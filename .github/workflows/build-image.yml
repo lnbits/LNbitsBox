@@ -25,18 +25,37 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
             extra-platforms = aarch64-linux
-            accept-flake-config = true
+            substituters = https://cache.nixos.org https://nix-community.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+            builders-use-substitutes = true
 
-      # Optional: speeds up if LNbits publishes cache hits; harmless if not
-      - name: Use LNbits Cachix (optional)
+      - name: Verify nix config
+        run: |
+          nix show-config | sed -n '/substituters/,/trusted-public-keys/p'
+
+      # Use Cachix binary caches to speed up builds
+      - name: Use nix-community Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: nix-community
+        continue-on-error: true
+
+      - name: Use LNbits Cachix
         uses: cachix/cachix-action@v15
         with:
           name: lnbits
         continue-on-error: true
 
+      - name: Use raspberry-pi-nix Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: raspberry-pi-nix
+        continue-on-error: true
+
       - name: Build SD image
+        timeout-minutes: 120
         run: |
-          nix build .#nixosConfigurations.pi4.config.system.build.sdImage
+          nix build .#sdImage -L
           ls -lah result/sd-image
 
       - name: Collect artefacts

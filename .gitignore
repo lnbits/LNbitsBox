@@ -1,0 +1,5 @@
+result
+dist
+*.img
+*.img.zst
+.DS_Store
