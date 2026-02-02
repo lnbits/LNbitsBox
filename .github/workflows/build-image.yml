@@ -1,0 +1,53 @@
+name: build-pi4-image
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Enable QEMU for aarch64 builds on x86 runners
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            extra-platforms = aarch64-linux
+            accept-flake-config = true
+
+      # Optional: speeds up if LNbits publishes cache hits; harmless if not
+      - name: Use LNbits Cachix (optional)
+        uses: cachix/cachix-action@v15
+        with:
+          name: lnbits
+        continue-on-error: true
+
+      - name: Build SD image
+        run: |
+          nix build .#nixosConfigurations.pi4.config.system.build.sdImage
+          ls -lah result/sd-image
+
+      - name: Collect artefacts
+        run: |
+          mkdir -p dist
+          cp -v result/sd-image/*.img.zst dist/
+          sha256sum dist/*.img.zst | tee dist/SHA256SUMS.txt
+
+      - name: Create GitHub Release and upload
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.img.zst
+            dist/SHA256SUMS.txt
