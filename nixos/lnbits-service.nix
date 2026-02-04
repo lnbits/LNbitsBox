@@ -24,6 +24,11 @@ in
   # Create default env file with proper multi-line content
   # This ensures all required variables are present
   system.activationScripts.lnbits-env = ''
+    # Ensure the directory exists
+    mkdir -p /etc/lnbits
+    chmod 0755 /etc/lnbits
+
+    # Create env file if it doesn't exist
     if [ ! -f ${envFile} ]; then
       cat > ${envFile} << 'EOF'
 LNBITS_ADMIN_UI=true

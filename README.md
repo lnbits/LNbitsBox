@@ -417,6 +417,20 @@ If you see `MemoryError: Cannot allocate write+execute memory for ffi.callback()
 - The pynostr library (used for Nostr Wallet Connect) requires write+execute memory for cryptographic operations
 - If you built an older image, rebuild with the latest code or manually edit `/etc/nixos/lnbits-service.nix` on the Pi and remove the `MemoryDenyWriteExecute = true;` line from the lnbits service, then run `sudo nixos-rebuild switch`
 
+**LNbits service fails with "Failed to load environment files: No such file or directory":**
+If you see this error, the `/etc/lnbits/lnbits.env` file wasn't created during system activation. Create it manually:
+```bash
+sudo mkdir -p /etc/lnbits
+sudo tee /etc/lnbits/lnbits.env > /dev/null << 'EOF'
+LNBITS_ADMIN_UI=true
+LNBITS_HOST=0.0.0.0
+LNBITS_PORT=9000
+EOF
+sudo chmod 0640 /etc/lnbits/lnbits.env
+sudo systemctl restart lnbits
+```
+This is fixed in the latest version of the configuration.
+
 **LNbits service fails with "is not a valid integer" error:**
 If you see `Error: invalid value for '--port': '${LNBITS_PORT}' is not a valid integer` in the logs:
 - The `/etc/lnbits/lnbits.env` file is missing required variables
