@@ -398,6 +398,12 @@ Access LNbits at: `http://<pi-ip-address>:9000`
 - Try accessing from a different device on the same network
 - Check firewall rules: `sudo iptables -L -n | grep 9000`
 
+**LNbits service crashes with MemoryError:**
+If you see `MemoryError: Cannot allocate write+execute memory for ffi.callback()` in the logs (`journalctl -u lnbits`):
+- This was fixed in the latest version by removing the `MemoryDenyWriteExecute` systemd hardening option
+- The pynostr library (used for Nostr Wallet Connect) requires write+execute memory for cryptographic operations
+- If you built an older image, rebuild with the latest code or manually edit `/etc/nixos/configuration.nix` on the Pi and remove the `MemoryDenyWriteExecute = true;` line from the lnbits service, then run `sudo nixos-rebuild switch`
+
 ### Build Issues (For developers)
 
 **Build is slow:** Building on x86_64 with QEMU emulation can take time. Make sure you've enabled the Cachix binary caches (step 3) to download pre-built packages instead of building from source. If you have access to a native aarch64 machine, building there will be much faster.

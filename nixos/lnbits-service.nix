@@ -50,14 +50,15 @@ in
       Restart = "on-failure";
       RestartSec = 2;
 
-      # basic hardening; safe defaults for a simple web service
+      # Basic hardening options
+      # Note: MemoryDenyWriteExecute is NOT enabled because pynostr (used by LNbits
+      # for Nostr Wallet Connect) requires write+execute memory for ffi.callback()
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
       ReadWritePaths = [ dataDir "/etc/lnbits" ];
       LockPersonality = true;
-      MemoryDenyWriteExecute = true;
     };
   };
 }
