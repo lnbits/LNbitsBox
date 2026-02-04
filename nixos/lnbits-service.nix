@@ -3,6 +3,7 @@
 let
   lnbitsPkg = lnbits.packages.${pkgs.system}.default;
   dataDir = "/var/lib/lnbits";
+  extensionsDir = "/var/lib/lnbits-extensions";
   envFile = "/etc/lnbits/lnbits.env";
 in
 {
@@ -16,6 +17,7 @@ in
   # Directories
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 lnbits lnbits - -"
+    "d ${extensionsDir} 0750 lnbits lnbits - -"
     "d /etc/lnbits 0755 root root - -"
   ];
 
@@ -43,12 +45,14 @@ EOF
       Type = "simple";
       User = "lnbits";
       Group = "lnbits";
+      WorkingDirectory = dataDir;
 
       EnvironmentFile = envFile;
 
-      # Persist LNbits data
+      # Persist LNbits data and configure paths
       Environment = [
         "LNBITS_DATA_FOLDER=${dataDir}"
+        "LNBITS_EXTENSIONS_PATH=${extensionsDir}"
       ];
 
       ExecStart = ''
@@ -67,7 +71,7 @@ EOF
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
-      ReadWritePaths = [ dataDir "/etc/lnbits" ];
+      ReadWritePaths = [ dataDir extensionsDir "/etc/lnbits" ];
       LockPersonality = true;
     };
   };

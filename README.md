@@ -21,6 +21,16 @@ After flashing, your SD card will have two partitions:
 
 You can customize the firmware partition label by setting `raspberry-pi-nix.firmware-partition-label` in `nixos/configuration.nix`.
 
+### LNbits Directory Structure
+
+Once running, LNbits uses the following directories on your Pi:
+
+- **`/var/lib/lnbits`** - Main data directory (database, uploaded files, etc.)
+- **`/var/lib/lnbits-extensions`** - Extensions/plugins directory
+- **`/etc/lnbits/lnbits.env`** - Configuration file (environment variables)
+
+All directories are owned by the `lnbits` system user and persist across reboots.
+
 ## Quick start: Download and flash
 
 ### Step 1: Download the image
@@ -417,6 +427,20 @@ If you see `Error: invalid value for '--port': '${LNBITS_PORT}' is not a valid i
   sudo systemctl restart lnbits
   ```
 - Or rebuild with the latest code which fixes the env file creation
+
+**LNbits service fails with "Read-only file system" error:**
+If you see `OSError: [Errno 30] Read-only file system: 'lnbits'` when trying to create extensions directory:
+- This was fixed in the latest version by setting `WorkingDirectory` and `LNBITS_EXTENSIONS_PATH`
+- LNbits was trying to create directories in the read-only Nix store instead of the data directory
+- Rebuild with the latest code, or manually add to the lnbits service config:
+  ```nix
+  WorkingDirectory = "/var/lib/lnbits";
+  Environment = [
+    "LNBITS_DATA_FOLDER=/var/lib/lnbits"
+    "LNBITS_EXTENSIONS_PATH=/var/lib/lnbits"
+  ];
+  ```
+  Then run `sudo nixos-rebuild switch`
 
 ### Build Issues (For developers)
 
