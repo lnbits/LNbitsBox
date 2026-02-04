@@ -29,10 +29,11 @@
   ];
 
   # Enable getty (login prompt) on tty1
-  systemd.services."getty@tty1".enable = true;
-
-  # Ensure autovt (automatic virtual terminals) are enabled
-  systemd.services."autovt@tty1".enable = true;
+  # Use wantedBy to ensure it starts automatically
+  systemd.services."getty@tty1" = {
+    enable = true;
+    wantedBy = [ "multi-user.target" ];
+  };
 
   # Create a login user for first boot
   # Change the username by modifying "lnbitsadmin" below
