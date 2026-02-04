@@ -9,7 +9,7 @@
   # Optional: Customize the firmware partition label (default is "FIRMWARE")
   raspberry-pi-nix.firmware-partition-label = "LNbitsPi";
 
-  networking.hostName = "lnbits-pi4";
+  networking.hostName = "lnbits";
   networking.useDHCP = true;
 
   # OpenSSH for headless access
