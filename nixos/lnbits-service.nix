@@ -50,7 +50,10 @@ EOF
       Type = "simple";
       User = "lnbits";
       Group = "lnbits";
-      WorkingDirectory = dataDir;
+
+      # Note: We don't set WorkingDirectory because LNbits needs to run from
+      # its installation directory to find static files. The environment
+      # variables below direct data and extensions to writable locations.
 
       EnvironmentFile = envFile;
 
