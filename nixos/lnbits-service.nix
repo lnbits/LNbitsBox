@@ -43,8 +43,8 @@ in
 
       ExecStart = ''
         ${lnbitsPkg}/bin/lnbits \
-          --host ''${LNBITS_HOST:-0.0.0.0} \
-          --port ''${LNBITS_PORT:-9000}
+          --host ''${LNBITS_HOST:0.0.0.0} \
+          --port ''${LNBITS_PORT:9000}
       '';
 
       Restart = "on-failure";
