@@ -402,7 +402,18 @@ Access LNbits at: `http://<pi-ip-address>:9000`
 If you see `MemoryError: Cannot allocate write+execute memory for ffi.callback()` in the logs (`journalctl -u lnbits`):
 - This was fixed in the latest version by removing the `MemoryDenyWriteExecute` systemd hardening option
 - The pynostr library (used for Nostr Wallet Connect) requires write+execute memory for cryptographic operations
-- If you built an older image, rebuild with the latest code or manually edit `/etc/nixos/configuration.nix` on the Pi and remove the `MemoryDenyWriteExecute = true;` line from the lnbits service, then run `sudo nixos-rebuild switch`
+- If you built an older image, rebuild with the latest code or manually edit `/etc/nixos/lnbits-service.nix` on the Pi and remove the `MemoryDenyWriteExecute = true;` line from the lnbits service, then run `sudo nixos-rebuild switch`
+
+**LNbits service fails with "is not a valid integer" error:**
+If you see `Error: invalid value for '--port': '${LNBITS_PORT}' is not a valid integer` in the logs:
+- The `/etc/lnbits/lnbits.env` file is missing required variables
+- Fix by running these commands on the Pi:
+  ```bash
+  echo "LNBITS_HOST=0.0.0.0" | sudo tee -a /etc/lnbits/lnbits.env
+  echo "LNBITS_PORT=9000" | sudo tee -a /etc/lnbits/lnbits.env
+  sudo systemctl restart lnbits
+  ```
+- Or rebuild with the latest code which fixes the env file creation
 
 ### Build Issues (For developers)
 

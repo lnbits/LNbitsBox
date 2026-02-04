@@ -13,15 +13,25 @@ in
   };
   users.groups.lnbits = {};
 
-  # Directories + default env file
+  # Directories
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 lnbits lnbits - -"
     "d /etc/lnbits 0755 root root - -"
-
-    # Created if missing. Users can edit later.
-    # Add SUPER_USER=... here once you’ve created a user in LNbits.
-    "f ${envFile} 0640 root root - LNBITS_ADMIN_UI=true\nLNBITS_HOST=0.0.0.0\nLNBITS_PORT=9000\n"
   ];
+
+  # Create default env file with proper multi-line content
+  # This ensures all required variables are present
+  system.activationScripts.lnbits-env = ''
+    if [ ! -f ${envFile} ]; then
+      cat > ${envFile} << 'EOF'
+LNBITS_ADMIN_UI=true
+LNBITS_HOST=0.0.0.0
+LNBITS_PORT=9000
+EOF
+      chmod 0640 ${envFile}
+      chown root:root ${envFile}
+    fi
+  '';
 
   systemd.services.lnbits = {
     description = "LNbits server";
@@ -43,8 +53,8 @@ in
 
       ExecStart = ''
         ${lnbitsPkg}/bin/lnbits \
-          --host ''${LNBITS_HOST:0.0.0.0} \
-          --port ''${LNBITS_PORT:9000}
+          --host ''${LNBITS_HOST} \
+          --port ''${LNBITS_PORT}
       '';
 
       Restart = "on-failure";
