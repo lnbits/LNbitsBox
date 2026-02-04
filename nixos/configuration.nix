@@ -19,11 +19,24 @@
     PasswordAuthentication = true; # simple first boot; change to keys-only if you want
   };
 
+  # Optional: Prevent console blanking (keeps display active)
+  # Uncomment if you want to see a login prompt on HDMI
+  boot.kernelParams = [ "consoleblank=0" ];
+  systemd.services."getty@tty1".enable = true;
+
   # Create a login user for first boot
+  # Change the username by modifying "lnbitsadmin" below
   users.users.lnbitsadmin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = [ "wheel" ]; # wheel = sudo access
+
+    # Option 1: Set initial password (plaintext - stored in /nix/store)
+    # User can change it after first login with 'passwd'
     initialPassword = "lnbits";
+
+    # Option 2: Use a hashed password (more secure - see example below)
+    # hashedPassword = "$y$j9T$...your-hashed-password-here...";
+    # Generate with: mkpasswd -m yescrypt
   };
 
   security.sudo.wheelNeedsPassword = true;

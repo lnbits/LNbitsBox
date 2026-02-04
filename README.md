@@ -108,11 +108,16 @@ zstd -d nixos-sd-image-*.img.zst
 1. Insert the SD card into your Raspberry Pi 4
 2. Connect ethernet cable (or configure WiFi later)
 3. Power on the Pi
-4. Wait 2-3 minutes for first boot to complete
-5. Find the Pi's IP address:
-   - Check your router's DHCP client list, or
-   - Use a network scanner like `nmap`, `angry-ip-scanner`, or your router's admin interface
-   - Or connect a monitor/keyboard and run `ip addr`
+4. **If you have a monitor connected:**
+   - You'll see boot messages
+   - Screen will go **black after "Reached target multi-user system"** - **this is normal!**
+   - The system is running and waiting for SSH (it's a headless system with no GUI)
+5. Wait 2-3 minutes for first boot to complete
+6. Find the Pi's IP address:
+   - Check your router's DHCP client list for hostname `lnbits-pi4`, or
+   - Try connecting via mDNS: `ssh lnbitsadmin@lnbits-pi4.local`
+   - Use a network scanner like `nmap` or `angry-ip-scanner`
+   - Or connect a keyboard and press a key to see if a login prompt appears
 
 ### Step 4: Access LNbits
 
@@ -350,12 +355,30 @@ Access LNbits at: `http://<pi-ip-address>:9000`
 
 ### Boot Issues
 
-**Pi won't boot / No activity:**
+**Screen goes black after boot messages (NORMAL for headless systems):**
+- **This is expected behavior!** The system is configured for SSH access only
+- After showing "Reached target multi-user system", the display goes blank
+- The system is running fine and waiting for SSH connections
+- To verify: Check your router for the Pi's IP address or try `ssh lnbitsadmin@lnbits-pi4.local`
+- To enable console login on HDMI: Uncomment the lines in `nixos/configuration.nix`:
+  ```nix
+  boot.kernelParams = [ "consoleblank=0" ];
+  systemd.services."getty@tty1".enable = true;
+  ```
+  Then rebuild and reflash the image
+
+**Pi won't boot / No activity at all:**
 - Verify the image was written completely (check file sizes)
 - Try re-flashing the image
 - Ensure you're using a Raspberry Pi 4 (this image won't work on Pi 3 or earlier)
 - Check your power supply (Pi 4 needs a good 5V/3A USB-C supply)
 - Look for the green activity LED - it should blink during boot
+
+**Boot messages stop or system hangs before "multi-user system":**
+- This indicates an actual boot problem (different from black screen above)
+- Connect via serial console (UART pins) to see detailed logs
+- Check if you modified any critical system settings
+- Try reflashing with the official unmodified image first
 
 **Can't find the Pi's IP address:**
 - Wait 3-5 minutes for first boot (it takes longer than subsequent boots)
@@ -422,6 +445,54 @@ lnbits.url = "github:lnbits/lnbits/dev";
 ```bash
 nix flake lock --update-input lnbits  # Update just LNbits
 nix build .#sdImage -L                # Build new image
+```
+
+### Changing default username/password
+
+The default SSH credentials are defined in `nixos/configuration.nix`:
+
+**Change the username:**
+```nix
+# Change "lnbitsadmin" to your desired username
+users.users.myusername = {
+  isNormalUser = true;
+  extraGroups = [ "wheel" ];
+  initialPassword = "mypassword";
+};
+```
+
+**Change the password (Method 1 - Simple):**
+```nix
+users.users.lnbitsadmin = {
+  isNormalUser = true;
+  extraGroups = [ "wheel" ];
+  initialPassword = "your-new-password";  # Change this
+};
+```
+⚠️ Note: `initialPassword` is stored in plaintext in `/nix/store`
+
+**Change the password (Method 2 - More secure):**
+
+Generate a hashed password:
+```bash
+# On any Linux system with mkpasswd:
+mkpasswd -m yescrypt
+# Enter your desired password when prompted
+```
+
+Then use the hash in your configuration:
+```nix
+users.users.lnbitsadmin = {
+  isNormalUser = true;
+  extraGroups = [ "wheel" ];
+  # hashedPassword = "$y$j9T$...paste-hash-here...";
+  initialPassword = null;  # Remove initialPassword when using hashedPassword
+};
+```
+
+After changing username/password, rebuild the image:
+```bash
+nix build .#sdImage -L
 ```
 
 ### Modifying system configuration
