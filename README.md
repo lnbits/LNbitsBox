@@ -442,19 +442,23 @@ If you see `Error: invalid value for '--port': '${LNBITS_PORT}' is not a valid i
   ```
 - Or rebuild with the latest code which fixes the env file creation
 
+**LNbits service fails with "Directory 'lnbits/static' does not exist" error:**
+If you see `RuntimeError: Directory 'lnbits/static' does not exist`:
+- This happens if `WorkingDirectory` is set in the systemd service
+- LNbits needs to run from its installation directory to find static files
+- Fix: Remove the `WorkingDirectory` line from the lnbits service config
+- The environment variables `LNBITS_DATA_FOLDER` and `LNBITS_EXTENSIONS_PATH` ensure data is written to the correct locations
+- Rebuild with the latest code which has this fixed
+
 **LNbits service fails with "Read-only file system" error:**
-If you see `OSError: [Errno 30] Read-only file system: 'lnbits'` when trying to create extensions directory:
-- This was fixed in the latest version by setting `WorkingDirectory` and `LNBITS_EXTENSIONS_PATH`
-- LNbits was trying to create directories in the read-only Nix store instead of the data directory
-- Rebuild with the latest code, or manually add to the lnbits service config:
-  ```nix
-  WorkingDirectory = "/var/lib/lnbits";
-  Environment = [
-    "LNBITS_DATA_FOLDER=/var/lib/lnbits"
-    "LNBITS_EXTENSIONS_PATH=/var/lib/lnbits-extensions"
-  ];
+If you see `OSError: [Errno 30] Read-only file system` when trying to create directories:
+- Make sure `LNBITS_DATA_FOLDER` and `LNBITS_EXTENSIONS_PATH` are set in the environment
+- Ensure both directories exist and are owned by the lnbits user:
+  ```bash
+  sudo mkdir -p /var/lib/lnbits /var/lib/lnbits-extensions
+  sudo chown lnbits:lnbits /var/lib/lnbits /var/lib/lnbits-extensions
   ```
-  And add `/var/lib/lnbits-extensions` to the `ReadWritePaths`, then run `sudo nixos-rebuild switch`
+- Check that both paths are in `ReadWritePaths` in the systemd service config
 
 ### Build Issues (For developers)
 
