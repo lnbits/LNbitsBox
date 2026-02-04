@@ -9,8 +9,9 @@
     raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
     raspberry-pi-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # LNbits flake input (you can pin to a tag/commit later)
-    lnbits.url = "github:lnbits/lnbits";
+    # LNbits flake input - pinned to v1.4.2 (latest stable)
+    # To update: change the version tag and run: nix flake lock --update-input lnbits
+    lnbits.url = "github:lnbits/lnbits/v1.4.2";
   };
 
   outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, ... }:

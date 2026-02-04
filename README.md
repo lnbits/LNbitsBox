@@ -385,16 +385,48 @@ If you're still having issues:
 
 ## Development
 
-To modify the configuration:
+### Updating LNbits version
 
-1. Edit `nixos/configuration.nix` for system settings
-2. Edit `nixos/lnbits-service.nix` for LNbits-specific configuration
+The LNbits version is pinned in `flake.nix`. To change versions:
+
+**Pin to a specific stable release (recommended):**
+```nix
+# In flake.nix, change:
+lnbits.url = "github:lnbits/lnbits/v1.4.2";
+```
+
+Available versions: Check [LNbits releases](https://github.com/lnbits/lnbits/releases)
+
+**Other pinning options:**
+```nix
+# Latest stable release (tracks main branch - may break)
+lnbits.url = "github:lnbits/lnbits";
+
+# Specific commit SHA
+lnbits.url = "github:lnbits/lnbits/abc123def456...";
+
+# Specific branch
+lnbits.url = "github:lnbits/lnbits/dev";
+```
+
+**After changing the version:**
+```bash
+nix flake lock --update-input lnbits  # Update just LNbits
+nix build .#sdImage -L                # Build new image
+```
+
+### Modifying system configuration
+
+To modify other aspects of the system:
+
+1. Edit `nixos/configuration.nix` for system settings (users, networking, packages)
+2. Edit `nixos/lnbits-service.nix` for LNbits-specific configuration (port, environment)
 3. Edit `flake.nix` to update dependencies or kernel settings
 
 After making changes:
 
 ```bash
-nix flake lock              # Update dependencies if needed
+nix flake lock              # Update all dependencies (if needed)
 nix build .#sdImage -L      # Build new image
 ```
 
