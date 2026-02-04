@@ -63,10 +63,10 @@ EOF
         "LNBITS_EXTENSIONS_PATH=${extensionsDir}"
       ];
 
+      # Change to the site-packages directory before starting so LNbits can find
+      # its static files at the relative path "lnbits/static"
       ExecStart = ''
-        ${lnbitsPkg}/bin/lnbits \
-          --host ''${LNBITS_HOST} \
-          --port ''${LNBITS_PORT}
+        ${pkgs.bash}/bin/bash -c 'cd ${lnbitsPkg}/lib/python*/site-packages && exec ${lnbitsPkg}/bin/lnbits --host ''${LNBITS_HOST} --port ''${LNBITS_PORT}'
       '';
 
       Restart = "on-failure";
