@@ -437,10 +437,10 @@ If you see `OSError: [Errno 30] Read-only file system: 'lnbits'` when trying to 
   WorkingDirectory = "/var/lib/lnbits";
   Environment = [
     "LNBITS_DATA_FOLDER=/var/lib/lnbits"
-    "LNBITS_EXTENSIONS_PATH=/var/lib/lnbits"
+    "LNBITS_EXTENSIONS_PATH=/var/lib/lnbits-extensions"
   ];
   ```
-  Then run `sudo nixos-rebuild switch`
+  And add `/var/lib/lnbits-extensions` to the `ReadWritePaths`, then run `sudo nixos-rebuild switch`
 
 ### Build Issues (For developers)
 
