@@ -46,7 +46,7 @@ export SPARK_MNEMONIC=$(cat "$MNEMONIC_FILE")
 
 # Execute spark_sidecar with all arguments
 cd $out/lib/spark-sidecar
-exec ${pkgs.nodejs}/bin/node index.js "$@"
+exec ${pkgs.nodejs}/bin/node server.mjs "$@"
 EOF
 
     chmod +x $out/bin/spark-sidecar
