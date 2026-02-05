@@ -23,11 +23,13 @@
   # When multiple consoles are specified, the LAST one becomes the default/preferred
   # We list serial first, then tty1 last so HDMI is the preferred console
   boot.kernelParams = [
-    "consoleblank=0"
-    "console=ttyAMA0,115200"  # Serial console (for UART debugging)
+    "consoleblank=0"           # Disable console blanking
+    "console=ttyAMA0,115200"   # Serial console (for UART debugging)
     "console=tty1"             # HDMI console (last = preferred/default)
     "fbcon=map:0"              # Force framebuffer console on fb0
     "vt.global_cursor_default=0" # Keep cursor visible
+    "logo.nologo"              # Skip boot logo (cleaner console output)
+    "loglevel=4"               # Show boot messages (4=warning, 7=debug)
   ];
 
   # Enable getty (login prompt) on tty1
@@ -35,7 +37,21 @@
   systemd.services."getty@tty1" = {
     enable = true;
     wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      # Keep trying to start even if it fails
+      Restart = "always";
+      RestartSec = "0";
+    };
   };
+
+  # Disable screen blanking at the systemd level
+  powerManagement.enable = false;
+  services.logind.extraConfig = ''
+    HandlePowerKey=ignore
+    HandleSuspendKey=ignore
+    HandleHibernateKey=ignore
+    HandleLidSwitch=ignore
+  '';
 
   # Create a login user for first boot
   # Change the username by modifying "lnbitsadmin" below
@@ -111,6 +127,22 @@
 
       enable_uart.enable = true;
       enable_uart.value = true;
+
+      # Force HDMI output (prevents display from turning off)
+      hdmi_force_hotplug.enable = true;
+      hdmi_force_hotplug.value = true;
+
+      # Auto-detect connected displays
+      display_auto_detect.enable = true;
+      display_auto_detect.value = true;
+
+      # Disable overscan (removes black borders)
+      disable_overscan.enable = true;
+      disable_overscan.value = true;
+
+      # Keep HDMI output active even when no signal detected
+      hdmi_blanking.enable = true;
+      hdmi_blanking.value = false;
     };
     pi4 = { };
   };
