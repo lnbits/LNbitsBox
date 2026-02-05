@@ -11,7 +11,7 @@ pkgs.buildNpmPackage {
   # 2. Run: nix build .#nixosConfigurations.pi4.config.system.build.toplevel
   # 3. Copy the hash from the error message
   # 4. Update this field with the correct hash
-  npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+  npmDepsHash = "sha256-IF87onWOqsv3vtrGWpP95zaaUpRtKiDJ5NokNWDAzEQ=";
 
   # Skip npm scripts that might fail in sandbox
   npmBuildScript = "build";
