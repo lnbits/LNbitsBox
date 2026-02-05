@@ -13,16 +13,20 @@ pkgs.buildNpmPackage {
   # 4. Update this field with the correct hash
   npmDepsHash = "sha256-IF87onWOqsv3vtrGWpP95zaaUpRtKiDJ5NokNWDAzEQ=";
 
+  # Skip build step - spark_sidecar doesn't need compilation
+  dontNpmBuild = true;
+
   # Skip npm scripts that might fail in sandbox
-  npmBuildScript = "build";
   npmFlags = [ "--legacy-peer-deps" ];
 
-  # Install phase: copy built files to output
+  # Install phase: copy files to output
   installPhase = ''
     runHook preInstall
 
     mkdir -p $out/lib/spark-sidecar
-    cp -r * $out/lib/spark-sidecar/
+
+    # Copy all source files and node_modules
+    cp -r . $out/lib/spark-sidecar/
 
     # Create wrapper script that loads mnemonic from file
     mkdir -p $out/bin
@@ -42,7 +46,7 @@ export SPARK_MNEMONIC=$(cat "$MNEMONIC_FILE")
 
 # Execute spark_sidecar with all arguments
 cd $out/lib/spark-sidecar
-exec ${pkgs.nodejs}/bin/node dist/index.js "$@"
+exec ${pkgs.nodejs}/bin/node index.js "$@"
 EOF
 
     chmod +x $out/bin/spark-sidecar
