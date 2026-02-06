@@ -200,8 +200,8 @@ def update_lnbits_env():
     """Update /etc/lnbits/lnbits.env with Spark configuration"""
     spark_config = """
 # Spark L2 Sidecar Configuration (added by configurator)
-LNBITS_BACKEND_WALLET_CLASS=SparkWallet
-LNBITS_SPARK_URL=http://127.0.0.1:8765
+LNBITS_BACKEND_WALLET_CLASS=LightsparkSparkWallet
+SPARK_URL=http://127.0.0.1:8765
 """
 
     # Read existing env file
@@ -211,7 +211,7 @@ LNBITS_SPARK_URL=http://127.0.0.1:8765
         existing = ""
 
     # Check if Spark config already exists
-    if "LNBITS_SPARK_URL" not in existing:
+    if "SPARK_URL" not in existing:
         # Append Spark configuration
         updated = existing.rstrip() + "\n" + spark_config
         ENV_FILE.write_text(updated)
