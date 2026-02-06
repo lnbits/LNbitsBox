@@ -16,7 +16,7 @@ in
 
   # Directories
   systemd.tmpfiles.rules = [
-    "d ${dataDir} 0750 lnbits lnbits - -"
+    "d ${dataDir} 0751 lnbits lnbits - -"
     "d ${extensionsDir} 0750 lnbits lnbits - -"
     "d /etc/lnbits 0755 root root - -"
   ];
