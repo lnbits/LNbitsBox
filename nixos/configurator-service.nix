@@ -15,6 +15,9 @@ in
       ConditionPathExists = "!/var/lib/lnbits/.configured";
     };
 
+    # chpasswd (shadow) and systemctl (systemd) must be in PATH
+    path = [ pkgs.shadow pkgs.systemd ];
+
     serviceConfig = {
       Type = "simple";
       # Run as root (needs permissions to set passwords, write files)
