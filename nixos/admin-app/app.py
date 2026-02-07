@@ -21,7 +21,7 @@ from flask import (
     url_for, flash, session, jsonify
 )
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="/box/static")
 app.secret_key = os.urandom(24)
 
 # Configuration
