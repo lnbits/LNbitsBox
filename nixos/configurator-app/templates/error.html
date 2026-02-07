@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Error - LNbitsPi{% endblock %}
+{% block title %}Error - LNbitsBox{% endblock %}
 
 {% block content %}
-<h2>Setup Error</h2>
-
-<div class="alert alert-error">
-    <strong>An error occurred during setup:</strong>
-    <p style="margin-top: 10px;">{{ error }}</p>
+{# ── Error Icon ── #}
+<div class="text-center mb-5">
+    <div class="mx-auto w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+        <svg class="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+    </div>
 </div>
 
-<p>Please try again or contact support if the problem persists.</p>
+<h2 class="text-xl font-bold text-ln-text text-center mb-4">Setup Error</h2>
 
-<p style="text-align: center; margin-top: 30px;">
-    <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Setup</a>
-</p>
+<div class="bg-red-500/5 border border-red-500/20 rounded-xl p-4 mb-6">
+    <p class="text-red-300 text-sm font-mono">{{ error }}</p>
+</div>
 
+<p class="text-ln-muted text-sm text-center mb-6">Please try again or check your device if the problem persists.</p>
+
+<a href="{{ url_for('index') }}"
+   class="block w-full text-center bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98]">
+    Return to Setup
+</a>
 {% endblock %}

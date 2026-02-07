@@ -1,47 +1,106 @@
 {% extends "base.html" %}
 
-{% block title %}Seed Setup - LNbitsPi{% endblock %}
+{% block title %}Seed Setup - LNbitsBox{% endblock %}
+
+{% block step_indicator %}
+<div class="flex items-center justify-center gap-2 px-6 pt-5 pb-1">
+    <div class="w-8 h-8 rounded-full bg-ln-pink flex items-center justify-center step-active">
+        <span class="text-white font-mono font-bold text-xs">1</span>
+    </div>
+    <div class="w-12 h-px bg-ln-border"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-border flex items-center justify-center">
+        <span class="text-ln-muted font-mono font-bold text-xs">2</span>
+    </div>
+    <div class="w-12 h-px bg-ln-border"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-border flex items-center justify-center">
+        <span class="text-ln-muted font-mono font-bold text-xs">3</span>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<h2>Step 1: Spark Wallet Seed</h2>
+<h2 class="text-xl font-bold text-ln-text mb-1">Spark Wallet Seed</h2>
+<p class="text-ln-muted text-sm mb-6">Choose how to set up your wallet</p>
 
 {% if action == "choose" %}
-    <p>Choose how you want to set up your Spark wallet:</p>
 
-    <form method="POST" style="margin-top: 30px;">
+    {# ── Generate ── #}
+    <form method="POST">
         <input type="hidden" name="action" value="generate">
-        <button type="submit" class="btn btn-primary btn-block">Generate New Seed Phrase</button>
+        <button type="submit"
+                class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98]">
+            Generate New Seed Phrase
+        </button>
     </form>
 
-    <p style="text-align: center; margin: 20px 0; color: #999;">or</p>
+    {# ── Divider ── #}
+    <div class="flex items-center gap-4 my-6">
+        <div class="flex-1 h-px bg-ln-border"></div>
+        <span class="text-ln-muted text-xs font-mono uppercase tracking-widest">or</span>
+        <div class="flex-1 h-px bg-ln-border"></div>
+    </div>
 
+    {# ── Import ── #}
     <form method="POST">
         <input type="hidden" name="action" value="import">
-        <div class="form-group">
-            <label for="mnemonic">Import Existing Seed Phrase:</label>
-            <textarea name="mnemonic" id="mnemonic" placeholder="Enter your 12-word BIP39 mnemonic here..."></textarea>
-            <small style="color: #666;">Enter 12 words separated by spaces</small>
+        <div class="mb-4">
+            <label for="mnemonic" class="block text-sm font-medium text-ln-text mb-2">Import Existing Seed Phrase</label>
+            <textarea name="mnemonic" id="mnemonic"
+                      placeholder="Enter your 12-word BIP39 mnemonic..."
+                      class="w-full bg-ln-surface border border-ln-border rounded-xl px-4 py-3 text-ln-text font-mono text-sm placeholder-ln-muted/50 focus:outline-none focus:border-ln-pink transition-colors resize-none"
+                      rows="3"></textarea>
+            <p class="text-ln-muted text-xs mt-1.5 font-mono">12 words separated by spaces</p>
         </div>
-        <button type="submit" class="btn btn-secondary btn-block">Import Seed Phrase</button>
+        <button type="submit"
+                class="w-full bg-ln-card-hover hover:bg-ln-border text-ln-text font-semibold py-3.5 rounded-xl border border-ln-border transition-all duration-200 active:scale-[0.98]">
+            Import Seed Phrase
+        </button>
     </form>
 
 {% elif action == "display" %}
-    <div class="warning">
-        <strong>CRITICAL: Save Your Seed Phrase</strong>
-        <p>Write down these 12 words in order and store them safely. This is the ONLY time you will see this phrase. Without it, you cannot recover your wallet.</p>
+
+    {# ── Critical Warning ── #}
+    <div class="bg-red-500/5 border border-red-500/20 rounded-xl p-4 mb-6">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 mt-0.5">
+                <svg class="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-red-300 text-sm font-semibold">Save Your Seed Phrase</p>
+                <p class="text-red-300/70 text-xs mt-1 leading-relaxed">
+                    Write down these 12 words in order. This is the <strong class="text-red-300">only time</strong> you will see them. Without this phrase, your wallet cannot be recovered.
+                </p>
+            </div>
+        </div>
     </div>
 
-    <div class="mnemonic-display">
-        {{ mnemonic }}
+    {# ── Mnemonic Display ── #}
+    <div class="bg-ln-surface border border-ln-pink/30 rounded-xl p-5 mb-6 glow-pink-strong">
+        <div class="grid grid-cols-3 gap-2">
+            {% for word in mnemonic.split() %}
+            <div class="flex items-center gap-2 bg-ln-card rounded-lg px-3 py-2">
+                <span class="text-ln-muted font-mono text-[10px]">{{ loop.index }}</span>
+                <span class="text-ln-text font-mono text-sm font-medium">{{ word }}</span>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
+    {# ── Confirm ── #}
     <form method="POST">
         <input type="hidden" name="action" value="confirm">
-        <div class="checkbox-group">
-            <input type="checkbox" name="confirmed" id="confirmed" value="yes" required>
-            <label for="confirmed">I have written down and safely stored my seed phrase</label>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Continue</button>
+        <label class="flex items-center gap-3 cursor-pointer mb-6 group">
+            <input type="checkbox" name="confirmed" value="yes" required>
+            <span class="text-sm text-ln-muted group-hover:text-ln-text transition-colors">
+                I have written down and safely stored my seed phrase
+            </span>
+        </label>
+        <button type="submit"
+                class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98]">
+            Continue
+        </button>
     </form>
 {% endif %}
 

@@ -1,29 +1,74 @@
 {% extends "base.html" %}
 
-{% block title %}Setup Complete - LNbitsPi{% endblock %}
+{% block title %}Setup Complete - LNbitsBox{% endblock %}
+
+{% block step_indicator %}
+<div class="flex items-center justify-center gap-2 px-6 pt-5 pb-1">
+    <div class="w-8 h-8 rounded-full bg-ln-pink/20 border border-ln-pink/40 flex items-center justify-center">
+        <svg class="w-4 h-4 text-ln-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    </div>
+    <div class="w-12 h-px bg-ln-pink/40"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-pink/20 border border-ln-pink/40 flex items-center justify-center">
+        <svg class="w-4 h-4 text-ln-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    </div>
+    <div class="w-12 h-px bg-ln-pink/40"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-pink flex items-center justify-center step-active">
+        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="success-icon">✓</div>
+<div class="text-center">
+    {# ── Success Icon ── #}
+    <div class="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-5 animate-glow-pulse" style="box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);">
+        <svg class="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    </div>
 
-<h2 style="text-align: center;">Setup Complete!</h2>
-
-<p style="text-align: center;">Your LNbitsPi is now configured and LNbits is starting up.</p>
-
-<div class="warning">
-    <strong>Next Steps:</strong>
-    <ol style="margin-top: 10px; padding-left: 20px;">
-        <li>Wait 10-15 seconds for services to start</li>
-        <li>Refresh this page or click the button below</li>
-        <li>LNbits will open and you can begin using it</li>
-    </ol>
+    <h2 class="text-2xl font-bold text-ln-text mb-2">Setup Complete</h2>
+    <p class="text-ln-muted text-sm mb-6">Your LNbitsBox is configured and services are starting</p>
 </div>
 
-<p style="text-align: center; margin-top: 30px;">
-    <a href="/" class="btn btn-success btn-block">Open LNbits</a>
-</p>
+{# ── Next Steps ── #}
+<div class="bg-ln-surface border border-ln-border rounded-xl p-4 mb-6">
+    <p class="text-ln-text text-sm font-medium mb-3">Next Steps</p>
+    <div class="space-y-2.5">
+        <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded bg-ln-pink/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-ln-pink font-mono text-[10px] font-bold">1</span>
+            </div>
+            <p class="text-ln-muted text-sm">Wait 10&ndash;15 seconds for services to start</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded bg-ln-pink/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-ln-pink font-mono text-[10px] font-bold">2</span>
+            </div>
+            <p class="text-ln-muted text-sm">Refresh this page or click below</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded bg-ln-pink/10 flex items-center justify-center flex-shrink-0">
+                <span class="text-ln-pink font-mono text-[10px] font-bold">3</span>
+            </div>
+            <p class="text-ln-muted text-sm">LNbits will open and you can start using it</p>
+        </div>
+    </div>
+</div>
 
-<p style="text-align: center; margin-top: 20px; color: #666; font-size: 14px;">
-    This configuration wizard is now disabled. To reconfigure, use: <code>sudo lnbitspi-reset</code>
-</p>
+{# ── CTA ── #}
+<a href="/"
+   class="block w-full text-center bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98] mb-4">
+    Open LNbits
+</a>
 
+<p class="text-center text-ln-muted text-xs font-mono">
+    To reconfigure: <span class="text-ln-pink/70">sudo lnbitspi-reset</span>
+</p>
 {% endblock %}

@@ -3,32 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LNbitsPi Setup{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>LNbitsPi Configuration Wizard</h1>
-        </header>
+    <title>{% block title %}LNbitsBox Setup{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ln-pink': '#FF1EE6',
+                        'ln-pink-dim': '#cc18b8',
+                        'ln-surface': '#0f0f14',
+                        'ln-card': '#16161e',
+                        'ln-card-hover': '#1c1c26',
+                        'ln-border': '#2a2a3a',
+                        'ln-text': '#e4e4ef',
+                        'ln-muted': '#7a7a8e',
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'monospace'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    animation: {
+                        'glow-pulse': 'glow-pulse 3s ease-in-out infinite',
+                        'slide-up': 'slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'fade-in': 'fade-in 0.6s ease forwards',
+                        'scan-line': 'scan-line 4s linear infinite',
+                    },
+                    keyframes: {
+                        'glow-pulse': {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '0.8' },
+                        },
+                        'slide-up': {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        'fade-in': {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        'scan-line': {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100vh)' },
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Space Grotesk', sans-serif; }
 
+        /* Noise texture overlay */
+        .noise-bg::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glow effect for primary accent */
+        .glow-pink {
+            box-shadow: 0 0 30px rgba(255, 30, 230, 0.15), 0 0 60px rgba(255, 30, 230, 0.05);
+        }
+
+        .glow-pink-strong {
+            box-shadow: 0 0 20px rgba(255, 30, 230, 0.3), 0 0 50px rgba(255, 30, 230, 0.1);
+        }
+
+        /* Step indicator active glow */
+        .step-active {
+            box-shadow: 0 0 12px rgba(255, 30, 230, 0.5);
+        }
+
+        /* Input focus glow */
+        input:focus, textarea:focus {
+            box-shadow: 0 0 0 1px #FF1EE6, 0 0 20px rgba(255, 30, 230, 0.15);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f0f14; }
+        ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FF1EE6; }
+
+        /* Subtle grid background */
+        .grid-bg {
+            background-image:
+                linear-gradient(rgba(255, 30, 230, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 30, 230, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Checkbox styling */
+        input[type="checkbox"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #2a2a3a;
+            border-radius: 4px;
+            background: #16161e;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+        input[type="checkbox"]:checked {
+            background: #FF1EE6;
+            border-color: #FF1EE6;
+        }
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="bg-ln-surface text-ln-text min-h-screen noise-bg grid-bg flex items-center justify-center p-4 sm:p-6">
+
+    <div class="relative z-10 w-full max-w-lg">
+
+        {# ── Header / Logo ── #}
+        <div class="flex items-center justify-center gap-3 mb-8 animate-fade-in">
+            <img src="{{ url_for('static', filename='lnbits-logo.svg') }}" alt="LNbits" class="h-8 opacity-90">
+        </div>
+
+        {# ── Flash Messages ── #}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="messages">
+                <div class="mb-4 space-y-2 animate-slide-up">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% if category == 'error' %}
+                    <div class="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-lg font-mono text-sm">
+                        {{ message }}
+                    </div>
+                    {% elif category == 'success' %}
+                    <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-4 py-3 rounded-lg font-mono text-sm">
+                        {{ message }}
+                    </div>
+                    {% else %}
+                    <div class="bg-amber-500/10 border border-amber-500/30 text-amber-300 px-4 py-3 rounded-lg font-mono text-sm">
+                        {{ message }}
+                    </div>
+                    {% endif %}
                 {% endfor %}
                 </div>
             {% endif %}
         {% endwith %}
 
-        <main>
-            {% block content %}{% endblock %}
-        </main>
+        {# ── Main Card ── #}
+        <div class="bg-ln-card border border-ln-border rounded-2xl overflow-hidden glow-pink animate-slide-up" style="animation-delay: 0.1s; opacity: 0;">
 
-        <footer>
-            <p>LNbitsPi &bull; Powered by LNbits and Spark</p>
-        </footer>
+            {# ── Step Indicator (shown on wizard pages) ── #}
+            {% block step_indicator %}{% endblock %}
+
+            {# ── Content ── #}
+            <div class="p-6 sm:p-8">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        {# ── Footer ── #}
+        <div class="mt-6 text-center animate-fade-in" style="animation-delay: 0.3s; opacity: 0;">
+            <p class="text-ln-muted text-xs font-mono tracking-wider uppercase">
+                LNbitsBox &middot; Powered by LNbits &amp; Spark
+            </p>
+        </div>
     </div>
+
 </body>
 </html>

@@ -1,20 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Already Configured - LNbitsPi{% endblock %}
+{% block title %}Already Configured - LNbitsBox{% endblock %}
 
 {% block content %}
-<h2>System Already Configured</h2>
-
-<p>Your LNbitsPi has already been configured. The setup wizard is disabled.</p>
-
-<p>If you need to reconfigure your system, run the following command via SSH:</p>
-
-<div style="background: #f8f9fa; padding: 15px; border-radius: 6px; font-family: monospace; margin: 20px 0;">
-    sudo lnbitspi-reset
+{# ── Status Icon ── #}
+<div class="text-center mb-5">
+    <div class="mx-auto w-14 h-14 rounded-full bg-ln-pink/10 border border-ln-pink/30 flex items-center justify-center">
+        <svg class="w-7 h-7 text-ln-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+        </svg>
+    </div>
 </div>
 
-<p style="text-align: center; margin-top: 30px;">
-    <a href="/" class="btn btn-primary">Return to LNbits</a>
-</p>
+<h2 class="text-xl font-bold text-ln-text text-center mb-2">Already Configured</h2>
+<p class="text-ln-muted text-sm text-center mb-6">Your LNbitsBox has been configured. The setup wizard is disabled.</p>
 
+<div class="bg-ln-surface border border-ln-border rounded-xl p-4 mb-6">
+    <p class="text-ln-muted text-xs mb-2">To reconfigure, run via SSH:</p>
+    <code class="block text-ln-pink font-mono text-sm">sudo lnbitspi-reset</code>
+</div>
+
+<a href="/"
+   class="block w-full text-center bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98]">
+    Return to LNbits
+</a>
 {% endblock %}
