@@ -102,9 +102,15 @@ def get_spark_balance():
     """Query Spark sidecar for wallet balance"""
     try:
         import requests
-        resp = requests.get(f"{SPARK_URL}/api/v1/balance", timeout=5)
+        resp = requests.post(f"{SPARK_URL}/v1/balance", timeout=5)
         if resp.ok:
-            return resp.json()
+            data = resp.json()
+            balance_msat = data.get("balance_msat")
+            if balance_msat is not None:
+                return {"balance": int(balance_msat) // 1000}
+            balance_sats = data.get("balance_sats")
+            if balance_sats is not None:
+                return {"balance": int(balance_sats)}
     except Exception:
         pass
     return None
