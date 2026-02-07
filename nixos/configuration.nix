@@ -107,6 +107,7 @@
     ./spark-sidecar-service.nix
     ./configurator-service.nix
     ./nginx-proxy.nix
+    ./admin-service.nix
   ];
 
   # Auto-migration for existing LNbits installations
