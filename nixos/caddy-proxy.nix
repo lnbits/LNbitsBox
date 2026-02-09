@@ -36,7 +36,8 @@ let
       'https:// {' \
       '	tls ${certFile} ${keyFile}' \
       "" \
-      '	handle /box/* {' \
+      '	@box path /box /box/*' \
+      '	handle @box {' \
       '		reverse_proxy 127.0.0.1:8090' \
       '	}' \
       "" \
