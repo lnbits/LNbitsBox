@@ -12,6 +12,16 @@
   networking.hostName = "lnbits";
   networking.useDHCP = true;
 
+  # Enable mDNS so the box is reachable via lnbits.local
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+    };
+  };
+
   # OpenSSH for headless access
   services.openssh.enable = true;
   services.openssh.settings = {
