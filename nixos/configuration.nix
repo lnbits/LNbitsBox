@@ -84,7 +84,7 @@
     ╚═══════════════════════════════════════════════════════════╝
 
     To configure your device, open a web browser and navigate to:
-      http://<this-device-ip>/
+      https://<this-device-ip>/
 
     Not configured yet? The setup wizard will guide you through:
       • Generating/importing your Spark wallet seed phrase
@@ -97,16 +97,16 @@
     To reset configuration, run: sudo lnbitspi-reset
   '';
 
-  # External port 80 (nginx reverse proxy)
-  # nginx routes to configurator (pre-setup) or LNbits (post-setup)
-  networking.firewall.allowedTCPPorts = [ 80 ];
+  # Caddy reverse proxy (ports 80 + 443)
+  # Caddy routes to configurator (pre-setup) or LNbits (post-setup)
+  networking.firewall.allowedTCPPorts = [ 80 443 ];
 
   # Import service modules
   imports = [
     ./lnbits-service.nix
     ./spark-sidecar-service.nix
     ./configurator-service.nix
-    ./nginx-proxy.nix
+    ./caddy-proxy.nix
     ./admin-service.nix
   ];
 

@@ -181,7 +181,7 @@ def complete():
         wizard_state.clear()
 
         # 5. Delay marker creation and service start so the complete page
-        #    and its assets are served by the configurator before nginx
+        #    and its assets are served by the configurator before Caddy
         #    switches routing to LNbits
         def finalize():
             time.sleep(5)
@@ -193,6 +193,7 @@ def complete():
                 subprocess.run(["systemctl", "start", "spark-sidecar.service"], check=False)
                 subprocess.run(["systemctl", "start", "lnbits.service"], check=False)
                 subprocess.run(["systemctl", "start", "lnbitspi-admin.service"], check=False)
+                subprocess.run(["systemctl", "reload", "caddy.service"], check=False)
 
         threading.Thread(target=finalize, daemon=True).start()
 
@@ -232,5 +233,5 @@ def health():
 
 
 if __name__ == "__main__":
-    # Run on loopback only (nginx will proxy)
+    # Run on loopback only (Caddy will proxy)
     app.run(host="127.0.0.1", port=8080, debug=False)

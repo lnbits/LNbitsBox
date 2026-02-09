@@ -38,6 +38,9 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   echo "Removing configuration marker..."
   rm -f /var/lib/lnbits/.configured
 
+  echo "Reloading Caddy to route to configurator..."
+  systemctl reload caddy.service || true
+
   echo ""
   echo "─────────────────────────────────────────────────────"
   echo "Mnemonic Management"
@@ -68,7 +71,7 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   echo "═══════════════════════════════════════════════════════"
   echo ""
   echo "The configuration wizard will be available at:"
-  echo "  http://<this-device-ip>/"
+  echo "  https://<this-device-ip>/"
   echo ""
   echo "The configurator service will start automatically."
   echo "LNbits and Spark sidecar will remain stopped until"
