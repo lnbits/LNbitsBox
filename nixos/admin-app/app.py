@@ -137,6 +137,14 @@ def get_memory_info():
         return {"used": 0, "total": 0, "percent": 0}
 
 
+def get_onion_address():
+    """Read the Tor hidden service .onion address"""
+    try:
+        return Path("/var/lib/tor/onion/lnbits/hostname").read_text().strip()
+    except Exception:
+        return None
+
+
 def collect_stats():
     """Collect all system stats"""
     disk = shutil.disk_usage("/")
@@ -155,6 +163,7 @@ def collect_stats():
             svc: get_service_status(svc) for svc in ALLOWED_SERVICES
         },
         "spark_balance": get_spark_balance(),
+        "tor_onion": get_onion_address(),
     }
 
 

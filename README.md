@@ -11,6 +11,7 @@ A pre-configured, bootable NixOS SD card image for Raspberry Pi 4 that runs [LNb
 - **SSH enabled** for remote access
 - **Mainline Linux kernel** (cached, no compilation needed)
 - **Raspberry Pi 4 optimizations** (64-bit, UART enabled)
+- **Tor hidden service** for private remote access (`.onion` address, no port forwarding needed)
 - **nginx reverse proxy** for secure internal routing
 - **Firewall configured** (port 80 open)
 
@@ -30,6 +31,7 @@ Once configured, the system uses the following directories:
 - **`/var/lib/lnbits`** - LNbits data directory (database, uploaded files, etc.)
 - **`/var/lib/lnbits-extensions`** - Extensions/plugins directory
 - **`/var/lib/spark-sidecar`** - Spark wallet data and mnemonic
+- **`/var/lib/tor/onion/lnbits`** - Tor hidden service keys and hostname
 - **`/etc/lnbits/lnbits.env`** - LNbits configuration file
 
 All directories are owned by their respective system users and persist across reboots.
@@ -172,6 +174,14 @@ http://<pi-ip-address>/
 ssh lnbitsadmin@<pi-ip-address>
 # Use the password you set in the wizard
 ```
+
+**Tor access (remote/private):**
+
+LNbits is also available as a Tor hidden service. The `.onion` address is generated automatically on first boot (takes 1-2 minutes). You can find it:
+- In the admin dashboard at `https://<pi-ip-address>/box/` (shown in the Tor Address card)
+- Via SSH: `cat /var/lib/tor/onion/lnbits/hostname`
+
+To access LNbits over Tor, open the `.onion` URL in [Tor Browser](https://www.torproject.org/download/). This works from anywhere without port forwarding.
 
 That's it! Your LNbits node with Spark L2 Lightning is now running.
 
@@ -513,6 +523,13 @@ After setup is complete, access LNbits at: `http://<pi-ip-address>/`
 - Run `sudo lnbitspi-reset` to restart the wizard
 - Choose NOT to delete the mnemonic when prompted
 - In the wizard, import your existing mnemonic instead of generating new
+
+**Tor hidden service not working / no `.onion` address:**
+- Tor takes 1-2 minutes to establish the hidden service on first boot
+- Check Tor is running: `systemctl status tor`
+- Check Tor logs: `journalctl -u tor`
+- Verify the hostname file exists: `sudo cat /var/lib/tor/onion/lnbits/hostname`
+- The `.onion` address persists across reboots once generated
 
 **LNbits can't connect to Spark sidecar:**
 - Check Spark is running: `systemctl status spark-sidecar`

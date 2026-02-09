@@ -19,6 +19,19 @@
         </a>
     </div>
 
+    {# ── Tor Address ── #}
+    <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 mb-6">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Tor Address</div>
+        <div class="flex items-center gap-3">
+            <div class="w-2.5 h-2.5 rounded-full" id="tor-dot"></div>
+            <code class="text-sm sm:text-base font-mono text-ln-text truncate flex-1" id="stat-tor-address">--</code>
+            <button onclick="copyOnion()" id="tor-copy-btn"
+                    class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0">
+                Copy
+            </button>
+        </div>
+    </div>
+
     {# ── Metric Cards ── #}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
 
@@ -125,7 +138,7 @@
     {# ── Footer ── #}
     <div class="mt-8 text-center">
         <p class="text-ln-muted text-xs font-mono tracking-wider uppercase">
-            LNbitsBox &middot; Powered by LNbits &amp; Spark
+            LNbitsBox &middot; Powered by LNbits
         </p>
     </div>
 </div>
@@ -294,6 +307,21 @@ async function fetchStats() {
         document.getElementById('stat-ram-detail').textContent =
             formatBytes(s.ram.used) + ' / ' + formatBytes(s.ram.total) + ' (' + s.ram.percent + '%)';
 
+        // Tor
+        const onion = s.tor_onion;
+        const torAddr = document.getElementById('stat-tor-address');
+        const torDot = document.getElementById('tor-dot');
+        const torCopyBtn = document.getElementById('tor-copy-btn');
+        if (onion) {
+            torAddr.textContent = onion;
+            torDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-400';
+            torCopyBtn.classList.remove('hidden');
+        } else {
+            torAddr.textContent = 'Waiting for Tor...';
+            torDot.className = 'w-2.5 h-2.5 rounded-full bg-ln-muted animate-pulse';
+            torCopyBtn.classList.add('hidden');
+        }
+
         // Services
         for (const svc of ['lnbits', 'spark-sidecar']) {
             const key = svc.replace('-', '-');
@@ -356,6 +384,28 @@ async function executeAction(action) {
         }
     } catch (e) {
         alert('Request failed');
+    }
+}
+
+async function copyOnion() {
+    const addr = document.getElementById('stat-tor-address').textContent;
+    if (!addr || addr === '--' || addr.startsWith('Waiting')) return;
+    try {
+        await navigator.clipboard.writeText('http://' + addr);
+        const btn = document.getElementById('tor-copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    } catch (e) {
+        // Fallback for non-HTTPS contexts
+        const ta = document.createElement('textarea');
+        ta.value = 'http://' + addr;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const btn = document.getElementById('tor-copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
     }
 }
 
