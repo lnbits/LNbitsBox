@@ -184,7 +184,7 @@ def complete():
         #    and its assets are served by the configurator before Caddy
         #    switches routing to LNbits
         def finalize():
-            time.sleep(5)
+            time.sleep(1)
             MARKER_FILE.parent.mkdir(parents=True, exist_ok=True)
             MARKER_FILE.touch(mode=0o644)
             if DEV_MODE:
