@@ -302,39 +302,7 @@ async function fetchStats() {
             document.getElementById('svc-' + svc + '-status').textContent = status;
         }
 
-        // LNbits status card
-        const lnbitsStatus = s.services['lnbits'] || 'unknown';
-        const statusDot = document.getElementById('lnbits-status-dot');
-        const statusText = document.getElementById('lnbits-status-text');
-        const statusBadge = document.getElementById('lnbits-status-badge');
-        const statusCard = document.getElementById('lnbits-status-card');
-        const openLink = document.getElementById('lnbits-open-link');
-
-        if (lnbitsStatus === 'active') {
-            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse transition-colors duration-300';
-            statusText.textContent = 'LNbits is running';
-            statusText.className = 'text-emerald-400/70 text-sm transition-colors duration-300';
-            statusBadge.textContent = 'active';
-            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-emerald-400 border-emerald-400/30 bg-emerald-400/5';
-            statusCard.className = 'bg-ln-surface border border-emerald-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
-            openLink.classList.remove('opacity-50', 'pointer-events-none');
-        } else if (lnbitsStatus === 'activating' || lnbitsStatus === 'reloading') {
-            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse transition-colors duration-300';
-            statusText.textContent = 'LNbits is starting...';
-            statusText.className = 'text-amber-400/70 text-sm transition-colors duration-300';
-            statusBadge.textContent = lnbitsStatus;
-            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-amber-400 border-amber-400/30 bg-amber-400/5';
-            statusCard.className = 'bg-ln-surface border border-amber-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
-            openLink.classList.add('opacity-50', 'pointer-events-none');
-        } else {
-            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-400 transition-colors duration-300';
-            statusText.textContent = lnbitsStatus === 'unknown' ? 'LNbits status unknown' : 'LNbits is stopped';
-            statusText.className = 'text-red-400/70 text-sm transition-colors duration-300';
-            statusBadge.textContent = lnbitsStatus;
-            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-red-400 border-red-400/30 bg-red-400/5';
-            statusCard.className = 'bg-ln-surface border border-red-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
-            openLink.classList.add('opacity-50', 'pointer-events-none');
-        }
+        // LNbits status card is updated by its own poller (updateLnbitsStatus)
 
         // Charts
         const labels = data.history.timestamps.map(t => {
@@ -358,6 +326,52 @@ async function fetchStats() {
 // Initial fetch + poll every 10s
 fetchStats();
 setInterval(fetchStats, 10000);
+
+// ── LNbits HTTP Status Polling (every 2s) ─────────────────────
+async function updateLnbitsStatus() {
+    const statusDot = document.getElementById('lnbits-status-dot');
+    const statusText = document.getElementById('lnbits-status-text');
+    const statusBadge = document.getElementById('lnbits-status-badge');
+    const statusCard = document.getElementById('lnbits-status-card');
+    const openLink = document.getElementById('lnbits-open-link');
+
+    try {
+        const resp = await fetch('/box/api/lnbits-status');
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        if (data.status === 'running') {
+            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse transition-colors duration-300';
+            statusText.textContent = 'LNbits is running';
+            statusText.className = 'text-emerald-400/70 text-sm transition-colors duration-300';
+            statusBadge.textContent = 'running';
+            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-emerald-400 border-emerald-400/30 bg-emerald-400/5';
+            statusCard.className = 'bg-ln-surface border border-emerald-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
+            openLink.classList.remove('opacity-50', 'pointer-events-none');
+        } else if (data.status === 'starting') {
+            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse transition-colors duration-300';
+            statusText.textContent = 'LNbits is starting...';
+            statusText.className = 'text-amber-400/70 text-sm transition-colors duration-300';
+            statusBadge.textContent = 'starting';
+            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-amber-400 border-amber-400/30 bg-amber-400/5';
+            statusCard.className = 'bg-ln-surface border border-amber-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
+            openLink.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-400 transition-colors duration-300';
+            statusText.textContent = data.status === 'error' ? 'LNbits error (HTTP ' + data.code + ')' : 'LNbits is stopped';
+            statusText.className = 'text-red-400/70 text-sm transition-colors duration-300';
+            statusBadge.textContent = data.status;
+            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-red-400 border-red-400/30 bg-red-400/5';
+            statusCard.className = 'bg-ln-surface border border-red-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
+            openLink.classList.add('opacity-50', 'pointer-events-none');
+        }
+    } catch (e) {
+        console.error('LNbits status check failed:', e);
+    }
+}
+
+updateLnbitsStatus();
+setInterval(updateLnbitsStatus, 2000);
 
 // ── Actions ────────────────────────────────────────────────────
 let pendingAction = null;

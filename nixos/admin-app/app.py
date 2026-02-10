@@ -137,6 +137,16 @@ def get_memory_info():
         return {"used": 0, "total": 0, "percent": 0}
 
 
+def get_lnbits_http_status():
+    """Check LNbits by making an HTTP request to /"""
+    try:
+        import requests
+        resp = requests.get(f"{LNBITS_URL}/", timeout=3, allow_redirects=True)
+        return resp.status_code
+    except Exception:
+        return None
+
+
 def get_onion_address():
     """Read the Tor hidden service .onion address"""
     try:
@@ -237,6 +247,20 @@ def api_stats():
             "temp": [s["cpu_temp"] for s in history],
         }
     })
+
+
+@app.route("/box/api/lnbits-status")
+@login_required
+def api_lnbits_status():
+    code = get_lnbits_http_status()
+    if code == 200:
+        return jsonify({"status": "running"})
+    elif code == 502:
+        return jsonify({"status": "starting"})
+    elif code is not None:
+        return jsonify({"status": "error", "code": code})
+    else:
+        return jsonify({"status": "stopped"})
 
 
 @app.route("/box/api/shutdown", methods=["POST"])
