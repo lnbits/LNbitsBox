@@ -299,7 +299,9 @@
     <script>
         (function() {
             const httpsUrl = 'https://' + window.location.hostname + '/health';
-            const httpsBase = 'https://' + window.location.hostname + '/';
+            const httpsBase = 'https://' + window.location.hostname;
+            httpsBase += window.location.pathname.replace(/\/?$/, '/');
+
             const stateUntrusted = document.getElementById('state-untrusted');
             const stateTrusted = document.getElementById('state-trusted');
             const checkingStatus = document.getElementById('checking-status');
