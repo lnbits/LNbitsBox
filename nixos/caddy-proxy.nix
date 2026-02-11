@@ -73,7 +73,10 @@ let
       '		respond "ok" 200' \
       '	}' \
       "" \
-      '	@box path /box /box/*' \
+      '	@box-redir path /box' \
+      '	redir @box-redir /box/ 308' \
+      "" \
+      '	@box path /box/*' \
       '	handle @box {' \
       '		reverse_proxy 127.0.0.1:8090' \
       '	}' \
