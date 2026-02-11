@@ -3,19 +3,52 @@
 let
   markerFile = "/var/lib/lnbits/.configured";
   caddyfile = "/var/lib/caddy/Caddyfile";
+  caCertFile = "/var/lib/caddy/ca-cert.pem";
+  caKeyFile = "/var/lib/caddy/ca-key.pem";
   certFile = "/var/lib/caddy/cert.pem";
   keyFile = "/var/lib/caddy/key.pem";
+  certTrustPage = ./cert-trust-page;
 
-  # Script to generate self-signed cert if it doesn't exist
+  # Script to generate Root CA (once) and server cert (each boot with current IP)
   generate-caddy-cert = pkgs.writeShellScript "generate-caddy-cert" ''
-    if [ ! -f ${certFile} ] || [ ! -f ${keyFile} ]; then
-      ${pkgs.openssl}/bin/openssl req -x509 \
+    OPENSSL=${pkgs.openssl}/bin/openssl
+    IP_CMD=${pkgs.iproute2}/bin/ip
+
+    # Phase 1: Root CA — generated ONCE, persists across reboots
+    if [ ! -f ${caCertFile} ] || [ ! -f ${caKeyFile} ]; then
+      echo "Generating LNbitsBox Root CA..."
+      $OPENSSL req -x509 \
         -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
-        -keyout ${keyFile} -out ${certFile} \
+        -keyout ${caKeyFile} -out ${caCertFile} \
         -days 3650 -nodes \
-        -subj '/CN=LNbitsBox' \
-        -addext 'subjectAltName=DNS:lnbits,DNS:lnbits.local,DNS:localhost,IP:127.0.0.1'
+        -subj '/CN=LNbitsBox Root CA'
+      chmod 644 ${caCertFile}
+      chmod 600 ${caKeyFile}
     fi
+
+    # Phase 2: Server cert — regenerated each boot to pick up IP changes
+    echo "Generating server certificate..."
+    CURRENT_IP=$($IP_CMD -4 route get 1.1.1.1 2>/dev/null | ${pkgs.gawk}/bin/awk '{for(i=1;i<=NF;i++) if ($i=="src") print $(i+1)}')
+    SAN="DNS:lnbits,DNS:lnbits.local,DNS:localhost,IP:127.0.0.1"
+    [ -n "$CURRENT_IP" ] && SAN="$SAN,IP:$CURRENT_IP"
+
+    # Generate CSR
+    $OPENSSL req -new \
+      -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+      -keyout ${keyFile} -out /tmp/server.csr -nodes \
+      -subj '/CN=LNbitsBox' \
+      -addext "subjectAltName=$SAN"
+
+    # Sign with Root CA
+    $OPENSSL x509 -req \
+      -in /tmp/server.csr \
+      -CA ${caCertFile} -CAkey ${caKeyFile} -CAcreateserial \
+      -out ${certFile} \
+      -days 825 -copy_extensions copyall
+
+    rm -f /tmp/server.csr
+    chmod 644 ${certFile}
+    chmod 600 ${keyFile}
   '';
 
   # Script to generate Caddyfile based on system state
@@ -36,6 +69,10 @@ let
       'https:// {' \
       '	tls ${certFile} ${keyFile}' \
       "" \
+      '	handle /health {' \
+      '		respond "ok" 200' \
+      '	}' \
+      "" \
       '	@box path /box /box/*' \
       '	handle @box {' \
       '		reverse_proxy 127.0.0.1:8090' \
@@ -52,7 +89,21 @@ let
       '}' \
       "" \
       'http:// {' \
-      '	redir https://{host}{uri} permanent' \
+      '	handle /cert/download {' \
+      '		header Content-Disposition "attachment; filename=\"LNbitsBox-CA.crt\""' \
+      '		header Content-Type "application/x-x509-ca-cert"' \
+      '		rewrite * /ca-cert.pem' \
+      '		root * /var/lib/caddy' \
+      '		file_server' \
+      '	}' \
+      '	handle /health {' \
+      '		respond "ok" 200' \
+      '	}' \
+      '	handle {' \
+      '		root * ${certTrustPage}' \
+      '		try_files {path} /index.html' \
+      '		file_server' \
+      '	}' \
       '}' \
       > ${caddyfile}
   '';
@@ -101,6 +152,6 @@ in
     };
   };
 
-  # Open ports 80 (redirect) and 443 (HTTPS) in firewall
+  # Open ports 80 (cert trust page) and 443 (HTTPS) in firewall
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 }

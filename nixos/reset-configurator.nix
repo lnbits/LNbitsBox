@@ -66,6 +66,33 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   fi
 
   echo ""
+  echo "─────────────────────────────────────────────────────"
+  echo "Root CA Certificate Management"
+  echo "─────────────────────────────────────────────────────"
+  if [ -f /var/lib/caddy/ca-cert.pem ]; then
+    echo "A Root CA certificate exists at:"
+    echo "  /var/lib/caddy/ca-cert.pem"
+    echo ""
+    echo "If you regenerate it, all devices that trusted the"
+    echo "old CA will need to download and install the new one."
+    echo ""
+    read -p "Regenerate the Root CA certificate? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      echo "Deleting CA and server certificates..."
+      rm -f /var/lib/caddy/ca-cert.pem
+      rm -f /var/lib/caddy/ca-key.pem
+      rm -f /var/lib/caddy/cert.pem
+      rm -f /var/lib/caddy/key.pem
+      echo "Certificates deleted. New ones will be generated on next boot."
+    else
+      echo "Keeping existing Root CA certificate."
+    fi
+  else
+    echo "No Root CA certificate found. One will be generated on next boot."
+  fi
+
+  echo ""
   echo "═══════════════════════════════════════════════════════"
   echo "  Reset Complete"
   echo "═══════════════════════════════════════════════════════"
