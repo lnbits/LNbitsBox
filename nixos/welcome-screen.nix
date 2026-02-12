@@ -76,8 +76,20 @@ let
       tor_status=$(service_status tor)
 
       # System info
-      up=$(uptime -p 2>/dev/null | sed 's/^up //')
       now=$(date '+%Y-%m-%d %H:%M:%S')
+      up=$(uptime -p 2>/dev/null)
+      up=${up#up }
+      if [ -z "$up" ] || [ "$up" = "uptime:"* ]; then
+        up=$(awk '{
+          s=$1
+          d=int(s/86400); s%=86400
+          h=int(s/3600);  s%=3600
+          m=int(s/60)
+          if (d>0) printf "%d day%s, ", d, d==1?"":"s"
+          if (h>0) printf "%d hour%s, ", h, h==1?"":"s"
+          printf "%d minute%s\n", m, m==1?"":"s"
+        }' /proc/uptime)
+      fi
 
       cpu_temp=""
       if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
@@ -121,6 +133,7 @@ LOGO
         printf "\n"
 
         printf "  ''${BOLD}Access LNbits''${RESET}\n"
+        printf "    http://lnbits.local/\n"
         if [ "$ip_count" -gt 0 ]; then
           first_ip=$(echo "$ips" | head -1)
           printf "    https://%s/\n" "$first_ip"
@@ -143,14 +156,18 @@ LOGO
           printf "  ''${RED}No network connection detected.''${RESET}\n\n"
           printf "  Connect an Ethernet cable or configure Wi-Fi:\n"
           printf "    1. Remove the SD card\n"
-          printf "    2. Edit wifi.txt on the LNbitsBox partition\n"
-          printf "    3. Re-insert and reboot\n"
+          printf "    2. Insert it into another computer and open the ''${BOLD}LNbitsBox''${RESET} disk\n"
+          printf "    3. Copy the file wifi.txt.example to wifi.txt\n"
+          printf "    4. Edit wifi.txt with your Wi-Fi SSID and password:\n"
+          printf "       ''${BOLD}SSID: YourWiFiNetwork''${RESET}\n"
+          printf "       ''${BOLD}PASSWORD: YourWiFiPassword''${RESET}\n"
+          printf "    5. Re-insert and reboot\n"
         fi
       fi
 
       printf "\n"
       printf "  ''${BOLD}System''${RESET}\n"
-      printf "    Uptime          %s\n" "''${up:-n/a}"
+      printf "    Uptime          %s\n" "$up"
       if [ -n "$cpu_temp" ]; then
         printf "    CPU Temp        %s\n" "$cpu_temp"
       fi
@@ -159,7 +176,7 @@ LOGO
       printf "\n"
       printf "  ''${DIM}Press Alt+F2 for login shell''${RESET}\n"
 
-      sleep 5
+      sleep 30
     done
   '';
 
