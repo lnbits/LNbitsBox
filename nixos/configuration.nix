@@ -119,6 +119,7 @@
     ./caddy-proxy.nix
     ./admin-service.nix
     ./tor-service.nix
+    ./wifi-config.nix
   ];
 
   # Auto-migration for existing LNbits installations
