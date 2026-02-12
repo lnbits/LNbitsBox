@@ -78,7 +78,7 @@ let
       # System info
       now=$(date '+%Y-%m-%d %H:%M:%S')
       up=$(uptime -p 2>/dev/null)
-      up=${up#up }
+      up=''${up#up }
       if [ -z "$up" ] || [ "$up" = "uptime:"* ]; then
         up=$(awk '{
           s=$1
