@@ -137,10 +137,10 @@
     '';
   };
 
-  # Place wifi.txt.example on the firmware partition as discoverable documentation
-  system.activationScripts.wifi-example = ''
-    if [ ! -f /boot/firmware/wifi.txt.example ]; then
-      cat > /boot/firmware/wifi.txt.example << 'EXAMPLE'
+  # Place wifi.txt.example on the firmware partition at build time
+  # so users can see it when browsing the SD card before first boot
+  sdImage.populateFirmwareCommands = lib.mkAfter ''
+    cat > firmware/wifi.txt.example << 'EXAMPLE'
 # LNbitsBox Wi-Fi Configuration
 #
 # To connect to Wi-Fi, rename this file to wifi.txt
@@ -159,6 +159,5 @@ PASSWORD=YourWiFiPassword
 # Optional: Set to true if your network is hidden
 # HIDDEN=true
 EXAMPLE
-    fi
   '';
 }
