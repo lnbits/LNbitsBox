@@ -316,7 +316,7 @@ After reset, the wizard will be available again at `http://<pi-ip-address>/`
 - Check that SSID and password are correct (no extra spaces around `=`)
 - Check Wi-Fi service status: `systemctl status wifi-config` and `systemctl status wpa_supplicant`
 - View Wi-Fi logs: `journalctl -u wifi-config` and `journalctl -u wpa_supplicant`
-- If credentials were wrong, reset Wi-Fi with `sudo lnbitspi-reset`, place a corrected `wifi.txt` on the firmware partition, and reboot
+- If credentials were wrong, reset Wi-Fi with `sudo lnbitspi-reset`, place a corrected `wifi.txt` on the firmware partition, and reboot. This will restart the wizard so make sure you have your Spark seed phrase saved before doing this!
 - Ensure your Pi 4 is within range of your Wi-Fi router
 - Some 5GHz-only networks may not work — try a 2.4GHz network
 
