@@ -42,18 +42,6 @@
     "loglevel=4"               # Show boot messages (4=warning, 7=debug)
   ];
 
-  # Enable getty (login prompt) on tty1
-  # Use wantedBy to ensure it starts automatically
-  systemd.services."getty@tty1" = {
-    enable = true;
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      # Keep trying to start even if it fails
-      Restart = "always";
-      RestartSec = "0";
-    };
-  };
-
   # Disable screen blanking at the systemd level
   powerManagement.enable = false;
   services.logind.extraConfig = ''
@@ -120,6 +108,7 @@
     ./admin-service.nix
     ./tor-service.nix
     ./wifi-config.nix
+    ./welcome-screen.nix
   ];
 
   # Auto-migration for existing LNbits installations
