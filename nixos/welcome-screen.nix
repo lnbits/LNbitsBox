@@ -76,7 +76,6 @@ let
       tor_status=$(service_status tor)
 
       # System info
-      up=$(uptime -p 2>/dev/null | sed 's/^up //')
       now=$(date '+%Y-%m-%d %H:%M:%S')
 
       cpu_temp=""
@@ -150,7 +149,6 @@ LOGO
 
       printf "\n"
       printf "  ''${BOLD}System''${RESET}\n"
-      printf "    Uptime          %s\n" "''${up:-n/a}"
       if [ -n "$cpu_temp" ]; then
         printf "    CPU Temp        %s\n" "$cpu_temp"
       fi
@@ -159,7 +157,7 @@ LOGO
       printf "\n"
       printf "  ''${DIM}Press Alt+F2 for login shell''${RESET}\n"
 
-      sleep 5
+      sleep 30
     done
   '';
 
