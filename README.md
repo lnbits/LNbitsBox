@@ -10,6 +10,7 @@ A pre-configured, bootable NixOS SD card image for Raspberry Pi 4 that runs [LNb
 - **LNbits**
 - **Lightspark Spark** for interacting with the Lightning Network
 - **First-run configuration wizard** for easy setup
+- **Wi-Fi support** via simple `wifi.txt` file on the SD card (no monitor needed)
 - **SSH enabled** for remote access
 - **Tor hidden service** for private remote access (`.onion` address, no port forwarding needed)
 
@@ -89,10 +90,39 @@ zstd -dc nixos-sd-image-*.img.zst | sudo dd of=/dev/rdiskX bs=4m
 diskutil eject /dev/diskX
 ```
 
-### Step 3: First boot
+### Step 3: Set up Wi-Fi (optional)
+
+If you want to use Wi-Fi instead of (or in addition to) ethernet, configure it before the first boot:
+
+1. After flashing, remove and re-insert the SD card
+2. Open the **LNbitsBox** partition (FAT32 firmware partition) in your file explorer
+3. You'll see a file called `wifi.txt.example` — rename it to `wifi.txt`
+4. Edit `wifi.txt` with your Wi-Fi details:
+
+```
+SSID=YourNetworkName
+PASSWORD=YourWiFiPassword
+```
+
+Optional settings:
+```
+# Two-letter country code for regulatory compliance (e.g., US, GB, DE)
+COUNTRY=US
+
+# Set to true if your network doesn't broadcast its name
+HIDDEN=true
+```
+
+5. Save the file and eject the SD card
+
+On first boot, LNbitsBox will automatically connect to your Wi-Fi network. The plaintext password is removed from `wifi.txt` after it's been read for security.
+
+> **Note:** You can use both ethernet and Wi-Fi at the same time. If ethernet is connected, the system will work on both interfaces.
+
+### Step 4: First boot
 
 1. Insert the SD card into your Raspberry Pi 4
-2. Connect ethernet cable
+2. Connect ethernet cable (skip if you configured Wi-Fi in Step 3)
 3. Power on the Pi
 4. **If you have a monitor connected:**
    - You'll see boot messages and a login prompt
@@ -104,7 +134,7 @@ diskutil eject /dev/diskX
    - Use a network scanner like `nmap` or `angry-ip-scanner`
    - Or check the login screen if you have a monitor connected
 
-### Step 4: Complete the setup wizard
+### Step 5: Complete the setup wizard
 
 On first boot, LNbitsBox presents a configuration wizard at `https://<pi-ip-address>/` or `https://lnbits.local/` to guide you through the initial setup.
 
@@ -130,7 +160,7 @@ On first boot, LNbitsBox presents a configuration wizard at `https://<pi-ip-addr
    - Wait 10-15 seconds for services to start
    - LNbits will open automatically
 
-### Step 5: Access LNbits
+### Step 6: Access LNbits
 
 After completing the wizard, LNbits is available at the same URL:
 
@@ -170,6 +200,7 @@ This will:
 - Stop LNbits and Spark sidecar services
 - Remove the configuration marker
 - Optionally delete the Spark mnemonic (you'll be prompted)
+- Optionally reset Wi-Fi configuration (you'll be prompted)
 - Re-enable the setup wizard
 
 After reset, the wizard will be available again at `http://<pi-ip-address>/`
@@ -279,6 +310,15 @@ After reset, the wizard will be available again at `http://<pi-ip-address>/`
 - Check Tor logs: `journalctl -u tor`
 - Verify the hostname file exists: `sudo cat /var/lib/tor/onion/lnbits/hostname`
 - The `.onion` address persists across reboots once generated
+
+**Wi-Fi not connecting:**
+- Verify `wifi.txt` was renamed correctly (not `wifi.txt.txt` on Windows — enable "show file extensions")
+- Check that SSID and password are correct (no extra spaces around `=`)
+- Check Wi-Fi service status: `systemctl status wifi-config` and `systemctl status wpa_supplicant`
+- View Wi-Fi logs: `journalctl -u wifi-config` and `journalctl -u wpa_supplicant`
+- If credentials were wrong, reset Wi-Fi with `sudo lnbitspi-reset`, place a corrected `wifi.txt` on the firmware partition, and reboot. This will restart the wizard so make sure you have your Spark seed phrase saved before doing this!
+- Ensure your Pi 4 is within range of your Wi-Fi router
+- Some 5GHz-only networks may not work — try a 2.4GHz network
 
 **LNbits can't connect to Spark sidecar:**
 - Check Spark is running: `systemctl status spark-sidecar`

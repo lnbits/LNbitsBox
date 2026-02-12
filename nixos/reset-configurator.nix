@@ -93,6 +93,31 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   fi
 
   echo ""
+  echo "─────────────────────────────────────────────────────"
+  echo "Wi-Fi Configuration"
+  echo "─────────────────────────────────────────────────────"
+  if [ -f /etc/wpa_supplicant.conf ] && grep -q 'network={' /etc/wpa_supplicant.conf 2>/dev/null; then
+    echo "A Wi-Fi configuration exists at:"
+    echo "  /etc/wpa_supplicant.conf"
+    echo ""
+    echo "If you reset it, you can drop a new wifi.txt on the"
+    echo "SD card firmware partition and reboot to reconfigure."
+    echo ""
+    read -p "Reset Wi-Fi configuration? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      echo "Removing Wi-Fi configuration..."
+      rm -f /etc/wpa_supplicant.conf
+      systemctl restart wpa_supplicant.service || true
+      echo "Wi-Fi configuration removed."
+    else
+      echo "Keeping Wi-Fi configuration."
+    fi
+  else
+    echo "No Wi-Fi configuration found. Skipping."
+  fi
+
+  echo ""
   echo "═══════════════════════════════════════════════════════"
   echo "  Reset Complete"
   echo "═══════════════════════════════════════════════════════"
