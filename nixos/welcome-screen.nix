@@ -167,7 +167,6 @@ LOGO
 
       printf "\n"
       printf "  ''${BOLD}System''${RESET}\n"
-      printf "    Uptime          %s\n" "$up"
       if [ -n "$cpu_temp" ]; then
         printf "    CPU Temp        %s\n" "$cpu_temp"
       fi
