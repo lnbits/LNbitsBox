@@ -268,7 +268,7 @@ def api_lnbits_status():
 def api_shutdown():
     if DEV_MODE:
         return jsonify({"status": "ok", "message": "DEV MODE: would shutdown"})
-    subprocess.Popen(["systemctl", "poweroff"])
+    subprocess.Popen(["systemd-run", "--no-block", "systemctl", "poweroff"])
     return jsonify({"status": "ok", "message": "Shutting down..."})
 
 
@@ -277,7 +277,7 @@ def api_shutdown():
 def api_reboot():
     if DEV_MODE:
         return jsonify({"status": "ok", "message": "DEV MODE: would reboot"})
-    subprocess.Popen(["systemctl", "reboot"])
+    subprocess.Popen(["systemd-run", "--no-block", "systemctl", "reboot"])
     return jsonify({"status": "ok", "message": "Rebooting..."})
 
 
