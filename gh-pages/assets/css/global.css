@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme tokens (RGB channels for Tailwind alpha support) ──── */
+:root {
+  --ln-pink:       255 30 230;
+  --ln-pink-dim:   204 24 184;
+  --ln-surface:    248 248 252;
+  --ln-card:       255 255 255;
+  --ln-card-hover: 240 240 246;
+  --ln-border:     216 216 228;
+  --ln-text:       26 26 46;
+  --ln-muted:      106 106 128;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ln-surface:    15 15 20;
+    --ln-card:       22 22 30;
+    --ln-card-hover: 28 28 38;
+    --ln-border:     42 42 58;
+    --ln-text:       228 228 239;
+    --ln-muted:      122 122 142;
+  }
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background-color: rgb(var(--ln-surface));
+  color: rgb(var(--ln-text));
+}
+
+/* ── Noise overlay ────────────────────────────────────────────── */
+.noise-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Grid background ──────────────────────────────────────────── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgb(var(--ln-border) / 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--ln-border) / 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Pink glow ────────────────────────────────────────────────── */
+.glow-pink {
+  box-shadow: 0 0 30px rgba(255, 30, 230, 0.15), 0 0 60px rgba(255, 30, 230, 0.05);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: rgb(var(--ln-surface)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--ln-border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--ln-pink)); }

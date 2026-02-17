@@ -3,3 +3,6 @@ dist
 *.img
 *.img.zst
 .DS_Store
+gh-pages/node_modules
+gh-pages/.output
+gh-pages/.nuxt
