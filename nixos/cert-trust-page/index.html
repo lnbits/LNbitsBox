@@ -321,13 +321,9 @@
                 polling = true;
                 checkingStatus.classList.remove('hidden');
 
-                fetch(healthUrl)
-                    .then(function(resp) {
-                        if (resp.ok) {
-                            showTrusted();
-                        } else {
-                            polling = false;
-                        }
+                fetch(healthUrl, { mode: 'no-cors' })
+                    .then(function() {
+                        showTrusted();
                     })
                     .catch(function() {
                         // TLS handshake failed — cert not yet trusted
