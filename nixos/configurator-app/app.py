@@ -6,6 +6,7 @@ Handles Spark mnemonic generation/import and SSH password setup
 
 import os
 import sys
+import secrets
 import subprocess
 import grp
 import threading
@@ -24,11 +25,13 @@ if DEV_MODE:
     MARKER_FILE = Path("/tmp/lnbitspi-test/lnbits/.configured")
     MNEMONIC_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
     ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")
+    SPARK_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")
     SSH_USER = os.environ.get("USER")  # Use current user instead of lnbitsadmin
 else:
     MARKER_FILE = Path("/var/lib/lnbits/.configured")
     MNEMONIC_FILE = Path("/var/lib/spark-sidecar/mnemonic")
     ENV_FILE = Path("/etc/lnbits/lnbits.env")
+    SPARK_SIDECAR_ENV_FILE = Path("/var/lib/spark-sidecar/api-key.env")
     SSH_USER = "lnbitsadmin"
 
 # In-memory state for wizard (cleared after completion)
@@ -206,10 +209,13 @@ def complete():
 
 def update_lnbits_env():
     """Update /etc/lnbits/lnbits.env with Spark configuration"""
-    spark_config = """
+    api_token = secrets.token_hex(32)
+
+    spark_config = f"""
 # Spark L2 Sidecar Configuration (added by configurator)
-LNBITS_BACKEND_WALLET_CLASS=LightsparkSparkWallet
-SPARK_URL=http://127.0.0.1:8765
+LNBITS_BACKEND_WALLET_CLASS=SparkL2Wallet
+SPARK_L2_EXTERNAL_ENDPOINT=http://127.0.0.1:8765
+SPARK_L2_EXTERNAL_API_KEY={api_token}
 """
 
     # Read existing env file
@@ -224,6 +230,15 @@ SPARK_URL=http://127.0.0.1:8765
         updated = existing.rstrip() + "\n" + spark_config
         ENV_FILE.write_text(updated)
         ENV_FILE.chmod(0o640)
+
+    # Write matching API key for the Spark sidecar service
+    SPARK_SIDECAR_ENV_FILE.write_text(f"SPARK_SIDECAR_API_KEY={api_token}\n")
+    SPARK_SIDECAR_ENV_FILE.chmod(0o640)
+    try:
+        spark_gid = grp.getgrnam("spark-sidecar").gr_gid
+        os.chown(SPARK_SIDECAR_ENV_FILE, 0, spark_gid)
+    except KeyError:
+        pass
 
 
 @app.route("/health")
