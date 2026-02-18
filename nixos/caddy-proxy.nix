@@ -68,6 +68,7 @@ let
       "" \
       'https:// {' \
       '	tls ${certFile} ${keyFile}' \
+      '	header Cache-Control "no-store"' \
       "" \
       '	handle /health {' \
       '		respond "ok" 200' \
@@ -92,6 +93,7 @@ let
       '}' \
       "" \
       'http:// {' \
+      '	header Cache-Control "no-store"' \
       '	handle /cert/download {' \
       '		header Content-Disposition "attachment; filename=\"LNbitsBox-CA.crt\""' \
       '		header Content-Type "application/x-x509-ca-cert"' \
