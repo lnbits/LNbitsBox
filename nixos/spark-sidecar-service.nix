@@ -43,6 +43,9 @@ in
         "SPARK_PAY_WAIT_MS=20000"
       ];
 
+      # API key written by the configurator during first-run setup
+      EnvironmentFile = "${stateDir}/api-key.env";
+
       ExecStart = "${sparkPkg}/bin/spark-sidecar";
 
       Restart = "on-failure";
