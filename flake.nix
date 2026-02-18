@@ -20,13 +20,14 @@
 
   outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, spark-sidecar, ... }:
   let
+    version = "1.0.0";  # Bump before each release tag
     system = "aarch64-linux";
   in
   {
     # Compressed SD image (default, for releases)
     nixosConfigurations.pi4 = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits spark-sidecar; };
+      specialArgs = { inherit lnbits spark-sidecar version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image
@@ -37,7 +38,7 @@
     # Uncompressed SD image (for faster local testing)
     nixosConfigurations.pi4-uncompressed = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits spark-sidecar; };
+      specialArgs = { inherit lnbits spark-sidecar version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image
@@ -57,6 +58,9 @@
       # Uncompressed SD image (for faster local testing)
       sdImageUncompressed = self.nixosConfigurations.pi4-uncompressed.config.system.build.sdImage;
 
+      # System toplevel (for OTA updates — CI builds and pushes to Cachix)
+      toplevel = self.nixosConfigurations.pi4.config.system.build.toplevel;
+
       # Default to compressed
       default = self.nixosConfigurations.pi4.config.system.build.sdImage;
     };
@@ -68,6 +72,9 @@
 
       # Uncompressed SD image (for faster local testing)
       sdImageUncompressed = self.nixosConfigurations.pi4-uncompressed.config.system.build.sdImage;
+
+      # System toplevel (for OTA updates)
+      toplevel = self.nixosConfigurations.pi4.config.system.build.toplevel;
 
       # Default to compressed
       default = self.nixosConfigurations.pi4.config.system.build.sdImage;

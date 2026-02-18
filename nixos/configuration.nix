@@ -1,7 +1,30 @@
-{ config, pkgs, ... }:
+{ config, pkgs, version ? "dev", ... }:
 
 {
   system.stateVersion = "24.11";
+
+  # Write version to filesystem for the admin app to read
+  environment.etc."lnbitsbox-version".text = version;
+
+  # Enable flakes (needed for nix copy) and configure binary caches
+  nix.settings = {
+    experimental-features = [ "nix-command" "flakes" ];
+    substituters = [
+      "https://cache.nixos.org"
+      "https://lnbitsbox.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "lnbitsbox.cachix.org-1:ODev9ZJ74MRM1rU5ITE7NhfpgJLyyQygjYP0Ug4aDyg="
+    ];
+  };
+
+  # Auto garbage collect old generations
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 14d";
+  };
 
   # Specify the Raspberry Pi board (required by raspberry-pi-nix)
   raspberry-pi-nix.board = "bcm2711"; # Raspberry Pi 4
@@ -109,6 +132,7 @@
     ./tor-service.nix
     ./wifi-config.nix
     ./welcome-screen.nix
+    ./update-service.nix
   ];
 
   # Auto-migration for existing LNbits installations

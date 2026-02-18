@@ -46,17 +46,42 @@ jobs:
           name: raspberry-pi-nix
         continue-on-error: true
 
+      # Set up LNbitsBox Cachix for pushing OTA update closures
+      - name: Set up LNbitsBox Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: lnbitsbox
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        continue-on-error: true
+
       - name: Build SD image
         timeout-minutes: 120
         run: |
-          nix build .#sdImage -L
-          ls -lah result/sd-image
+          nix build .#sdImage -L --out-link result-sdimage
+          ls -lah result-sdimage/sd-image
+
+      - name: Build and push system toplevel for OTA updates
+        timeout-minutes: 30
+        run: |
+          nix build .#toplevel -L --out-link result-toplevel
+          cachix push lnbitsbox result-toplevel || echo "Warning: Cachix push failed (may not be configured)"
+        continue-on-error: true
 
       - name: Collect artefacts
         run: |
           mkdir -p dist
-          cp -v result/sd-image/*.img.zst dist/
+          cp -v result-sdimage/sd-image/*.img.zst dist/
           sha256sum dist/*.img.zst | tee dist/SHA256SUMS.txt
+
+      - name: Create update manifest
+        run: |
+          STORE_PATH=$(readlink -f result-toplevel)
+          VERSION=$(cat "$STORE_PATH/etc/lnbitsbox-version" 2>/dev/null || echo "unknown")
+          printf '{\n  "version": "%s",\n  "store_path": "%s",\n  "nixos_version": "24.11"\n}\n' \
+            "$VERSION" "$STORE_PATH" > dist/manifest.json
+          echo "Created manifest.json:"
+          cat dist/manifest.json
+        continue-on-error: true
 
       - name: Create GitHub Release and upload
         uses: softprops/action-gh-release@v2
@@ -64,3 +89,4 @@ jobs:
           files: |
             dist/*.img.zst
             dist/SHA256SUMS.txt
+            dist/manifest.json

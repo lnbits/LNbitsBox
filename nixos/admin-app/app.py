@@ -34,6 +34,9 @@ except Exception:
     SPARK_SIDECAR_API_KEY = ""
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar"]
+UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
+VERSION_FILE = Path("/etc/lnbitsbox-version")
+GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
 
 # Stats history — 2 hours at 30s intervals = 240 data points
 STATS_INTERVAL = 30
@@ -303,6 +306,136 @@ def api_restart_service(service):
         return jsonify({"status": "ok", "message": f"{service} restarted"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+
+
+# ── OTA Update Endpoints ─────────────────────────────────────────
+
+def get_current_version():
+    try:
+        return VERSION_FILE.read_text().strip()
+    except Exception:
+        return "dev"
+
+
+@app.route("/box/api/update/check")
+@login_required
+def api_update_check():
+    if DEV_MODE:
+        return jsonify({
+            "current_version": "1.0.0",
+            "latest_version": "1.1.0",
+            "update_available": True,
+            "release_notes": "DEV MODE: Mock update available.\n- Bug fixes\n- Performance improvements",
+            "release_tag": "v1.1.0",
+        })
+
+    current = get_current_version()
+    try:
+        import requests
+        resp = requests.get(GITHUB_RELEASES_URL, timeout=10, headers={
+            "Accept": "application/vnd.github.v3+json",
+        })
+        if not resp.ok:
+            return jsonify({"error": "Failed to check for updates", "status_code": resp.status_code}), 502
+
+        release = resp.json()
+        latest_tag = release.get("tag_name", "")
+        latest_version = latest_tag.lstrip("v")
+        release_notes = release.get("body", "")
+
+        has_manifest = any(
+            a.get("name") == "manifest.json"
+            for a in release.get("assets", [])
+        )
+
+        return jsonify({
+            "current_version": current,
+            "latest_version": latest_version,
+            "update_available": latest_version != current and has_manifest,
+            "release_notes": release_notes,
+            "release_tag": latest_tag,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/box/api/update/start", methods=["POST"])
+@login_required
+def api_update_start():
+    if DEV_MODE:
+        return jsonify({"status": "started", "message": "DEV MODE: would start update"})
+
+    # Check if an update is already in progress
+    status_file = UPDATE_STATE_DIR / "status"
+    try:
+        current_status = status_file.read_text().strip()
+        if current_status in ("downloading", "activating"):
+            return jsonify({"status": "error", "message": "Update already in progress"}), 409
+    except Exception:
+        pass
+
+    data = request.get_json(silent=True) or {}
+    release_tag = data.get("release_tag", "")
+    if not release_tag:
+        return jsonify({"status": "error", "message": "No release_tag provided"}), 400
+
+    # Reset status to idle before starting
+    try:
+        UPDATE_STATE_DIR.mkdir(parents=True, exist_ok=True)
+        (UPDATE_STATE_DIR / "status").write_text("idle")
+        (UPDATE_STATE_DIR / "log").write_text("")
+    except Exception:
+        pass
+
+    # Launch update as a transient systemd unit so it survives admin app restarts
+    try:
+        subprocess.Popen([
+            "systemd-run",
+            "--unit=lnbitsbox-update",
+            "--description=LNbitsBox OTA Update",
+            "--no-block",
+            "lnbitsbox-update", release_tag,
+        ])
+        return jsonify({"status": "started"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/box/api/update/status")
+@login_required
+def api_update_status():
+    if DEV_MODE:
+        return jsonify({
+            "status": "idle",
+            "log_lines": ["DEV MODE: No update in progress"],
+            "target_version": "",
+        })
+
+    status = "idle"
+    log_lines = []
+    target_version = ""
+
+    try:
+        status = (UPDATE_STATE_DIR / "status").read_text().strip()
+    except Exception:
+        pass
+
+    try:
+        log_text = (UPDATE_STATE_DIR / "log").read_text()
+        log_lines = log_text.strip().splitlines()[-50:]  # Last 50 lines
+    except Exception:
+        pass
+
+    try:
+        target_version = (UPDATE_STATE_DIR / "target-version").read_text().strip()
+    except Exception:
+        pass
+
+    return jsonify({
+        "status": status,
+        "log_lines": log_lines,
+        "target_version": target_version,
+    })
 
 
 if __name__ == "__main__":

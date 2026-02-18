@@ -51,6 +51,59 @@
         </div>
     </div>
 
+    {# ── System Update ── #}
+    <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 mb-6 transition-all duration-500" id="update-card">
+        <div class="flex items-center justify-between mb-3">
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">System Update</div>
+            <span class="text-xs font-mono text-ln-muted" id="update-current-version">--</span>
+        </div>
+
+        {# Idle / check state #}
+        <div id="update-idle">
+            <div class="flex items-center gap-3">
+                <button onclick="checkForUpdate()"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+                        id="update-check-btn">
+                    Check for updates
+                </button>
+                <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
+            </div>
+        </div>
+
+        {# Update available #}
+        <div id="update-available" class="hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border text-ln-pink border-ln-pink/30 bg-ln-pink/5">
+                    Update available
+                </span>
+                <span class="text-sm font-mono text-ln-text" id="update-latest-version"></span>
+            </div>
+            <div class="text-ln-muted text-xs font-mono mb-3 max-h-24 overflow-y-auto whitespace-pre-wrap border border-ln-border rounded-lg p-2" id="update-release-notes"></div>
+            <button onclick="confirmUpdate()"
+                    class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
+                Update Now
+            </button>
+        </div>
+
+        {# Update in progress #}
+        <div id="update-progress" class="hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+                <span class="text-amber-400 text-sm font-mono" id="update-progress-status">Updating...</span>
+            </div>
+            <div class="bg-ln-surface border border-ln-border rounded-lg p-2 max-h-40 overflow-y-auto font-mono text-xs text-ln-muted" id="update-log">
+            </div>
+        </div>
+
+        {# Update complete #}
+        <div id="update-done" class="hidden">
+            <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full" id="update-done-dot"></div>
+                <span class="text-sm font-mono" id="update-done-text"></span>
+            </div>
+        </div>
+    </div>
+
     {# ── Metric Cards ── #}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
 
@@ -443,5 +496,181 @@ async function restartService(service) {
         alert('Request failed');
     }
 }
+
+// ── System Update ──────────────────────────────────────────────
+let updateReleaseTag = '';
+let updatePollInterval = null;
+let updateReconnectInterval = null;
+
+function showUpdateSection(id) {
+    for (const s of ['update-idle', 'update-available', 'update-progress', 'update-done']) {
+        document.getElementById(s).classList.toggle('hidden', s !== id);
+    }
+}
+
+async function checkForUpdate() {
+    const btn = document.getElementById('update-check-btn');
+    const status = document.getElementById('update-check-status');
+    btn.disabled = true;
+    status.textContent = 'Checking...';
+
+    try {
+        const resp = await fetch('/box/api/update/check');
+        if (!resp.ok) { status.textContent = 'Check failed'; btn.disabled = false; return; }
+        const data = await resp.json();
+
+        document.getElementById('update-current-version').textContent = 'v' + data.current_version;
+
+        if (data.update_available) {
+            updateReleaseTag = data.release_tag;
+            document.getElementById('update-latest-version').textContent = 'v' + data.latest_version;
+            document.getElementById('update-release-notes').textContent = data.release_notes || 'No release notes.';
+            showUpdateSection('update-available');
+        } else {
+            status.textContent = 'Up to date';
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+    } catch (e) {
+        status.textContent = 'Check failed';
+    }
+    btn.disabled = false;
+}
+
+function confirmUpdate() {
+    document.getElementById('confirm-message').textContent =
+        'This will download and activate a new system version. Services will briefly restart.';
+    document.getElementById('confirm-title').textContent = 'Start System Update?';
+    document.getElementById('confirm-modal').classList.remove('hidden');
+    document.getElementById('confirm-btn').onclick = () => { closeModal(); startUpdate(); };
+}
+
+async function startUpdate() {
+    showUpdateSection('update-progress');
+    document.getElementById('update-log').textContent = '';
+    document.getElementById('update-progress-status').textContent = 'Starting update...';
+
+    try {
+        const resp = await fetch('/box/api/update/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ release_tag: updateReleaseTag }),
+        });
+        const data = await resp.json();
+        if (data.status !== 'started') {
+            document.getElementById('update-progress-status').textContent = 'Error: ' + (data.message || 'Unknown');
+            return;
+        }
+    } catch (e) {
+        document.getElementById('update-progress-status').textContent = 'Failed to start update';
+        return;
+    }
+
+    // Start polling for status
+    pollUpdateStatus();
+    updatePollInterval = setInterval(pollUpdateStatus, 2000);
+}
+
+async function pollUpdateStatus() {
+    try {
+        const resp = await fetch('/box/api/update/status');
+        if (!resp.ok) throw new Error('status fetch failed');
+        const data = await resp.json();
+
+        const logEl = document.getElementById('update-log');
+        if (data.log_lines && data.log_lines.length > 0) {
+            logEl.textContent = data.log_lines.join('\n');
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        const statusLabels = {
+            idle: 'Waiting...',
+            downloading: 'Downloading updates...',
+            activating: 'Activating new system...',
+        };
+
+        if (data.status === 'success') {
+            clearInterval(updatePollInterval);
+            updatePollInterval = null;
+            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+            document.getElementById('update-done-text').textContent = 'Update complete! Services have been restarted.';
+            document.getElementById('update-done-text').className = 'text-sm font-mono text-emerald-400';
+            showUpdateSection('update-done');
+            // Refresh version display
+            setTimeout(checkForUpdate, 5000);
+        } else if (data.status === 'failed') {
+            clearInterval(updatePollInterval);
+            updatePollInterval = null;
+            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-400';
+            document.getElementById('update-done-text').textContent = 'Update failed. Check logs above for details.';
+            document.getElementById('update-done-text').className = 'text-sm font-mono text-red-400';
+            showUpdateSection('update-done');
+        } else {
+            document.getElementById('update-progress-status').textContent =
+                statusLabels[data.status] || data.status;
+        }
+    } catch (e) {
+        // Connection lost — admin app may be restarting during switch-to-configuration
+        document.getElementById('update-progress-status').textContent =
+            'Reconnecting... (services restarting)';
+        startReconnect();
+    }
+}
+
+function startReconnect() {
+    if (updateReconnectInterval) return;
+    clearInterval(updatePollInterval);
+    updatePollInterval = null;
+
+    updateReconnectInterval = setInterval(async () => {
+        try {
+            const resp = await fetch('/box/api/update/status');
+            if (resp.ok) {
+                clearInterval(updateReconnectInterval);
+                updateReconnectInterval = null;
+                // Resuming — poll once immediately then start regular interval
+                pollUpdateStatus();
+                updatePollInterval = setInterval(pollUpdateStatus, 2000);
+            }
+        } catch (e) {
+            // Still disconnected, keep trying
+        }
+    }, 3000);
+}
+
+// On page load, check update status in case an update was already in progress
+(async function initUpdateCard() {
+    try {
+        const resp = await fetch('/box/api/update/status');
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        if (data.status === 'downloading' || data.status === 'activating') {
+            showUpdateSection('update-progress');
+            pollUpdateStatus();
+            updatePollInterval = setInterval(pollUpdateStatus, 2000);
+        } else if (data.status === 'success') {
+            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+            document.getElementById('update-done-text').textContent = 'Last update completed successfully.';
+            document.getElementById('update-done-text').className = 'text-sm font-mono text-emerald-400';
+            showUpdateSection('update-done');
+        } else if (data.status === 'failed') {
+            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-400';
+            document.getElementById('update-done-text').textContent = 'Last update failed.';
+            document.getElementById('update-done-text').className = 'text-sm font-mono text-red-400';
+            showUpdateSection('update-done');
+        }
+    } catch (e) {
+        // Ignore — card stays in idle state
+    }
+
+    // Load current version
+    try {
+        const resp = await fetch('/box/api/update/check');
+        if (resp.ok) {
+            const data = await resp.json();
+            document.getElementById('update-current-version').textContent = 'v' + data.current_version;
+        }
+    } catch (e) {}
+})();
 </script>
 {% endblock %}
