@@ -28,7 +28,10 @@ app.secret_key = os.urandom(24)
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
 SSH_USER = "lnbitsadmin"
 SPARK_URL = os.environ.get("SPARK_URL", "http://127.0.0.1:8765")
-SPARK_SIDECAR_API_KEY= os.environ.get("SPARK_SIDECAR_API_KEY", "")
+try:
+    SPARK_SIDECAR_API_KEY = Path("/var/lib/spark-sidecar/api-key.env").read_text().strip().split("=")[1]
+except Exception:
+    SPARK_SIDECAR_API_KEY = ""
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar"]
 
