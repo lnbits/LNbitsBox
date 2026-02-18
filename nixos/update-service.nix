@@ -65,10 +65,12 @@ let
     log "Target store path: $STORE_PATH"
     log "Target version: $VERSION"
 
-    # Step 2: Download the closure from Cachix
-    log "Downloading system closure from binary cache..."
-    ${pkgs.nix}/bin/nix copy --from https://lnbitsbox.cachix.org "$STORE_PATH" 2>&1 | tee -a "$LOG_FILE" || {
-      log "ERROR: Failed to download closure from Cachix"
+    # Step 2: Download the closure from configured substituters
+    # Uses all substituters from nix.settings (cache.nixos.org + lnbitsbox.cachix.org)
+    # so common packages come from NixOS cache and LNbitsBox-specific ones from Cachix
+    log "Downloading system closure from binary caches..."
+    ${pkgs.nix}/bin/nix-store --realise "$STORE_PATH" 2>&1 | tee -a "$LOG_FILE" || {
+      log "ERROR: Failed to download closure"
       set_status "failed"
       exit 1
     }

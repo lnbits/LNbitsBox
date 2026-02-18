@@ -156,7 +156,7 @@ If this returns the path info without error, it's in the cache and ready for dow
 The update script (`nixos/update-service.nix`) runs these steps:
 
 1. **Downloads `manifest.json`** from the GitHub Release URL
-2. **Runs `nix copy --from https://lnbitsbox.cachix.org <store-path>`** to download the full system closure
+2. **Runs `nix-store --realise <store-path>`** to download the full system closure from all configured substituters (common packages like systemd come from `cache.nixos.org`, LNbitsBox-specific paths come from `lnbitsbox.cachix.org`)
 3. **Runs `nix-env -p /nix/var/nix/profiles/system --set <store-path>`** to create a new system generation
 4. **Runs `<store-path>/bin/switch-to-configuration switch`** to activate the new system
 
