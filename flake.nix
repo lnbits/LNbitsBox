@@ -9,9 +9,9 @@
     raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
     raspberry-pi-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # LNbits flake input - using sparkwallet branch until merged into a release
+    # LNbits flake input - using dev branch
     # To update: nix flake lock --update-input lnbits
-    lnbits.url = "github:lnbits/lnbits/sparkwallet";
+    lnbits.url = "github:lnbits/lnbits/dev";
 
     # Spark sidecar for L2 Lightning integration
     spark-sidecar.url = "github:lnbits/spark_sidecar";

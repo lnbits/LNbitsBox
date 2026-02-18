@@ -87,16 +87,16 @@
         "uv2nix": "uv2nix_2"
       },
       "locked": {
-        "lastModified": 1770294377,
-        "narHash": "sha256-yQ80RVmI9IDiIyFg0wgA7zCu6yfLZsw4tizIhWq+4Lo=",
+        "lastModified": 1771327610,
+        "narHash": "sha256-ZADaNFgHXB3rntVoA1Mr5daLmfJy5FmehgvESc4X1aY=",
         "owner": "lnbits",
         "repo": "lnbits",
-        "rev": "7d34f459fa203814d47a4789d71adcce03abce17",
+        "rev": "027a161494c1bec8be94e372c413154e334841f6",
         "type": "github"
       },
       "original": {
         "owner": "lnbits",
-        "ref": "sparkwallet",
+        "ref": "dev",
         "repo": "lnbits",
         "type": "github"
       }
