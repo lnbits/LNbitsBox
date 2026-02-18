@@ -28,6 +28,7 @@ app.secret_key = os.urandom(24)
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
 SSH_USER = "lnbitsadmin"
 SPARK_URL = os.environ.get("SPARK_URL", "http://127.0.0.1:8765")
+SPARK_SIDECAR_API_KEY= os.environ.get("SPARK_SIDECAR_API_KEY", "")
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar"]
 
@@ -102,7 +103,8 @@ def get_spark_balance():
     """Query Spark sidecar for wallet balance"""
     try:
         import requests
-        resp = requests.post(f"{SPARK_URL}/v1/balance", timeout=5)
+        headers = {"X-API-KEY": SPARK_SIDECAR_API_KEY}
+        resp = requests.post(f"{SPARK_URL}/v1/balance", headers=headers, timeout=5)
         if resp.ok:
             data = resp.json()
             balance_msat = data.get("balance_msat")
