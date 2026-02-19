@@ -87,11 +87,11 @@
         "uv2nix": "uv2nix_2"
       },
       "locked": {
-        "lastModified": 1771327610,
-        "narHash": "sha256-ZADaNFgHXB3rntVoA1Mr5daLmfJy5FmehgvESc4X1aY=",
+        "lastModified": 1771419139,
+        "narHash": "sha256-jP1l6BRdj7FJGOsBPPK2dIHkfBC54UsUrNmpOupLx1s=",
         "owner": "lnbits",
         "repo": "lnbits",
-        "rev": "027a161494c1bec8be94e372c413154e334841f6",
+        "rev": "c65d373f23890664721d2af8529bc34cc2222ef8",
         "type": "github"
       },
       "original": {
