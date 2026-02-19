@@ -8,10 +8,10 @@ pkgs.buildNpmPackage {
 
   # To get the correct hash:
   # 1. Set to empty string initially: npmDepsHash = "";
-  # 2. Run: nix build .#nixosConfigurations.pi4.config.system.build.toplevel
+  # 2. Run: nix build .#toplevel -L or nix build .#toplevel -L &2>1 | grep "got:"
   # 3. Copy the hash from the error message
   # 4. Update this field with the correct hash
-  npmDepsHash = "sha256-IF87onWOqsv3vtrGWpP95zaaUpRtKiDJ5NokNWDAzEQ=";
+  npmDepsHash = "sha256-DsxMBn3ZiAnTEsv97e6f4NLi+Mw5VDi4aQKIA4k80nQ=";
 
   # Skip build step - spark_sidecar doesn't need compilation
   dontNpmBuild = true;
