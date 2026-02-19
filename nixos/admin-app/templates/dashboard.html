@@ -662,7 +662,7 @@ function startReconnect() {
             updatePollInterval = setInterval(pollUpdateStatus, 2000);
         } else if (data.status === 'success') {
             document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-            document.getElementById('update-done-text').textContent = 'You are running the latest version.';
+            document.getElementById('update-done-text').textContent = 'The last update completed successfully.';
             document.getElementById('update-done-text').className = 'text-sm font-mono text-emerald-400';
             showUpdateSection('update-done');
         } else if (data.status === 'failed') {
