@@ -237,7 +237,7 @@ def logout():
 @app.route("/box/")
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    return render_template("dashboard.html", dev_mode=DEV_MODE)
 
 
 @app.route("/box/api/stats")

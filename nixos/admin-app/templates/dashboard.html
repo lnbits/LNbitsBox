@@ -248,10 +248,37 @@ const chartOpts = {
     responsive: true,
     maintainAspectRatio: false,
     animation: { duration: 300 },
-    plugins: { legend: { display: false } },
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            enabled: true,
+            backgroundColor: 'rgb(' + _cs('--ln-card') + ')',
+            titleColor: 'rgb(' + thMuted + ')',
+            bodyColor: 'rgb(' + _cs('--ln-text') + ')',
+            borderColor: 'rgb(' + thBorder + ')',
+            borderWidth: 1,
+            titleFont: { family: 'JetBrains Mono', size: 11 },
+            bodyFont: { family: 'JetBrains Mono', size: 12 },
+            padding: 8,
+            displayColors: false,
+            callbacks: {
+                label: ctx => ctx.parsed.y.toFixed(1) + '%',
+            },
+        },
+    },
+    interaction: {
+        mode: 'index',
+        intersect: false,
+    },
     scales: {
         x: {
-            display: false,
+            display: true,
+            grid: { display: false },
+            ticks: {
+                color: 'rgb(' + thMuted + ')',
+                font: { family: 'JetBrains Mono', size: 9 },
+                maxTicksLimit: 6,
+            },
         },
         y: {
             min: 0, max: 100,
@@ -264,7 +291,7 @@ const chartOpts = {
         },
     },
     elements: {
-        point: { radius: 0 },
+        point: { radius: 0, hoverRadius: 5, hitRadius: 20, hoverBorderWidth: 2 },
         line: { tension: 0.3, borderWidth: 2 },
     },
 };
@@ -392,6 +419,29 @@ async function fetchStats() {
         console.error('Stats fetch failed:', e);
     }
 }
+
+// ── DEV_MODE: seed charts with mock data ───────────────────────
+{% if dev_mode %}
+(function seedMockData() {
+    const now = Date.now();
+    const points = 60;
+    const labels = [];
+    const cpu = [];
+    const ram = [];
+    for (let i = points; i > 0; i--) {
+        const t = new Date(now - i * 30000);
+        labels.push(t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0'));
+        cpu.push(Math.round(15 + 40 * Math.sin(i / 8) ** 2 + Math.random() * 10));
+        ram.push(Math.round(45 + 15 * Math.sin(i / 12) + Math.random() * 5));
+    }
+    cpuChart.data.labels = labels;
+    cpuChart.data.datasets[0].data = cpu;
+    cpuChart.update('none');
+    ramChart.data.labels = labels;
+    ramChart.data.datasets[0].data = ram;
+    ramChart.update('none');
+})();
+{% endif %}
 
 // Initial fetch + poll every 10s
 fetchStats();
