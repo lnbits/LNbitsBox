@@ -59,15 +59,13 @@
         </div>
 
         {# Idle / check state #}
-        <div id="update-idle">
-            <div class="flex items-center gap-3">
-                <button onclick="checkForUpdate()"
-                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
-                        id="update-check-btn">
-                    Check for updates
-                </button>
-                <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
-            </div>
+        <div class="flex items-center gap-3">
+            <button onclick="checkForUpdate()"
+                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+                    id="update-check-btn">
+                Check for updates
+            </button>
+            <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
         </div>
 
         {# Update available #}
@@ -517,7 +515,7 @@ let updatePollInterval = null;
 let updateReconnectInterval = null;
 
 function showUpdateSection(id) {
-    for (const s of ['update-idle', 'update-available', 'update-progress', 'update-done']) {
+    for (const s of ['update-available', 'update-progress', 'update-done']) {
         document.getElementById(s).classList.toggle('hidden', s !== id);
     }
 }
@@ -597,7 +595,7 @@ async function pollUpdateStatus() {
         }
 
         const statusLabels = {
-            idle: 'Waiting...',
+            idle: 'Waiting for system to start update...',
             downloading: 'Downloading updates...',
             activating: 'Activating new system...',
         };
