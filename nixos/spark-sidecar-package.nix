@@ -16,6 +16,11 @@ pkgs.buildNpmPackage {
   # Skip build step - spark_sidecar doesn't need compilation
   dontNpmBuild = true;
 
+  # Remove upstream Makefile (runs dev tools like prettier/pyright via uv)
+  postPatch = ''
+    rm -f Makefile
+  '';
+
   # Skip npm scripts that might fail in sandbox
   npmFlags = [ "--legacy-peer-deps" ];
 
