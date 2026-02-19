@@ -664,8 +664,8 @@ async function pollUpdateStatus() {
             document.getElementById('update-done-text').textContent = 'Update complete! Services have been restarted.';
             document.getElementById('update-done-text').className = 'text-sm font-mono text-emerald-400';
             showUpdateSection('update-done');
-            // Refresh version display
-            setTimeout(checkForUpdate, 5000);
+            // Reload the page so all stats/version info refreshes
+            setTimeout(() => location.reload(), 3000);
         } else if (data.status === 'failed') {
             clearInterval(updatePollInterval);
             updatePollInterval = null;
