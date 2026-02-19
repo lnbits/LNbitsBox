@@ -14,7 +14,7 @@
     lnbits.url = "github:lnbits/lnbits/dev";
 
     # Spark sidecar for L2 Lightning integration
-    spark-sidecar.url = "github:lnbits/spark_sidecar";
+    spark-sidecar.url = "github:lnbits/spark_sidecar/main";
     spark-sidecar.flake = false;  # Not a flake, just source
   };
 
