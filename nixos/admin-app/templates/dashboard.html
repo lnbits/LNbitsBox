@@ -58,16 +58,6 @@
             <span class="text-xs font-mono text-ln-muted" id="update-current-version">--</span>
         </div>
 
-        {# Idle / check state #}
-        <div class="flex items-center gap-3">
-            <button onclick="checkForUpdate()"
-                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
-                    id="update-check-btn">
-                Check for updates
-            </button>
-            <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
-        </div>
-
         {# Update available #}
         <div id="update-available" class="hidden">
             <div class="flex items-center gap-2 mb-3">
@@ -99,6 +89,16 @@
                 <div class="w-2.5 h-2.5 rounded-full" id="update-done-dot"></div>
                 <span class="text-sm font-mono" id="update-done-text"></span>
             </div>
+        </div>
+
+        {# Idle / check state #}
+        <div class="flex items-center gap-3 mt-3">
+            <button onclick="checkForUpdate()"
+                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+                    id="update-check-btn">
+                Check for updates
+            </button>
+            <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
         </div>
     </div>
 
