@@ -389,15 +389,24 @@ def api_update_start():
 
     # Launch update as a transient systemd unit so it survives admin app restarts
     try:
-        subprocess.Popen([
-            "systemd-run",
-            "--unit=lnbitsbox-update",
-            "--description=LNbitsBox OTA Update",
-            "--no-block",
-            "lnbitsbox-update", release_tag,
-        ])
+        result = subprocess.run(
+            [
+                "systemd-run",
+                "--system",
+                "--unit=lnbitsbox-update",
+                "--description=LNbitsBox OTA Update",
+                "--no-block",
+                "lnbitsbox-update", release_tag,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            app.logger.error("systemd-run failed: %s", result.stderr.strip())
+            return jsonify({"status": "error", "message": result.stderr.strip()}), 500
         return jsonify({"status": "started"})
     except Exception as e:
+        app.logger.error("Failed to launch update: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
