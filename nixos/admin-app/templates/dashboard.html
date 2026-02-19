@@ -595,9 +595,9 @@ async function pollUpdateStatus() {
         }
 
         const statusLabels = {
-            idle: 'Waiting for system to start update...',
-            downloading: 'Downloading updates...',
-            activating: 'Activating new system...',
+            idle: 'Waiting for system to start update. This may take a moment...',
+            downloading: 'Downloading updates. Please wait...',
+            activating: 'Activating new system. Services will restart shortly...',
         };
 
         if (data.status === 'success') {

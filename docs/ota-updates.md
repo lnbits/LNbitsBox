@@ -206,3 +206,11 @@ This prevents the Nix store from growing unbounded on the Pi's SD card. Generati
 **Update fails during activation**: The `switch-to-configuration` step can fail if the new system has incompatible state. Check the full log at `/var/lib/lnbitsbox-update/log` on the Pi. The previous system generation is still intact — a reboot will boot into the last working generation.
 
 **Testing locally with DEV_MODE**: Run the admin app with `DEV_MODE=true` and the update endpoints return mock data (update always available from v1.0.0 to v1.1.0). This lets you develop the UI without a real Cachix setup.
+
+# Terminal command to update to specific version
+
+ssh into the box and run:
+```bash
+sudo lnbitsbox-update vx.y.z
+```
+Replace `vx.y.z` with the desired version tag (e.g., `v1.0.0`). This will trigger the same update process as the admin dashboard, allowing you to update to a specific version directly from the terminal.]
