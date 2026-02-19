@@ -105,7 +105,7 @@
     </div>
 
     {# ── Metric Cards ── #}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
 
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
             <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Spark Balance</div>
@@ -129,6 +129,20 @@
             <div class="text-2xl sm:text-3xl font-display font-bold text-ln-text" id="stat-disk">--</div>
             <div class="w-full bg-ln-surface rounded-full h-1.5 mt-2">
                 <div class="bg-ln-pink rounded-full h-1.5 transition-all duration-500" id="stat-disk-bar" style="width: 0%"></div>
+            </div>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="text-ln-muted text-xs font-mono"><span id="stat-disk-detail">--</span></span>
+            </div>
+        </div>
+
+        <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Memory Usage</div>
+            <div class="text-2xl sm:text-3xl font-display font-bold text-ln-text" id="stat-ram">--</div>
+            <div class="w-full bg-ln-surface rounded-full h-1.5 mt-2">
+                <div class="bg-ln-pink rounded-full h-1.5 transition-all duration-500" id="stat-ram-bar" style="width: 0%"></div>
+            </div>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="text-ln-muted text-xs font-mono"><span id="stat-ram-detail">--</span></span>
             </div>
         </div>
     </div>
@@ -195,10 +209,6 @@
                         class="bg-ln-surface hover:bg-ln-card-hover border border-ln-border hover:border-red-500/30 text-ln-text font-mono text-sm py-3 px-4 rounded-lg transition-all duration-200">
                     Shutdown
                 </button>
-            </div>
-            <div class="mt-4 flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span class="text-ln-muted text-xs font-mono">RAM: <span id="stat-ram-detail">--</span></span>
             </div>
         </div>
     </div>
@@ -326,10 +336,14 @@ async function fetchStats() {
         // Disk
         document.getElementById('stat-disk').textContent = s.disk.percent + '%';
         document.getElementById('stat-disk-bar').style.width = s.disk.percent + '%';
+        document.getElementById('stat-disk-detail').textContent =
+            formatBytes(s.disk.used) + ' / ' + formatBytes(s.disk.total);
 
-        // RAM detail
+        // RAM
+        document.getElementById('stat-ram').textContent = s.ram.percent + '%';
+        document.getElementById('stat-ram-bar').style.width = s.ram.percent + '%';
         document.getElementById('stat-ram-detail').textContent =
-            formatBytes(s.ram.used) + ' / ' + formatBytes(s.ram.total) + ' (' + s.ram.percent + '%)';
+            formatBytes(s.ram.used) + ' / ' + formatBytes(s.ram.total);
 
         // Tor
         const onion = s.tor_onion;
