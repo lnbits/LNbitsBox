@@ -238,6 +238,11 @@
 </div>
 
 <script>
+// ── Theme-aware colors ─────────────────────────────────────────
+const _cs = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim().split(' ').join(',');
+const thBorder = _cs('--ln-border');
+const thMuted  = _cs('--ln-muted');
+
 // ── Chart Setup ────────────────────────────────────────────────
 const chartOpts = {
     responsive: true,
@@ -250,9 +255,9 @@ const chartOpts = {
         },
         y: {
             min: 0, max: 100,
-            grid: { color: 'rgba(42,42,58,0.5)' },
+            grid: { color: 'rgba(' + thBorder + ',0.5)' },
             ticks: {
-                color: '#7a7a8e',
+                color: 'rgb(' + thMuted + ')',
                 font: { family: 'JetBrains Mono', size: 10 },
                 callback: v => v + '%',
             },
