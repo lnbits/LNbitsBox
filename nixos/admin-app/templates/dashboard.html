@@ -108,24 +108,24 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
 
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Balance</div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Spark Balance</div>
             <div class="text-2xl sm:text-3xl font-display font-bold text-ln-text" id="stat-balance">--</div>
             <div class="text-ln-muted text-xs font-mono mt-1">sats</div>
         </div>
 
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Uptime</div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">System Uptime</div>
             <div class="text-2xl sm:text-3xl font-display font-bold text-ln-text" id="stat-uptime">--</div>
         </div>
 
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">CPU Temp</div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">CPU Temperature</div>
             <div class="text-2xl sm:text-3xl font-display font-bold" id="stat-temp">--</div>
             <div class="text-ln-muted text-xs font-mono mt-1" id="stat-temp-unit">&deg;C</div>
         </div>
 
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Disk</div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Disk Usage</div>
             <div class="text-2xl sm:text-3xl font-display font-bold text-ln-text" id="stat-disk">--</div>
             <div class="w-full bg-ln-surface rounded-full h-1.5 mt-2">
                 <div class="bg-ln-pink rounded-full h-1.5 transition-all duration-500" id="stat-disk-bar" style="width: 0%"></div>
@@ -172,7 +172,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-2.5 h-2.5 rounded-full" id="svc-spark-sidecar-dot"></div>
-                        <span class="font-mono text-sm">spark-sidecar</span>
+                        <span class="font-mono text-sm">spark funding source</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-spark-sidecar-status">--</span>
                     </div>
                     <button onclick="restartService('spark-sidecar')"
@@ -189,7 +189,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <button onclick="confirmAction('reboot', 'Reboot LNbitsBox?')"
                         class="bg-ln-surface hover:bg-ln-card-hover border border-ln-border hover:border-amber-500/30 text-ln-text font-mono text-sm py-3 px-4 rounded-lg transition-all duration-200">
-                    Reboot
+                    Restart
                 </button>
                 <button onclick="confirmAction('shutdown', 'Shut down LNbitsBox?')"
                         class="bg-ln-surface hover:bg-ln-card-hover border border-ln-border hover:border-red-500/30 text-ln-text font-mono text-sm py-3 px-4 rounded-lg transition-all duration-200">
