@@ -92,7 +92,7 @@
         </div>
 
         {# Idle / check state #}
-        <div class="flex items-center gap-3 mt-3">
+        <div class="flex items-center gap-3 mt-3" id="update-check-section">
             <button onclick="checkForUpdate()"
                     class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
                     id="update-check-btn">
@@ -543,6 +543,8 @@ async function checkForUpdate() {
             document.getElementById('update-latest-version').textContent = 'v' + data.latest_version;
             document.getElementById('update-release-notes').textContent = data.release_notes || 'No release notes.';
             showUpdateSection('update-available');
+            // hide update-check-section while update is available
+            document.getElementById('update-check-section').classList.add('hidden');
         } else {
             status.textContent = 'Up to date';
             setTimeout(() => { status.textContent = ''; }, 3000);
