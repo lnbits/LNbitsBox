@@ -396,7 +396,7 @@ def api_update_start():
                 "--unit=lnbitsbox-update",
                 "--description=LNbitsBox OTA Update",
                 "--no-block",
-                "lnbitsbox-update", release_tag,
+                "/run/current-system/sw/bin/lnbitsbox-update", release_tag,
             ],
             capture_output=True,
             text=True,
