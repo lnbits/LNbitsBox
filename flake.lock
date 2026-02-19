@@ -313,15 +313,16 @@
     "spark-sidecar": {
       "flake": false,
       "locked": {
-        "lastModified": 1770296288,
-        "narHash": "sha256-SZ4UC8gezg8jfdce/STtxHcZQX6maIKB/RhFRIJG/Ts=",
+        "lastModified": 1771326160,
+        "narHash": "sha256-M5+Noy9eYe7tTyd7EJiHjdQ8zj65dzyzEBDog9p3Gvg=",
         "owner": "lnbits",
         "repo": "spark_sidecar",
-        "rev": "cded97d18f1fba5684d54dcb804a8fc69a90710c",
+        "rev": "384cdc4896a0bcfcc2453bb4c9efdf0554904f62",
         "type": "github"
       },
       "original": {
         "owner": "lnbits",
+        "ref": "main",
         "repo": "spark_sidecar",
         "type": "github"
       }
