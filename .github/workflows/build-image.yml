@@ -1,4 +1,4 @@
-name: build-pi4-image
+name: Build SD Image and Deploy OTA Update
 
 on:
   push:
