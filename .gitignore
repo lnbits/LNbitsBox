@@ -6,3 +6,5 @@ dist
 gh-pages/node_modules
 gh-pages/.output
 gh-pages/.nuxt
+manifest.json
+__pycache__
