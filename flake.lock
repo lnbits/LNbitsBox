@@ -96,7 +96,7 @@
       },
       "original": {
         "owner": "lnbits",
-        "ref": "dev",
+        "ref": "refs/tags/v1.5.0-rc2",
         "repo": "lnbits",
         "type": "github"
       }
