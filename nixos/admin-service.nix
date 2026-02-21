@@ -15,8 +15,8 @@ in
       ConditionPathExists = "/var/lib/lnbits/.configured";
     };
 
-    # systemctl must be in PATH for service restart/shutdown commands
-    path = [ pkgs.systemd ];
+    # systemctl, wpa_cli, ip, ping must be in PATH
+    path = [ pkgs.systemd pkgs.wpa_supplicant pkgs.iproute2 pkgs.iputils ];
 
     serviceConfig = {
       Type = "simple";
@@ -29,7 +29,9 @@ in
       Restart = "on-failure";
       RestartSec = 5;
 
-      PrivateTmp = true;
+      # PrivateTmp must be off: wpa_cli creates response sockets in /tmp
+      # that wpa_supplicant (in a different unit) needs to reach.
+      PrivateTmp = false;
     };
   };
 }

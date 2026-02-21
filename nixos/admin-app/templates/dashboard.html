@@ -163,8 +163,8 @@
         </div>
     </div>
 
-    {# ── Services + Actions ── #}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+    {# ── Services + Network + System ── #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
 
         {# Services #}
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
@@ -191,6 +191,34 @@
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Restart
                     </button>
+                </div>
+            </div>
+        </div>
+
+        {# Network #}
+        <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-4">Network</div>
+            <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="net-internet-dot"></div>
+                    <span class="font-mono text-sm">Internet</span>
+                    <span class="text-ln-muted font-mono text-xs" id="net-internet-status">--</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-2.5 h-2.5 rounded-full bg-gray-600 shrink-0" id="net-wifi-dot"></div>
+                        <span class="font-mono text-sm shrink-0">WiFi</span>
+                        <span class="text-ln-muted font-mono text-xs truncate" id="net-wifi-status">--</span>
+                    </div>
+                    <button onclick="openWifiScan()"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0 ml-2">
+                        Scan
+                    </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="net-eth-dot"></div>
+                    <span class="font-mono text-sm">Ethernet</span>
+                    <span class="text-ln-muted font-mono text-xs" id="net-eth-status">--</span>
                 </div>
             </div>
         </div>
@@ -233,6 +261,79 @@
                     class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
                 Confirm
             </button>
+        </div>
+    </div>
+</div>
+
+{# ── WiFi Scan Modal ── #}
+<div id="wifi-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-lg font-display font-semibold">WiFi Networks</p>
+            <button onclick="closeWifiModal()" class="text-ln-muted hover:text-ln-text transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {# Scan results list #}
+        <div id="wifi-scan-list">
+            <div class="flex items-center justify-center py-8">
+                <div class="w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3"></div>
+                <span class="text-ln-muted font-mono text-sm">Scanning...</span>
+            </div>
+        </div>
+
+        {# Connect form (hidden initially) #}
+        <div id="wifi-connect-form" class="hidden">
+            <div class="flex items-center gap-2 mb-4">
+                <button onclick="showScanList()" class="text-ln-muted hover:text-ln-text transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <span class="font-mono text-sm font-semibold" id="wifi-connect-ssid"></span>
+            </div>
+            <div id="wifi-password-group" class="mb-4">
+                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Password</label>
+                <input type="password" id="wifi-password"
+                       class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                       placeholder="Enter password">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="showScanList()"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Cancel
+                </button>
+                <button onclick="connectToWifi()"
+                        class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                    Connect
+                </button>
+            </div>
+        </div>
+
+        {# Connecting status #}
+        <div id="wifi-connecting" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-6 h-6 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-ln-muted font-mono text-sm" id="wifi-connecting-text">Connecting...</span>
+            </div>
+        </div>
+
+        {# Result #}
+        <div id="wifi-result" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-8 h-8 rounded-full mb-3" id="wifi-result-icon"></div>
+                <span class="font-mono text-sm mb-1" id="wifi-result-text"></span>
+                <span class="text-ln-muted font-mono text-xs" id="wifi-result-ip"></span>
+            </div>
+            <div class="flex gap-3" id="wifi-result-actions">
+                <button onclick="showScanList()"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Try Another
+                </button>
+                <button onclick="closeWifiModal()"
+                        class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                    Done
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -399,6 +500,33 @@ async function fetchStats() {
             document.getElementById('svc-' + svc + '-status').textContent = status;
         }
 
+        // Network
+        if (s.network) {
+            const net = s.network;
+            // Internet
+            document.getElementById('net-internet-dot').className =
+                'w-2.5 h-2.5 rounded-full ' + (net.internet ? 'bg-emerald-400' : 'bg-red-400');
+            document.getElementById('net-internet-status').textContent =
+                net.internet ? 'Connected' : 'Disconnected';
+            // WiFi
+            if (net.wifi) {
+                document.getElementById('net-wifi-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
+                document.getElementById('net-wifi-status').textContent =
+                    '"' + net.wifi.ssid + '" (' + net.wifi.ip + ')';
+            } else {
+                document.getElementById('net-wifi-dot').className = 'w-2.5 h-2.5 rounded-full bg-gray-600 shrink-0';
+                document.getElementById('net-wifi-status').textContent = 'Not connected';
+            }
+            // Ethernet
+            if (net.ethernet) {
+                document.getElementById('net-eth-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                document.getElementById('net-eth-status').textContent = net.ethernet.ip;
+            } else {
+                document.getElementById('net-eth-dot').className = 'w-2.5 h-2.5 rounded-full bg-gray-600';
+                document.getElementById('net-eth-status').textContent = 'Not connected';
+            }
+        }
+
         // LNbits status card is updated by its own poller (updateLnbitsStatus)
 
         // Charts
@@ -561,6 +689,160 @@ async function restartService(service) {
         }
     } catch (e) {
         alert('Request failed');
+    }
+}
+
+// ── WiFi Scan & Connect ────────────────────────────────────────
+let wifiSelectedSsid = '';
+let wifiSelectedFlags = '';
+let wifiConnectPoll = null;
+
+function signalBars(dbm) {
+    if (dbm >= -50) return '\u2582\u2584\u2586\u2588';
+    if (dbm >= -60) return '\u2582\u2584\u2586\u2007';
+    if (dbm >= -70) return '\u2582\u2584\u2007\u2007';
+    return '\u2582\u2007\u2007\u2007';
+}
+
+function isEncrypted(flags) {
+    return flags && (flags.includes('WPA') || flags.includes('WEP'));
+}
+
+function showWifiView(id) {
+    for (const v of ['wifi-scan-list', 'wifi-connect-form', 'wifi-connecting', 'wifi-result']) {
+        document.getElementById(v).classList.toggle('hidden', v !== id);
+    }
+}
+
+async function openWifiScan() {
+    document.getElementById('wifi-modal').classList.remove('hidden');
+    showWifiView('wifi-scan-list');
+    document.getElementById('wifi-scan-list').innerHTML =
+        '<div class="flex items-center justify-center py-8">' +
+        '<div class="w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3"></div>' +
+        '<span class="text-ln-muted font-mono text-sm">Scanning...</span></div>';
+
+    try {
+        const resp = await fetch('/box/api/wifi/scan', { method: 'POST' });
+        if (!resp.ok) throw new Error('Scan failed');
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+
+        if (!data.networks || data.networks.length === 0) {
+            document.getElementById('wifi-scan-list').innerHTML =
+                '<p class="text-ln-muted font-mono text-sm text-center py-8">No networks found</p>';
+            return;
+        }
+
+        let html = '<div class="space-y-1 max-h-72 overflow-y-auto">';
+        for (const net of data.networks) {
+            const encrypted = isEncrypted(net.flags);
+            const lock = encrypted ? '<svg class="w-3.5 h-3.5 text-ln-muted shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>' : '';
+            html += '<button onclick="selectWifiNetwork(\'' + net.ssid.replace(/'/g, "\\'") + '\', \'' + net.flags.replace(/'/g, "\\'") + '\')" ' +
+                'class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-ln-surface transition-colors group">' +
+                '<div class="flex items-center gap-2 min-w-0">' + lock +
+                '<span class="font-mono text-sm truncate">' + net.ssid + '</span></div>' +
+                '<span class="font-mono text-sm text-ln-muted shrink-0 ml-2">' + signalBars(net.signal) + '</span></button>';
+        }
+        html += '</div>';
+        document.getElementById('wifi-scan-list').innerHTML = html;
+    } catch (e) {
+        document.getElementById('wifi-scan-list').innerHTML =
+            '<p class="text-red-400 font-mono text-sm text-center py-8">Scan failed: ' + e.message + '</p>';
+    }
+}
+
+function selectWifiNetwork(ssid, flags) {
+    wifiSelectedSsid = ssid;
+    wifiSelectedFlags = flags;
+    document.getElementById('wifi-connect-ssid').textContent = ssid;
+    document.getElementById('wifi-password').value = '';
+
+    if (isEncrypted(flags)) {
+        document.getElementById('wifi-password-group').classList.remove('hidden');
+    } else {
+        document.getElementById('wifi-password-group').classList.add('hidden');
+    }
+    showWifiView('wifi-connect-form');
+}
+
+function showScanList() {
+    showWifiView('wifi-scan-list');
+}
+
+async function connectToWifi() {
+    const password = document.getElementById('wifi-password').value;
+    showWifiView('wifi-connecting');
+    document.getElementById('wifi-connecting-text').textContent = 'Connecting to ' + wifiSelectedSsid + '...';
+
+    try {
+        const resp = await fetch('/box/api/wifi/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ssid: wifiSelectedSsid, password: password }),
+        });
+        const data = await resp.json();
+        if (data.status === 'error') {
+            showWifiResult(false, data.message, '');
+            return;
+        }
+    } catch (e) {
+        showWifiResult(false, 'Failed to start connection', '');
+        return;
+    }
+
+    // Poll for status
+    wifiConnectPoll = setInterval(async () => {
+        try {
+            const resp = await fetch('/box/api/wifi/connect/status');
+            const data = await resp.json();
+            if (data.status === 'success') {
+                clearInterval(wifiConnectPoll);
+                wifiConnectPoll = null;
+                showWifiResult(true, data.message, data.ip);
+                // Refresh stats to show new connection
+                setTimeout(fetchStats, 2000);
+            } else if (data.status === 'failed') {
+                clearInterval(wifiConnectPoll);
+                wifiConnectPoll = null;
+                showWifiResult(false, data.message, '');
+            }
+        } catch (e) {
+            // keep polling
+        }
+    }, 2000);
+}
+
+function showWifiResult(success, message, ip) {
+    showWifiView('wifi-result');
+    const icon = document.getElementById('wifi-result-icon');
+    const text = document.getElementById('wifi-result-text');
+    const ipEl = document.getElementById('wifi-result-ip');
+
+    if (success) {
+        icon.className = 'w-8 h-8 rounded-full mb-3 bg-emerald-400';
+        text.textContent = message;
+        text.className = 'font-mono text-sm mb-1 text-emerald-400';
+        ipEl.textContent = ip ? 'IP: ' + ip : '';
+        // Auto-close after 3s
+        setTimeout(() => {
+            if (!document.getElementById('wifi-modal').classList.contains('hidden')) {
+                closeWifiModal();
+            }
+        }, 3000);
+    } else {
+        icon.className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
+        text.textContent = message;
+        text.className = 'font-mono text-sm mb-1 text-red-400';
+        ipEl.textContent = '';
+    }
+}
+
+function closeWifiModal() {
+    document.getElementById('wifi-modal').classList.add('hidden');
+    if (wifiConnectPoll) {
+        clearInterval(wifiConnectPoll);
+        wifiConnectPoll = null;
     }
 }
 

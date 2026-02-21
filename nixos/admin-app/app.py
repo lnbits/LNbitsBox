@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """LNbitsBox Admin Dashboard — system monitoring and service management"""
 
+import json
 import os
 import sys
 import time
@@ -43,6 +44,99 @@ STATS_INTERVAL = 30
 STATS_HISTORY_SIZE = 240
 stats_history = deque(maxlen=STATS_HISTORY_SIZE)
 stats_lock = threading.Lock()
+
+# WiFi connection state
+wifi_connect_status = {"status": "idle", "message": "", "ip": ""}
+wifi_connect_lock = threading.Lock()
+
+
+# ── Network Helpers ─────────────────────────────────────────────────
+
+def get_wifi_interface():
+    """Detect wireless interface name by checking /sys/class/net/*/wireless"""
+    try:
+        for iface in Path("/sys/class/net").iterdir():
+            if (iface / "wireless").exists():
+                return iface.name
+    except Exception:
+        pass
+    return None
+
+
+def wpa_cli(iface, *args, timeout=5, check=False):
+    """Run wpa_cli via control socket (not D-Bus) with stdin closed"""
+    return subprocess.run(
+        ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", iface, *args],
+        capture_output=True, text=True, timeout=timeout,
+        stdin=subprocess.DEVNULL, check=check,
+    )
+
+
+def get_network_info():
+    """Return network connectivity info: internet, wifi, ethernet"""
+    if DEV_MODE:
+        return {
+            "internet": True,
+            "wifi": {"ssid": "HomeNetwork", "ip": "192.168.1.100", "interface": "wlan0"},
+            "ethernet": {"interface": "eth0", "ip": "192.168.1.50"},
+        }
+    info = {"internet": False, "wifi": None, "ethernet": None}
+
+    # Internet check — ping 1.1.1.1
+    try:
+        result = subprocess.run(
+            ["ping", "-c", "1", "-W", "2", "1.1.1.1"],
+            capture_output=True, timeout=5,
+        )
+        info["internet"] = result.returncode == 0
+    except Exception:
+        pass
+
+    # WiFi — via wpa_cli status
+    wifi_iface = get_wifi_interface()
+    if wifi_iface:
+        try:
+            result = wpa_cli(wifi_iface, "status")
+            if result.returncode == 0:
+                wpa = {}
+                for line in result.stdout.strip().splitlines():
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        wpa[k] = v
+                if wpa.get("wpa_state") == "COMPLETED":
+                    info["wifi"] = {
+                        "ssid": wpa.get("ssid", ""),
+                        "ip": wpa.get("ip_address", ""),
+                        "interface": wifi_iface,
+                    }
+        except Exception:
+            pass
+
+    # Ethernet — via ip -j addr show
+    try:
+        result = subprocess.run(
+            ["ip", "-j", "addr", "show"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            ifaces = json.loads(result.stdout)
+            for iface in ifaces:
+                name = iface.get("ifname", "")
+                if not (name.startswith("eth") or name.startswith("en")):
+                    continue
+                for addr_info in iface.get("addr_info", []):
+                    if addr_info.get("family") == "inet":
+                        info["ethernet"] = {
+                            "interface": name,
+                            "ip": addr_info.get("local", ""),
+                        }
+                        break
+                if info["ethernet"]:
+                    break
+    except Exception:
+        pass
+
+    return info
 
 
 # ── Authentication ──────────────────────────────────────────────────
@@ -182,6 +276,7 @@ def collect_stats():
         },
         "spark_balance": get_spark_balance(),
         "tor_onion": get_onion_address(),
+        "network": get_network_info(),
     }
 
 
@@ -306,6 +401,167 @@ def api_restart_service(service):
         return jsonify({"status": "ok", "message": f"{service} restarted"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+
+
+# ── WiFi Endpoints ──────────────────────────────────────────────
+
+@app.route("/box/api/wifi/scan", methods=["POST"])
+@login_required
+def api_wifi_scan():
+    if DEV_MODE:
+        return jsonify({"networks": [
+            {"ssid": "HomeNetwork", "signal": -45, "flags": "[WPA2-PSK-CCMP][ESS]"},
+            {"ssid": "CoffeeShop_Free", "signal": -62, "flags": "[ESS]"},
+            {"ssid": "Neighbor5G", "signal": -70, "flags": "[WPA2-PSK-CCMP][WPS][ESS]"},
+            {"ssid": "OfficeWiFi", "signal": -78, "flags": "[WPA2-EAP-CCMP][ESS]"},
+        ]})
+
+    wifi_iface = get_wifi_interface()
+    if not wifi_iface:
+        return jsonify({"error": "No wireless interface found"}), 404
+
+    try:
+        wpa_cli(wifi_iface, "scan")
+        time.sleep(3)
+        result = wpa_cli(wifi_iface, "scan_results")
+        if result.returncode != 0:
+            return jsonify({"error": "Scan failed"}), 500
+
+        # Parse scan results: bssid / frequency / signal / flags / ssid
+        networks = {}
+        for line in result.stdout.strip().splitlines()[1:]:  # skip header
+            parts = line.split("\t")
+            if len(parts) < 5:
+                continue
+            ssid = parts[4].strip()
+            if not ssid:
+                continue
+            signal = int(parts[2])
+            flags = parts[3]
+            # Deduplicate by SSID, keeping strongest signal
+            if ssid not in networks or signal > networks[ssid]["signal"]:
+                networks[ssid] = {"ssid": ssid, "signal": signal, "flags": flags}
+
+        sorted_networks = sorted(networks.values(), key=lambda n: n["signal"], reverse=True)
+        return jsonify({"networks": sorted_networks})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/box/api/wifi/connect", methods=["POST"])
+@login_required
+def api_wifi_connect():
+    data = request.get_json(silent=True) or {}
+    ssid = data.get("ssid", "").strip()
+    password = data.get("password", "")
+
+    if not ssid:
+        return jsonify({"status": "error", "message": "SSID is required"}), 400
+
+    if DEV_MODE:
+        with wifi_connect_lock:
+            wifi_connect_status.update({"status": "connecting", "message": f"Connecting to {ssid}...", "ip": ""})
+
+        def mock_connect():
+            time.sleep(4)
+            with wifi_connect_lock:
+                wifi_connect_status.update({"status": "success", "message": f"Connected to {ssid}", "ip": "192.168.1.42"})
+        threading.Thread(target=mock_connect, daemon=True).start()
+        return jsonify({"status": "connecting"})
+
+    wifi_iface = get_wifi_interface()
+    if not wifi_iface:
+        return jsonify({"status": "error", "message": "No wireless interface found"}), 404
+
+    with wifi_connect_lock:
+        if wifi_connect_status["status"] == "connecting":
+            return jsonify({"status": "error", "message": "Connection attempt already in progress"}), 409
+        wifi_connect_status.update({"status": "connecting", "message": f"Connecting to {ssid}...", "ip": ""})
+
+    def do_connect():
+        global wifi_connect_status
+        try:
+            # Read backup of current config
+            backup_conf = None
+            conf_path = "/etc/wpa_supplicant.conf"
+            try:
+                backup_conf = Path(conf_path).read_text()
+            except Exception:
+                pass
+
+            # Add network
+            result = wpa_cli(wifi_iface, "add_network")
+            net_id = result.stdout.strip()
+
+            # Set SSID
+            wpa_cli(wifi_iface, "set_network", net_id, "ssid", f'"{ssid}"', check=True)
+
+            # Set password or open network
+            if password:
+                wpa_cli(wifi_iface, "set_network", net_id, "psk", f'"{password}"', check=True)
+            else:
+                wpa_cli(wifi_iface, "set_network", net_id, "key_mgmt", "NONE", check=True)
+
+            # Select network (connects to new, disables others)
+            wpa_cli(wifi_iface, "select_network", net_id, check=True)
+
+            # Poll for connection
+            connected = False
+            new_ip = ""
+            for _ in range(8):  # 8 * 2s = 16s max
+                time.sleep(2)
+                result = wpa_cli(wifi_iface, "status")
+                wpa = {}
+                for line in result.stdout.strip().splitlines():
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        wpa[k] = v
+                if wpa.get("wpa_state") == "COMPLETED":
+                    new_ip = wpa.get("ip_address", "")
+                    connected = True
+                    break
+
+            if connected:
+                # Re-enable all networks and save
+                wpa_cli(wifi_iface, "enable_network", "all")
+                wpa_cli(wifi_iface, "save_config")
+                with wifi_connect_lock:
+                    wifi_connect_status.update({
+                        "status": "success",
+                        "message": f"Connected to {ssid}",
+                        "ip": new_ip,
+                    })
+            else:
+                # Restore backup config
+                if backup_conf is not None:
+                    try:
+                        Path(conf_path).write_text(backup_conf)
+                        wpa_cli(wifi_iface, "reconfigure")
+                    except Exception:
+                        pass
+                with wifi_connect_lock:
+                    wifi_connect_status.update({
+                        "status": "failed",
+                        "message": f"Failed to connect to {ssid}",
+                        "ip": "",
+                    })
+        except Exception as e:
+            with wifi_connect_lock:
+                wifi_connect_status.update({
+                    "status": "failed",
+                    "message": str(e),
+                    "ip": "",
+                })
+
+    threading.Thread(target=do_connect, daemon=True).start()
+    return jsonify({"status": "connecting"})
+
+
+@app.route("/box/api/wifi/connect/status")
+@login_required
+def api_wifi_connect_status():
+    with wifi_connect_lock:
+        return jsonify(dict(wifi_connect_status))
 
 
 # ── OTA Update Endpoints ─────────────────────────────────────────
