@@ -146,7 +146,14 @@
     </div>
 
     {# ── Charts ── #}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
+
+        <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-3">Temperature</div>
+            <div class="h-48">
+                <canvas id="chart-temp"></canvas>
+            </div>
+        </div>
 
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
             <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-3">CPU Usage</div>
@@ -425,6 +432,32 @@ const ramChart = new Chart(document.getElementById('chart-ram'), {
     options: { ...chartOpts },
 });
 
+const tempChartOpts = JSON.parse(JSON.stringify(chartOpts));
+tempChartOpts.scales.y = {
+    min: 20, max: 90,
+    grid: { color: 'rgba(' + thBorder + ',0.5)' },
+    ticks: {
+        color: 'rgb(' + thMuted + ')',
+        font: { family: 'JetBrains Mono', size: 10 },
+        callback: v => v + '°',
+    },
+};
+tempChartOpts.plugins.tooltip.callbacks = { label: ctx => ctx.parsed.y.toFixed(1) + '°C' };
+
+const tempChart = new Chart(document.getElementById('chart-temp'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            data: [],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245,158,11,0.08)',
+            fill: true,
+        }],
+    },
+    options: tempChartOpts,
+});
+
 // ── Stats Polling ──────────────────────────────────────────────
 function formatBytes(bytes) {
     if (bytes === 0) return '0 B';
@@ -543,6 +576,10 @@ async function fetchStats() {
         ramChart.data.datasets[0].data = data.history.ram;
         ramChart.update('none');
 
+        tempChart.data.labels = labels;
+        tempChart.data.datasets[0].data = data.history.temp;
+        tempChart.update('none');
+
     } catch (e) {
         console.error('Stats fetch failed:', e);
     }
@@ -556,11 +593,13 @@ async function fetchStats() {
     const labels = [];
     const cpu = [];
     const ram = [];
+    const temp = [];
     for (let i = points; i > 0; i--) {
         const t = new Date(now - i * 30000);
         labels.push(t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0'));
         cpu.push(Math.round(15 + 40 * Math.sin(i / 8) ** 2 + Math.random() * 10));
         ram.push(Math.round(45 + 15 * Math.sin(i / 12) + Math.random() * 5));
+        temp.push(Math.round(42 + 12 * Math.sin(i / 10) + Math.random() * 3));
     }
     cpuChart.data.labels = labels;
     cpuChart.data.datasets[0].data = cpu;
@@ -568,6 +607,9 @@ async function fetchStats() {
     ramChart.data.labels = labels;
     ramChart.data.datasets[0].data = ram;
     ramChart.update('none');
+    tempChart.data.labels = labels;
+    tempChart.data.datasets[0].data = temp;
+    tempChart.update('none');
 })();
 {% endif %}
 
