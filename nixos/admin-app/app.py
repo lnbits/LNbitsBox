@@ -4,6 +4,7 @@
 import json
 import os
 import sys
+import tempfile
 import time
 try:
     import crypt
@@ -12,6 +13,7 @@ except ModuleNotFoundError:
 import shutil
 import subprocess
 import threading
+import zipfile
 from collections import deque
 from datetime import datetime
 from functools import wraps
@@ -19,7 +21,7 @@ from pathlib import Path
 
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, flash, session, jsonify
+    url_for, flash, session, jsonify, send_file
 )
 
 app = Flask(__name__, static_url_path="/box/static")
@@ -35,6 +37,7 @@ except Exception:
     SPARK_SIDECAR_API_KEY = ""
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar"]
+LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
 GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
@@ -401,6 +404,187 @@ def api_restart_service(service):
         return jsonify({"status": "ok", "message": f"{service} restarted"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+
+
+# ── Database Backup & Restore ────────────────────────────────
+
+@app.route("/box/api/db/info")
+@login_required
+def api_db_info():
+    if DEV_MODE:
+        return jsonify({"size": 4_520_000})
+    try:
+        size = LNBITS_DB_PATH.stat().st_size
+        return jsonify({"size": size})
+    except FileNotFoundError:
+        return jsonify({"size": 0, "error": "Database file not found"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/box/api/db/backup", methods=["POST"])
+@login_required
+def api_db_backup():
+    if DEV_MODE:
+        fd, tmp_dev = tempfile.mkstemp(suffix=".zip")
+        os.close(fd)
+        with zipfile.ZipFile(tmp_dev, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("database.sqlite3", "DEV_MODE dummy database")
+        response = send_file(
+            tmp_dev,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="lnbits-backup.zip",
+        )
+
+        @response.call_on_close
+        def _cleanup_dev():
+            try:
+                os.unlink(tmp_dev)
+            except OSError:
+                pass
+
+        return response
+
+    if not LNBITS_DB_PATH.exists():
+        return jsonify({"error": "Database file not found"}), 404
+
+    tmp_path = None
+    try:
+        # Stop LNbits
+        subprocess.run(
+            ["systemctl", "stop", "lnbits.service"],
+            check=True, capture_output=True, timeout=30,
+        )
+
+        # Create zip
+        fd, tmp_path = tempfile.mkstemp(suffix=".zip")
+        os.close(fd)
+        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(LNBITS_DB_PATH, "database.sqlite3")
+
+        # Start LNbits
+        subprocess.run(
+            ["systemctl", "start", "lnbits.service"],
+            capture_output=True, timeout=30,
+        )
+
+        response = send_file(
+            tmp_path,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="lnbits-backup.zip",
+        )
+
+        # Clean up temp file after response
+        @response.call_on_close
+        def _cleanup():
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+        return response
+    except subprocess.CalledProcessError as e:
+        # Try to restart LNbits even if something failed
+        subprocess.run(
+            ["systemctl", "start", "lnbits.service"],
+            capture_output=True, timeout=30,
+        )
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+        return jsonify({"error": f"Backup failed: {e.stderr.decode()}"}), 500
+    except Exception as e:
+        subprocess.run(
+            ["systemctl", "start", "lnbits.service"],
+            capture_output=True, timeout=30,
+        )
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/box/api/db/restore", methods=["POST"])
+@login_required
+def api_db_restore():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    upload = request.files["file"]
+    if not upload.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    # Save upload to temp file for validation
+    fd, tmp_path = tempfile.mkstemp(suffix=".zip")
+    os.close(fd)
+    try:
+        upload.save(tmp_path)
+
+        # Validate zip contents
+        if not zipfile.is_zipfile(tmp_path):
+            os.unlink(tmp_path)
+            return jsonify({"error": "File is not a valid zip archive"}), 400
+
+        with zipfile.ZipFile(tmp_path, "r") as zf:
+            if "database.sqlite3" not in zf.namelist():
+                os.unlink(tmp_path)
+                return jsonify({"error": "Zip does not contain database.sqlite3"}), 400
+
+        if DEV_MODE:
+            os.unlink(tmp_path)
+            return jsonify({"status": "ok", "message": "DEV MODE: restore validated successfully"})
+
+        # Stop LNbits
+        subprocess.run(
+            ["systemctl", "stop", "lnbits.service"],
+            check=True, capture_output=True, timeout=30,
+        )
+
+        # Extract and overwrite
+        with zipfile.ZipFile(tmp_path, "r") as zf:
+            with zf.open("database.sqlite3") as src, open(LNBITS_DB_PATH, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+
+        # Fix ownership
+        subprocess.run(
+            ["chown", "lnbits:lnbits", str(LNBITS_DB_PATH)],
+            capture_output=True, timeout=5,
+        )
+
+        # Start LNbits
+        subprocess.run(
+            ["systemctl", "start", "lnbits.service"],
+            capture_output=True, timeout=30,
+        )
+
+        os.unlink(tmp_path)
+        return jsonify({"status": "ok", "message": "Database restored successfully"})
+    except subprocess.CalledProcessError as e:
+        subprocess.run(
+            ["systemctl", "start", "lnbits.service"],
+            capture_output=True, timeout=30,
+        )
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        return jsonify({"error": f"Restore failed: {e.stderr.decode()}"}), 500
+    except Exception as e:
+        subprocess.run(
+            ["systemctl", "start", "lnbits.service"],
+            capture_output=True, timeout=30,
+        )
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        return jsonify({"error": str(e)}), 500
 
 
 # ── WiFi Endpoints ──────────────────────────────────────────────

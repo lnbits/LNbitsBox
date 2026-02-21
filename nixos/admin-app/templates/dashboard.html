@@ -63,8 +63,42 @@
         </div>
     </div>
 
+    {# ── LNbits Database + System Update row ── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-6">
+
+    {# ── LNbits Database ── #}
+    <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="db-card">
+        <div class="flex items-center justify-between mb-3">
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">LNbits Database</div>
+            <span class="text-xs font-mono text-ln-muted" id="db-size">--</span>
+        </div>
+
+        <p class="text-ln-muted text-xs font-mono mb-4">
+            LNbits will be temporarily stopped during backup and restore operations.
+        </p>
+
+        {# Status indicator (hidden by default) #}
+        <div id="db-status" class="hidden mb-4">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 border-2 border-ln-pink border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-ln-muted text-sm font-mono" id="db-status-text">Processing...</span>
+            </div>
+        </div>
+
+        <div class="flex gap-3" id="db-buttons">
+            <button onclick="confirmDbBackup()" id="db-backup-btn"
+                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                Download Backup
+            </button>
+            <button onclick="openRestoreModal()" id="db-restore-btn"
+                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                Restore Backup
+            </button>
+        </div>
+    </div>
+
     {# ── System Update ── #}
-    <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 mb-6 transition-all duration-500" id="update-card">
+    <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="update-card">
         <div class="flex items-center justify-between mb-3">
             <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">System Update</div>
             <span class="text-xs font-mono text-ln-muted" id="update-current-version">--</span>
@@ -113,6 +147,8 @@
             <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
         </div>
     </div>
+
+    </div> {# close Database + Update grid #}
 
     {# ── Metric Cards ── #}
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
@@ -353,6 +389,62 @@
                     Done
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+{# ── Database Restore Modal ── #}
+<div id="restore-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-lg font-display font-semibold">Restore Database</p>
+            <button onclick="closeRestoreModal()" class="text-ln-muted hover:text-ln-text transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        {# Upload form #}
+        <div id="restore-form">
+            <div class="bg-red-400/5 border border-red-400/20 rounded-lg p-3 mb-4">
+                <p class="text-red-400 text-xs font-mono leading-relaxed">
+                    This will overwrite your current LNbits database. All existing data (wallets, extensions, settings) will be replaced. This action cannot be undone.
+                </p>
+            </div>
+
+            <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
+            <input type="file" id="restore-file" accept=".zip"
+                   class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+
+            <div class="flex gap-3">
+                <button onclick="closeRestoreModal()"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Cancel
+                </button>
+                <button onclick="startRestore()" id="restore-confirm-btn"
+                        class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                    Restore
+                </button>
+            </div>
+        </div>
+
+        {# Progress #}
+        <div id="restore-progress" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-6 h-6 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-ln-muted font-mono text-sm">Restoring database...</span>
+            </div>
+        </div>
+
+        {# Result #}
+        <div id="restore-result" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-8 h-8 rounded-full mb-3" id="restore-result-icon"></div>
+                <span class="font-mono text-sm mb-1" id="restore-result-text"></span>
+            </div>
+            <button onclick="closeRestoreModal()"
+                    class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                Close
+            </button>
         </div>
     </div>
 </div>
@@ -897,6 +989,134 @@ function closeWifiModal() {
     if (wifiConnectPoll) {
         clearInterval(wifiConnectPoll);
         wifiConnectPoll = null;
+    }
+}
+
+// ── Database Backup & Restore ──────────────────────────────────
+
+async function fetchDbInfo() {
+    try {
+        const resp = await fetch('/box/api/db/info');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.size !== undefined) {
+            document.getElementById('db-size').textContent = formatBytes(data.size);
+        }
+    } catch (e) {
+        console.error('DB info fetch failed:', e);
+    }
+}
+
+fetchDbInfo();
+
+function setDbBusy(busy, text) {
+    const status = document.getElementById('db-status');
+    const buttons = document.getElementById('db-buttons');
+    if (busy) {
+        status.classList.remove('hidden');
+        document.getElementById('db-status-text').textContent = text || 'Processing...';
+        buttons.querySelectorAll('button').forEach(b => { b.disabled = true; b.classList.add('opacity-50'); });
+    } else {
+        status.classList.add('hidden');
+        buttons.querySelectorAll('button').forEach(b => { b.disabled = false; b.classList.remove('opacity-50'); });
+    }
+}
+
+function confirmDbBackup() {
+    document.getElementById('confirm-title').textContent = 'Download Backup?';
+    document.getElementById('confirm-message').textContent =
+        'LNbits will be stopped while creating the backup. It will be restarted automatically.';
+    document.getElementById('confirm-modal').classList.remove('hidden');
+    document.getElementById('confirm-btn').onclick = () => { closeModal(); startDbBackup(); };
+}
+
+function startDbBackup() {
+    setDbBusy(true, 'Creating backup... LNbits is stopping.');
+
+    // Use a hidden iframe to trigger the file download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    // We need to POST, so create a form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/box/api/db/backup';
+    form.target = iframe.name = 'db-backup-frame-' + Date.now();
+    iframe.name = form.target;
+    document.body.appendChild(form);
+    form.submit();
+
+    // Poll to detect when download completes (check if LNbits is back)
+    setTimeout(() => {
+        setDbBusy(false);
+        document.body.removeChild(form);
+        setTimeout(() => document.body.removeChild(iframe), 5000);
+        fetchDbInfo();
+    }, 5000);
+}
+
+function openRestoreModal() {
+    document.getElementById('restore-modal').classList.remove('hidden');
+    document.getElementById('restore-file').value = '';
+    showRestoreView('restore-form');
+}
+
+function closeRestoreModal() {
+    document.getElementById('restore-modal').classList.add('hidden');
+}
+
+function showRestoreView(id) {
+    for (const v of ['restore-form', 'restore-progress', 'restore-result']) {
+        document.getElementById(v).classList.toggle('hidden', v !== id);
+    }
+}
+
+async function startRestore() {
+    const fileInput = document.getElementById('restore-file');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select a backup file.');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (!file.name.endsWith('.zip')) {
+        alert('Please select a .zip file.');
+        return;
+    }
+
+    showRestoreView('restore-progress');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const resp = await fetch('/box/api/db/restore', {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await resp.json();
+
+        showRestoreView('restore-result');
+        const icon = document.getElementById('restore-result-icon');
+        const text = document.getElementById('restore-result-text');
+
+        if (resp.ok && data.status === 'ok') {
+            icon.className = 'w-8 h-8 rounded-full mb-3 bg-emerald-400';
+            text.textContent = data.message;
+            text.className = 'font-mono text-sm mb-1 text-emerald-400';
+            fetchDbInfo();
+        } else {
+            icon.className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
+            text.textContent = data.error || 'Restore failed';
+            text.className = 'font-mono text-sm mb-1 text-red-400';
+        }
+    } catch (e) {
+        showRestoreView('restore-result');
+        document.getElementById('restore-result-icon').className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
+        const text = document.getElementById('restore-result-text');
+        text.textContent = 'Request failed: ' + e.message;
+        text.className = 'font-mono text-sm mb-1 text-red-400';
     }
 }
 
