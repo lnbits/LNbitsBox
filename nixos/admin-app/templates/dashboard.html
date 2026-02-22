@@ -231,7 +231,7 @@
                         <span class="font-mono text-sm">LNbits</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-lnbits-status">--</span>
                     </div>
-                    <button onclick="restartService('lnbits')"
+                    <button onclick="confirmAction('restart/lnbits', 'Restart LNbits?')"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Restart
                     </button>
@@ -242,7 +242,7 @@
                         <span class="font-mono text-sm">Spark</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-spark-sidecar-status">--</span>
                     </div>
-                    <button onclick="restartService('spark-sidecar')"
+                    <button onclick="confirmAction('restart/spark-sidecar', 'Restart Spark?')"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Restart
                     </button>
@@ -253,7 +253,7 @@
                         <span class="font-mono text-sm">Tor</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-tor-status">--</span>
                     </div>
-                    <button onclick="restartService('tor')"
+                    <button onclick="confirmAction('restart/tor', 'Restart Tor?')"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Restart
                     </button>
@@ -799,6 +799,7 @@ async function executeAction(action) {
         const resp = await fetch('/box/api/' + action, { method: 'POST' });
         const data = await resp.json();
         if (data.status === 'ok') {
+            setTimeout(fetchStats, 2000);
             // Show brief feedback
             const msg = action === 'shutdown' ? 'Shutting down...' :
                         action === 'reboot' ? 'Rebooting...' : data.message;
@@ -830,22 +831,6 @@ async function copyOnion() {
         const btn = document.getElementById('tor-copy-btn');
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-    }
-}
-
-async function restartService(service) {
-    if (!confirm('Restart ' + service + '?')) return;
-    try {
-        const resp = await fetch('/box/api/restart/' + service, { method: 'POST' });
-        const data = await resp.json();
-        if (data.status === 'ok') {
-            // Refresh stats after restart
-            setTimeout(fetchStats, 2000);
-        } else {
-            alert('Error: ' + data.message);
-        }
-    } catch (e) {
-        alert('Request failed');
     }
 }
 

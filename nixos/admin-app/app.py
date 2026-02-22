@@ -401,7 +401,7 @@ def api_restart_service(service):
             ["systemctl", "restart", f"{service}.service"],
             check=True, capture_output=True, timeout=30
         )
-        return jsonify({"status": "ok", "message": f"{service} restarted"})
+        return jsonify({"status": "ok", "message": f"{service} is restarting"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
 
