@@ -247,6 +247,17 @@
                         Restart
                     </button>
                 </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2.5 h-2.5 rounded-full" id="svc-tor-dot"></div>
+                        <span class="font-mono text-sm">Tor</span>
+                        <span class="text-ln-muted font-mono text-xs" id="svc-tor-status">--</span>
+                    </div>
+                    <button onclick="restartService('tor')"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                        Restart
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -629,7 +640,7 @@ async function fetchStats() {
         }
 
         // Services
-        for (const svc of ['lnbits', 'spark-sidecar']) {
+        for (const svc of ['lnbits', 'spark-sidecar', 'tor']) {
             const key = svc.replace('-', '-');
             const status = s.services[svc] || 'unknown';
             document.getElementById('svc-' + svc + '-dot').className =

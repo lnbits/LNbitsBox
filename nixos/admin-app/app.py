@@ -36,7 +36,7 @@ try:
 except Exception:
     SPARK_SIDECAR_API_KEY = ""
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
-ALLOWED_SERVICES = ["lnbits", "spark-sidecar"]
+ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "tor"]
 LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
