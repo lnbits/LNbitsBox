@@ -29,7 +29,14 @@
 
       # Check if wifi.txt exists
       if [ ! -f "$WIFI_FILE" ]; then
-        echo "No wifi.txt found on firmware partition, skipping Wi-Fi setup."
+        echo "No wifi.txt found on firmware partition."
+        # Still create a minimal config so wpa_supplicant can start
+        # (needed for WiFi scanning from the admin app)
+        if [ ! -f "$WPA_CONF" ]; then
+          echo "Creating minimal wpa_supplicant.conf for scan support."
+          printf 'ctrl_interface=/run/wpa_supplicant\nctrl_interface_group=wheel\nupdate_config=1\n' > "$WPA_CONF"
+          chmod 0600 "$WPA_CONF"
+        fi
         exit 0
       fi
 
