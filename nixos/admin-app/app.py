@@ -163,6 +163,43 @@ def authenticate(username, password):
     return False
 
 
+# ── Login Rate Limiting ─────────────────────────────────────────────
+# Exponential backoff: after 5 failures, lock out for 30s, doubling each time
+
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_BASE_LOCKOUT = 30  # seconds
+_login_attempts = {}  # ip -> {"failures": int, "locked_until": float}
+_login_attempts_lock = threading.Lock()
+
+
+def _check_rate_limit(ip):
+    """Return seconds remaining if locked out, else 0."""
+    with _login_attempts_lock:
+        entry = _login_attempts.get(ip)
+        if not entry:
+            return 0
+        if entry["failures"] < LOGIN_MAX_ATTEMPTS:
+            return 0
+        remaining = entry["locked_until"] - time.monotonic()
+        return max(0, remaining)
+
+
+def _record_failure(ip):
+    with _login_attempts_lock:
+        entry = _login_attempts.setdefault(ip, {"failures": 0, "locked_until": 0})
+        entry["failures"] += 1
+        if entry["failures"] >= LOGIN_MAX_ATTEMPTS:
+            # Exponential backoff: 30s, 60s, 120s, ...
+            exponent = entry["failures"] - LOGIN_MAX_ATTEMPTS
+            lockout = LOGIN_BASE_LOCKOUT * (2 ** min(exponent, 8))
+            entry["locked_until"] = time.monotonic() + lockout
+
+
+def _clear_failures(ip):
+    with _login_attempts_lock:
+        _login_attempts.pop(ip, None)
+
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -316,13 +353,22 @@ def login():
     if session.get("authenticated"):
         return redirect(url_for("dashboard"))
 
+    ip = request.remote_addr or "unknown"
+
     if request.method == "POST":
+        lockout = _check_rate_limit(ip)
+        if lockout > 0:
+            flash(f"Too many attempts. Try again in {int(lockout)}s.", "error")
+            return render_template("login.html"), 429
+
         password = request.form.get("password", "")
 
         if authenticate(SSH_USER, password):
+            _clear_failures(ip)
             session["authenticated"] = True
             return redirect(url_for("dashboard"))
 
+        _record_failure(ip)
         flash("Invalid password", "error")
 
     return render_template("login.html")
