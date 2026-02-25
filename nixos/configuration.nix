@@ -101,7 +101,7 @@
   # Display first-boot instructions on login
   environment.etc."motd".text = ''
     ╔═══════════════════════════════════════════════════════════╗
-    ║                    Welcome to LNbitsBox                    ║
+    ║                    Welcome to LNbitsBox                   ║
     ╚═══════════════════════════════════════════════════════════╝
 
     To configure your device, open a web browser and navigate to:
@@ -138,7 +138,7 @@
   # Auto-migration for existing LNbits installations
   # If database exists but no marker file, create marker to skip wizard
   system.activationScripts.lnbits-migration = ''
-    if [ -f /var/lib/lnbits/database.sqlite ] && [ ! -f /var/lib/lnbits/.configured ]; then
+    if [ -f /var/lib/lnbits/database.sqlite3 ] && [ ! -f /var/lib/lnbits/.configured ]; then
       echo "Existing LNbits installation detected, auto-migrating..."
       touch /var/lib/lnbits/.configured
       echo "Migration complete. Wizard will be skipped."

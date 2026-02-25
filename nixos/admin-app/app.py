@@ -23,9 +23,11 @@ from flask import (
     Flask, render_template, request, redirect,
     url_for, flash, session, jsonify, send_file
 )
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__, static_url_path="/box/static")
 app.secret_key = os.urandom(24)
+csrf = CSRFProtect(app)
 
 # Configuration
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"

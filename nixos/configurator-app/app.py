@@ -13,10 +13,12 @@ import threading
 import time
 from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_wtf.csrf import CSRFProtect
 from mnemonic import Mnemonic
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+csrf = CSRFProtect(app)
 
 # Development mode - use /tmp paths instead of system paths
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"

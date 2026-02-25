@@ -3,6 +3,7 @@
 let
   python = pkgs.python3.withPackages (ps: with ps; [
     flask
+    ps."flask-wtf"  # CSRF protection
     mnemonic  # BIP39 mnemonic generation
   ]);
 in

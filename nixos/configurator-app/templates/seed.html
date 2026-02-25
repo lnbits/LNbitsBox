@@ -26,6 +26,7 @@
 
     {# ── Generate ── #}
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="generate">
         <button type="submit"
                 class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98]">
@@ -42,6 +43,7 @@
 
     {# ── Import ── #}
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="import">
         <div class="mb-4">
             <label for="mnemonic" class="block text-sm font-medium text-ln-text mb-2">Import Existing Seed Phrase</label>
@@ -90,6 +92,7 @@
 
     {# ── Confirm ── #}
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="action" value="confirm">
         <label class="flex items-center gap-3 cursor-pointer mb-6 group">
             <input type="checkbox" name="confirmed" value="yes" required>

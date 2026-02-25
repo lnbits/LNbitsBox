@@ -14,6 +14,7 @@
             <p class="text-ln-muted text-sm text-center mb-6 font-mono">Sign in with your SSH password</p>
 
             <form method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-4">
                     <label class="block text-sm font-mono text-ln-muted mb-2 uppercase tracking-wider">User</label>
                     <input type="text"

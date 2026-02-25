@@ -461,6 +461,22 @@
 </div>
 
 <script>
+// ── CSRF Protection ────────────────────────────────────────────
+// Wrap fetch() to automatically include the CSRF token on mutating requests
+(function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) return;
+    const _fetch = window.fetch;
+    window.fetch = function(url, opts) {
+        opts = opts || {};
+        const method = (opts.method || 'GET').toUpperCase();
+        if (method !== 'GET' && method !== 'HEAD') {
+            opts.headers = Object.assign({}, opts.headers, {'X-CSRFToken': csrfToken});
+        }
+        return _fetch.call(this, url, opts);
+    };
+})();
+
 // ── Theme-aware colors ─────────────────────────────────────────
 const _cs = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim().split(' ').join(',');
 const thBorder = _cs('--ln-border');
@@ -1034,10 +1050,15 @@ function startDbBackup() {
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
 
-    // We need to POST, so create a form
+    // We need to POST, so create a form with CSRF token
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/box/api/db/backup';
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    form.appendChild(csrfInput);
     form.target = iframe.name = 'db-backup-frame-' + Date.now();
     iframe.name = form.target;
     document.body.appendChild(form);
