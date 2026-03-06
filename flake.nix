@@ -12,16 +12,16 @@
     # LNbits flake input - using dev branch
     # To update: nix flake lock --update-input lnbits
     #lnbits.url = "github:lnbits/lnbits/refs/tags/v1.5.0";
-    lnbits.url = "github:lnbits/lnbits/spark_set_mnemonic";
+    lnbits.url = "github:lnbits/lnbits/dev";
 
     # Spark sidecar for L2 Lightning integration
-    spark-sidecar.url = "github:lnbits/spark_sidecar/seed_api";
+    spark-sidecar.url = "github:lnbits/spark_sidecar/main";
     spark-sidecar.flake = false;  # Not a flake, just source
   };
 
   outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, spark-sidecar, ... }:
   let
-    version = "0.1.32";  # Bump before each release tag to match the next tag name
+    version = "0.1.33";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
   in
   {
