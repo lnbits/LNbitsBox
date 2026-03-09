@@ -76,12 +76,13 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2 text-sm font-mono">
-                <div><span class="text-ln-muted">Public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
-                <div><span class="text-ln-muted">Expires:</span> <span id="tunnel-expires-at">--</span></div>
                 <div class="flex items-center gap-2">
+                    <div class="text-ln-muted">Status:</div>
                     <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="tunnel-status-dot"></div>
                     <span class="text-ln-muted" id="tunnel-status-text">No tunnel yet</span>
                 </div>
+                <div><span class="text-ln-muted">Public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
+                <div><span class="text-ln-muted">Expires:</span> <span id="tunnel-expires-at">--</span></div>
             </div>
             <div>
                 <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-1.5">Add Credit</div>
@@ -102,16 +103,6 @@
                     <button onclick="payPendingTunnelInvoice()"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Pay Invoice
-                    </button>
-                </div>
-                <div class="flex gap-2">
-                    <button id="tunnel-start-btn" onclick="startTunnelService()"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Start Tunnel
-                    </button>
-                    <button id="tunnel-stop-btn" onclick="stopTunnelService()"
-                            class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-red-400/30">
-                        Stop Tunnel
                     </button>
                 </div>
             </div>
@@ -985,6 +976,23 @@ async function copyOnion() {
 let tunnelState = null;
 let tunnelPollTimer = null;
 let tunnelInvoiceQr = null;
+let tunnelInvoiceLoading = false;
+
+function setTunnelInvoiceButtonLoading(isLoading) {
+    tunnelInvoiceLoading = isLoading;
+    const btn = document.getElementById('tunnel-invoice-btn');
+    if (!btn) return;
+    if (isLoading) {
+        btn.disabled = true;
+        btn.classList.add('opacity-70', 'cursor-not-allowed');
+        btn.innerHTML = '<span class="inline-flex items-center gap-2"><span class="w-3.5 h-3.5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"></span><span>Getting invoice</span></span>';
+        return;
+    }
+    btn.disabled = false;
+    btn.classList.remove('opacity-70', 'cursor-not-allowed');
+    const hasTunnel = tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id;
+    btn.textContent = hasTunnel ? 'Add Days' : 'Create Tunnel';
+}
 
 function toggleTunnelDetails() {
     const panel = document.getElementById('tunnel-details');
@@ -1017,7 +1025,8 @@ function setTunnelStatusDot(status) {
 function renderTunnel(data) {
     tunnelState = data;
     const current = data.current_tunnel || {};
-    const status = current.status || 'none';
+    const status = current.status || 'unknown';
+    current.status = (status === 'pending') ? 'pending payment' : status;
     const hasTunnel = !!current.tunnel_id;
     const hasPending = !!data.pending_invoice;
 
@@ -1025,8 +1034,8 @@ function renderTunnel(data) {
     document.getElementById('tunnel-remote-port').textContent = current.remote_port || '--';
     document.getElementById('tunnel-expires-at').textContent = formatTunnelDate(current.expires_at);
     document.getElementById('tunnel-service-status').textContent = 'service: ' + (data.service_status || '--');
-    document.getElementById('tunnel-status-text').textContent = hasTunnel ? status : 'No tunnel yet';
-    setTunnelStatusDot(status);
+    document.getElementById('tunnel-status-text').textContent = hasTunnel ? current.status : 'No tunnel yet';
+    setTunnelStatusDot(current.status);
     const tunnelServiceActive = (data.service_status || '') === 'active';
     document.getElementById('tunnel-start-btn').classList.toggle('hidden', tunnelServiceActive);
     document.getElementById('tunnel-stop-btn').classList.toggle('hidden', !tunnelServiceActive);
@@ -1040,7 +1049,11 @@ function renderTunnel(data) {
         urlEl.textContent = '--';
     }
 
-    document.getElementById('tunnel-invoice-btn').textContent = hasTunnel ? 'Add Days' : 'Create Tunnel';
+    if (tunnelInvoiceLoading) {
+        setTunnelInvoiceButtonLoading(true);
+    } else {
+        setTunnelInvoiceButtonLoading(false);
+    }
     document.getElementById('tunnel-copy-script-btn').disabled = !data.connect_script;
     document.getElementById('tunnel-copy-script-btn').classList.toggle('opacity-50', !data.connect_script);
     document.getElementById('tunnel-days-section').classList.toggle('hidden', hasPending);
@@ -1140,6 +1153,7 @@ async function openTunnelInvoiceFlow() {
         showNotice('Days must be greater than zero', 'Validation');
         return;
     }
+    setTunnelInvoiceButtonLoading(true);
     const hasTunnel = tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id;
     const endpoint = hasTunnel ? '/box/api/tunnel/renew-invoice' : '/box/api/tunnel/create-invoice';
     try {
@@ -1163,6 +1177,8 @@ async function openTunnelInvoiceFlow() {
         startTunnelPoll();
     } catch (e) {
         showNotice('Invoice request failed', 'Error');
+    } finally {
+        setTunnelInvoiceButtonLoading(false);
     }
 }
 
