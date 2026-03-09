@@ -413,6 +413,18 @@
     </div>
 </div>
 
+{# ── Notice Modal ── #}
+<div id="notice-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-sm w-full glow-pink">
+        <p class="text-lg font-display font-semibold mb-2" id="notice-title">Notice</p>
+        <p class="text-ln-muted text-sm font-mono mb-6" id="notice-message"></p>
+        <button onclick="closeNoticeModal()"
+                class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+            Close
+        </button>
+    </div>
+</div>
+
 {# ── WiFi Scan Modal ── #}
 <div id="wifi-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
@@ -918,6 +930,16 @@ function closeModal() {
     pendingAction = null;
 }
 
+function showNotice(message, title) {
+    document.getElementById('notice-title').textContent = title || 'Notice';
+    document.getElementById('notice-message').textContent = message || '';
+    document.getElementById('notice-modal').classList.remove('hidden');
+}
+
+function closeNoticeModal() {
+    document.getElementById('notice-modal').classList.add('hidden');
+}
+
 async function executeAction(action) {
     closeModal();
     try {
@@ -928,12 +950,12 @@ async function executeAction(action) {
             // Show brief feedback
             const msg = action === 'shutdown' ? 'Shutting down...' :
                         action === 'reboot' ? 'Rebooting...' : data.message;
-            alert(msg);
+            showNotice(msg, 'Success');
         } else {
-            alert('Error: ' + data.message);
+            showNotice('Error: ' + data.message, 'Error');
         }
     } catch (e) {
-        alert('Request failed');
+        showNotice('Request failed', 'Error');
     }
 }
 
@@ -1115,7 +1137,7 @@ function startTunnelPoll() {
 async function openTunnelInvoiceFlow() {
     const days = parseInt(document.getElementById('tunnel-days-input').value || '0', 10);
     if (!days || days <= 0) {
-        alert('Days must be greater than zero');
+        showNotice('Days must be greater than zero', 'Validation');
         return;
     }
     const hasTunnel = tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id;
@@ -1128,7 +1150,7 @@ async function openTunnelInvoiceFlow() {
         });
         const data = await resp.json();
         if (!resp.ok || data.status !== 'ok') {
-            alert('Error: ' + (data.message || 'request failed'));
+            showNotice('Error: ' + (data.message || 'request failed'), 'Error');
             return;
         }
         renderTunnel({
@@ -1140,7 +1162,7 @@ async function openTunnelInvoiceFlow() {
         openTunnelInvoiceModal(data.invoice.payment_request);
         startTunnelPoll();
     } catch (e) {
-        alert('Invoice request failed');
+        showNotice('Invoice request failed', 'Error');
     }
 }
 
@@ -1149,12 +1171,12 @@ async function startTunnelService() {
         const resp = await fetch('/box/api/tunnel/start', { method: 'POST' });
         const data = await resp.json();
         if (!resp.ok || data.status !== 'ok') {
-            alert('Error: ' + (data.message || 'failed to start service'));
+            showNotice('Error: ' + (data.message || 'failed to start service'), 'Error');
             return;
         }
         await fetchTunnelStatus();
     } catch (e) {
-        alert('Failed to start tunnel service');
+        showNotice('Failed to start tunnel service', 'Error');
     }
 }
 
@@ -1163,12 +1185,12 @@ async function stopTunnelService() {
         const resp = await fetch('/box/api/tunnel/stop', { method: 'POST' });
         const data = await resp.json();
         if (!resp.ok || data.status !== 'ok') {
-            alert('Error: ' + (data.message || 'failed to stop service'));
+            showNotice('Error: ' + (data.message || 'failed to stop service'), 'Error');
             return;
         }
         await fetchTunnelStatus();
     } catch (e) {
-        alert('Failed to stop tunnel service');
+        showNotice('Failed to stop tunnel service', 'Error');
     }
 }
 
@@ -1182,7 +1204,7 @@ async function copyTunnelScript() {
         btn.textContent = 'Copied';
         setTimeout(() => { btn.textContent = old; }, 1500);
     } catch (e) {
-        alert('Failed to copy connect script');
+        showNotice('Failed to copy connect script', 'Error');
     }
 }
 
@@ -1428,13 +1450,13 @@ function showRestoreView(id) {
 async function startRestore() {
     const fileInput = document.getElementById('restore-file');
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Please select a backup file.');
+        showNotice('Please select a backup file.', 'Validation');
         return;
     }
 
     const file = fileInput.files[0];
     if (!file.name.endsWith('.zip')) {
-        alert('Please select a .zip file.');
+        showNotice('Please select a .zip file.', 'Validation');
         return;
     }
 
