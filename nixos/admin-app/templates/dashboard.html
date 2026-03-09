@@ -937,8 +937,6 @@ async function fetchStats() {
 // Initial fetch + poll every 10s
 fetchStats();
 setInterval(fetchStats, 10000);
-fetchTunnelStatus();
-setInterval(fetchTunnelStatus, 5000);
 
 // ── LNbits HTTP Status Polling (every 2s) ─────────────────────
 async function updateLnbitsStatus() {
@@ -983,8 +981,48 @@ async function updateLnbitsStatus() {
     }
 }
 
-updateLnbitsStatus();
-setInterval(updateLnbitsStatus, 2000);
+const TUNNEL_POLL_FAST_MS = 5000;
+const TUNNEL_POLL_SLOW_MS = 30000;
+const LNBITS_POLL_MS = 15000;
+const HIDDEN_TAB_POLL_MS = 60000;
+let tunnelPollLoopTimer = null;
+let lnbitsPollLoopTimer = null;
+
+function nextTunnelPollDelay() {
+    if (document.hidden) return HIDDEN_TAB_POLL_MS;
+    const hasPending = !!(tunnelState && tunnelState.pending_invoice);
+    return hasPending ? TUNNEL_POLL_FAST_MS : TUNNEL_POLL_SLOW_MS;
+}
+
+function nextLnbitsPollDelay() {
+    return document.hidden ? HIDDEN_TAB_POLL_MS : LNBITS_POLL_MS;
+}
+
+async function runTunnelPollLoop() {
+    await fetchTunnelStatus();
+    tunnelPollLoopTimer = setTimeout(runTunnelPollLoop, nextTunnelPollDelay());
+}
+
+async function runLnbitsPollLoop() {
+    await updateLnbitsStatus();
+    lnbitsPollLoopTimer = setTimeout(runLnbitsPollLoop, nextLnbitsPollDelay());
+}
+
+function restartStatusPollLoops() {
+    if (tunnelPollLoopTimer) {
+        clearTimeout(tunnelPollLoopTimer);
+        tunnelPollLoopTimer = null;
+    }
+    if (lnbitsPollLoopTimer) {
+        clearTimeout(lnbitsPollLoopTimer);
+        lnbitsPollLoopTimer = null;
+    }
+    runTunnelPollLoop();
+    runLnbitsPollLoop();
+}
+
+restartStatusPollLoops();
+document.addEventListener('visibilitychange', restartStatusPollLoops);
 
 // ── Actions ────────────────────────────────────────────────────
 let pendingAction = null;
@@ -1167,30 +1205,37 @@ function setTunnelStatusDot(status) {
 
 function renderTunnel(data) {
     tunnelState = data;
+    const el = (id) => document.getElementById(id);
     const current = data.current_tunnel || {};
     const tunnelStatusRaw = current.status || 'unknown';
     const tunnelStatusLabel = (tunnelStatusRaw === 'pending') ? 'pending payment' : tunnelStatusRaw;
     const hasTunnel = !!current.tunnel_id;
     const hasPending = !!data.pending_invoice;
 
-    document.getElementById('tunnel-client-id').textContent = data.client_id || '--';
-    document.getElementById('tunnel-remote-port').textContent = current.remote_port || '--';
-    document.getElementById('tunnel-expires-at').textContent = formatTunnelDate(current.expires_at);
-    document.getElementById('tunnel-service-status').textContent = 'service: ' + serviceStatusLabel(data.service_status || '--');
-    document.getElementById('tunnel-status-text').textContent = hasTunnel ? tunnelStatusLabel : 'No tunnel yet';
+    if (el('tunnel-client-id')) el('tunnel-client-id').textContent = data.client_id || '--';
+    if (el('tunnel-remote-port')) el('tunnel-remote-port').textContent = current.remote_port || '--';
+    if (el('tunnel-expires-at')) el('tunnel-expires-at').textContent = formatTunnelDate(current.expires_at);
+    if (el('tunnel-service-status')) el('tunnel-service-status').textContent = 'service: ' + serviceStatusLabel(data.service_status || '--');
+    if (el('tunnel-status-text')) el('tunnel-status-text').textContent = hasTunnel ? tunnelStatusLabel : 'No tunnel yet';
     setTunnelStatusDot(tunnelStatusRaw);
     const tunnelServiceActive = (data.service_status || '') === 'active';
-    document.getElementById('tunnel-start-btn').classList.toggle('hidden', tunnelServiceActive);
-    document.getElementById('tunnel-stop-btn').classList.toggle('hidden', !tunnelServiceActive);
+    if (el('tunnel-start-btn')) el('tunnel-start-btn').classList.toggle('hidden', tunnelServiceActive);
+    if (el('tunnel-stop-btn')) el('tunnel-stop-btn').classList.toggle('hidden', !tunnelServiceActive);
     setServiceActionVisibility('tunnel', data.service_status || 'inactive', { hasTunnel });
 
-    const urlEl = document.getElementById('tunnel-public-url');
-    if (current.public_url) {
-        urlEl.href = current.public_url;
-        urlEl.textContent = current.public_url;
+    const urlEl = el('tunnel-public-url');
+    const publicUrl = (current.public_url || '').trim();
+    if (publicUrl) {
+        if (urlEl) {
+            urlEl.href = publicUrl;
+            urlEl.textContent = publicUrl;
+            urlEl.rel = 'noopener noreferrer';
+        }
     } else {
-        urlEl.href = '#';
-        urlEl.textContent = '--';
+        if (urlEl) {
+            urlEl.href = '#';
+            urlEl.textContent = '--';
+        }
     }
 
     if (tunnelInvoiceLoading) {
@@ -1198,21 +1243,33 @@ function renderTunnel(data) {
     } else {
         setTunnelInvoiceButtonLoading(false);
     }
-    document.getElementById('tunnel-copy-script-btn').disabled = !data.connect_script;
-    document.getElementById('tunnel-copy-script-btn').classList.toggle('opacity-50', !data.connect_script);
-    document.getElementById('tunnel-days-section').classList.toggle('hidden', hasPending);
-    document.getElementById('tunnel-pending-row').classList.toggle('hidden', !hasPending);
-    document.getElementById('tunnel-pending-row').classList.toggle('flex', hasPending);
-    document.getElementById('svc-tunnel-dot').className = 'w-2.5 h-2.5 rounded-full ' + svcColor(data.service_status || 'inactive');
-    document.getElementById('svc-tunnel-status').textContent = serviceStatusLabel(data.service_status || 'unknown');
-    document.getElementById('svc-tunnel-restart-btn').disabled = !hasTunnel;
-    document.getElementById('svc-tunnel-restart-btn').classList.toggle('opacity-50', !hasTunnel);
-    document.getElementById('svc-tunnel-start-btn').disabled = !hasTunnel;
-    document.getElementById('svc-tunnel-start-btn').classList.toggle('opacity-50', !hasTunnel);
-    document.getElementById('svc-tunnel-stop-btn').disabled = !hasTunnel;
-    document.getElementById('svc-tunnel-stop-btn').classList.toggle('opacity-50', !hasTunnel);
-    document.getElementById('svc-tunnel-create-btn').disabled = hasPending;
-    document.getElementById('svc-tunnel-create-btn').classList.toggle('opacity-50', hasPending);
+    if (el('tunnel-copy-script-btn')) {
+        el('tunnel-copy-script-btn').disabled = !data.connect_script;
+        el('tunnel-copy-script-btn').classList.toggle('opacity-50', !data.connect_script);
+    }
+    if (el('tunnel-days-section')) el('tunnel-days-section').classList.toggle('hidden', hasPending);
+    if (el('tunnel-pending-row')) {
+        el('tunnel-pending-row').classList.toggle('hidden', !hasPending);
+        el('tunnel-pending-row').classList.toggle('flex', hasPending);
+    }
+    if (el('svc-tunnel-dot')) el('svc-tunnel-dot').className = 'w-2.5 h-2.5 rounded-full ' + svcColor(data.service_status || 'inactive');
+    if (el('svc-tunnel-status')) el('svc-tunnel-status').textContent = serviceStatusLabel(data.service_status || 'unknown');
+    if (el('svc-tunnel-restart-btn')) {
+        el('svc-tunnel-restart-btn').disabled = !hasTunnel;
+        el('svc-tunnel-restart-btn').classList.toggle('opacity-50', !hasTunnel);
+    }
+    if (el('svc-tunnel-start-btn')) {
+        el('svc-tunnel-start-btn').disabled = !hasTunnel;
+        el('svc-tunnel-start-btn').classList.toggle('opacity-50', !hasTunnel);
+    }
+    if (el('svc-tunnel-stop-btn')) {
+        el('svc-tunnel-stop-btn').disabled = !hasTunnel;
+        el('svc-tunnel-stop-btn').classList.toggle('opacity-50', !hasTunnel);
+    }
+    if (el('svc-tunnel-create-btn')) {
+        el('svc-tunnel-create-btn').disabled = hasPending;
+        el('svc-tunnel-create-btn').classList.toggle('opacity-50', hasPending);
+    }
 
     if (!hasPending) {
         stopTunnelPoll();
