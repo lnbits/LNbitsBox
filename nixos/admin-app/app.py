@@ -1188,7 +1188,7 @@ def api_tunnel_start():
             ["systemctl", "restart", f"{TUNNEL_SERVICE_NAME}.service"],
             check=True, capture_output=True, timeout=20
         )
-        return jsonify({"status": "ok", "message": "Reverse tunnel service restarted"})
+        return jsonify({"status": "ok", "message": "Tunnel service restarted"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
     except Exception as e:
@@ -1206,7 +1206,7 @@ def api_tunnel_stop():
             ["systemctl", "stop", f"{TUNNEL_SERVICE_NAME}.service"],
             check=True, capture_output=True, timeout=20
         )
-        return jsonify({"status": "ok", "message": "Reverse tunnel service stopped"})
+        return jsonify({"status": "ok", "message": "Tunnel service stopped"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
     except Exception as e:
