@@ -67,15 +67,17 @@
     {# ── Reverse SSH Tunnel ── #}
     <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 mb-6 transition-all duration-500" id="tunnel-card">
         <div class="flex items-center justify-between mb-3">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Reverse SSH Tunnel</div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Tunnel Me Out</div>
             <span class="text-xs font-mono text-ln-muted" id="tunnel-service-status">service: --</span>
+        </div>
+
+        <div class="text-ln-muted text-sm font-mono mb-3">
+            Access your LNbits from anywhere. Perfect for using your LNbitsBox when you're away from home, your business, or need to use LNbits anywhere outside your local network.
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2 text-sm font-mono">
-                <div><span class="text-ln-muted">Session key:</span> <span class="text-ln-text" id="tunnel-client-id">--</span></div>
-                <div><span class="text-ln-muted">Public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
-                <div><span class="text-ln-muted">Port:</span> <span id="tunnel-remote-port">--</span></div>
+                <div><span class="text-ln-muted">Your public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
                 <div><span class="text-ln-muted">Expires:</span> <span id="tunnel-expires-at">--</span></div>
                 <div class="flex items-center gap-2">
                     <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="tunnel-status-dot"></div>
@@ -83,7 +85,7 @@
                 </div>
             </div>
             <div>
-                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Days</label>
+                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Add days to my connection</label>
                 <div class="flex gap-2 mb-3">
                     <input type="number" min="1" step="1" id="tunnel-days-input"
                            class="w-24 bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
@@ -96,18 +98,13 @@
                 <div class="flex gap-2">
                     <button onclick="startTunnelService()"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Start / Restart
+                        Start / Restart Tunnel
                     </button>
                     <button onclick="stopTunnelService()"
                             class="text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-red-400/30">
-                        Stop
+                        Stop Tunnel
                     </button>
-                    <button id="tunnel-copy-script-btn" onclick="copyTunnelScript()"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Copy Connect Script
-                    </button>
-                </div>
-                <p class="text-ln-muted text-xs font-mono mt-2">Only one tunnel is managed. Renewals extend the same URL.</p>
+                    </div>
             </div>
         </div>
     </div>
