@@ -107,6 +107,13 @@
                         Copy Connect Script
                     </button>
                 </div>
+                <div id="tunnel-pending-row" class="hidden items-center gap-2 mt-3">
+                    <span class="text-amber-400 text-xs font-mono uppercase tracking-wider">Pending payment</span>
+                    <button onclick="payPendingTunnelInvoice()"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                        Pay Invoice
+                    </button>
+                </div>
                 <p class="text-ln-muted text-xs font-mono mt-2">Only one tunnel is managed. Renewals extend the same URL.</p>
             </div>
         </div>
@@ -977,13 +984,10 @@ function renderTunnel(data) {
     document.getElementById('tunnel-invoice-btn').textContent = hasTunnel ? 'Add Days' : 'Create Tunnel';
     document.getElementById('tunnel-copy-script-btn').disabled = !data.connect_script;
     document.getElementById('tunnel-copy-script-btn').classList.toggle('opacity-50', !data.connect_script);
+    document.getElementById('tunnel-pending-row').classList.toggle('hidden', !hasPending);
+    document.getElementById('tunnel-pending-row').classList.toggle('flex', hasPending);
 
-    if (hasPending) {
-        const modal = document.getElementById('tunnel-invoice-modal');
-        if (modal.classList.contains('hidden')) {
-            openTunnelInvoiceModal(data.pending_invoice.payment_request);
-        }
-    } else {
+    if (!hasPending) {
         stopTunnelPoll();
     }
 }
@@ -1018,6 +1022,15 @@ function openTunnelInvoiceModal(bolt11) {
 function closeTunnelInvoiceModal() {
     document.getElementById('tunnel-invoice-modal').classList.add('hidden');
     stopTunnelPoll();
+}
+
+function payPendingTunnelInvoice() {
+    const pending = tunnelState && tunnelState.pending_invoice;
+    if (!pending || !pending.payment_request) {
+        return;
+    }
+    openTunnelInvoiceModal(pending.payment_request);
+    startTunnelPoll();
 }
 
 async function copyTunnelInvoice() {
