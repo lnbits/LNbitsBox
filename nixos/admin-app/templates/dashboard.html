@@ -2,6 +2,7 @@
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -61,6 +62,113 @@
                 Copy
             </button>
         </div>
+    </div>
+
+    {# ── Remote Tunnel ── #}
+    <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 mb-6" id="tunnel-card">
+        <div class="flex items-center justify-between mb-3">
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Remote Tunnel</div>
+            <span id="tunnel-status-badge" class="text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border text-ln-muted border-ln-border bg-transparent">none</span>
+        </div>
+
+        {# None / Expired state #}
+        <div id="tunnel-section-none">
+            <p class="text-ln-muted text-xs font-mono mb-3">Purchase a reverse SSH tunnel to make your LNbits publicly accessible via a stable HTTPS subdomain.</p>
+            <div class="flex items-center gap-2">
+                <input type="number" id="tunnel-days-input" value="7" min="1" max="365"
+                       class="w-20 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm rounded-lg px-2 py-1.5 text-center"/>
+                <span class="text-ln-muted text-xs font-mono">days</span>
+                <button onclick="createTunnel()"
+                        class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-1.5 px-4 rounded-lg transition-colors">
+                    Create Tunnel
+                </button>
+            </div>
+            <div id="tunnel-client-note" class="mt-2 text-ln-muted text-xs font-mono opacity-50"></div>
+        </div>
+
+        {# Pending / Invoice state #}
+        <div id="tunnel-section-pending" class="hidden">
+            <p class="text-ln-muted text-xs font-mono mb-3">Pay this Lightning invoice to activate your tunnel:</p>
+            <div class="flex flex-col items-start gap-3">
+                <canvas id="tunnel-qr" class="rounded-lg" style="width:180px;height:180px;"></canvas>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyTunnelInvoice()"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+                            id="tunnel-copy-invoice-btn">
+                        Copy Invoice
+                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                        <span class="text-amber-400 text-xs font-mono">Waiting for payment...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Active state (SSH stopped) #}
+        <div id="tunnel-section-active-stopped" class="hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-2 h-2 rounded-full bg-gray-500"></div>
+                <code class="text-sm font-mono text-ln-text flex-1 truncate" id="tunnel-url-stopped"></code>
+                <button onclick="copyTunnelUrl()" class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-2 py-0.5 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0">Copy</button>
+            </div>
+            <div class="text-ln-muted text-xs font-mono mb-3" id="tunnel-expires-stopped"></div>
+            <button onclick="startTunnel()"
+                    class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-1.5 px-4 rounded-lg transition-colors">
+                Start Tunnel
+            </button>
+        </div>
+
+        {# Active state (SSH running) #}
+        <div id="tunnel-section-active-running" class="hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <code class="text-sm font-mono text-ln-text flex-1 truncate" id="tunnel-url-running"></code>
+                <button onclick="copyTunnelUrl()" class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-2 py-0.5 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0">Copy</button>
+                <a id="tunnel-open-link" href="#" target="_blank" rel="noopener"
+                   class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-2 py-0.5 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0">Open ↗</a>
+            </div>
+            <div class="text-ln-muted text-xs font-mono mb-3" id="tunnel-expires-running"></div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="stopTunnel()"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Stop Tunnel
+                </button>
+                <input type="number" id="tunnel-renew-days-input" value="7" min="1" max="365"
+                       class="w-16 bg-ln-surface border border-ln-border text-ln-text font-mono text-xs rounded-lg px-2 py-1.5 text-center"/>
+                <span class="text-ln-muted text-xs font-mono">days</span>
+                <button onclick="renewTunnel()"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Add Days
+                </button>
+            </div>
+        </div>
+
+        {# Renewal pending state #}
+        <div id="tunnel-section-renewal-pending" class="hidden">
+            <div class="flex items-center gap-2 mb-1">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <code class="text-sm font-mono text-ln-text flex-1 truncate" id="tunnel-url-renewal"></code>
+            </div>
+            <p class="text-ln-muted text-xs font-mono mb-3">Pay this invoice to extend your tunnel:</p>
+            <div class="flex flex-col items-start gap-3">
+                <canvas id="tunnel-renewal-qr" class="rounded-lg" style="width:180px;height:180px;"></canvas>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyTunnelInvoice()"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+                            id="tunnel-copy-renewal-btn">
+                        Copy Invoice
+                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                        <span class="text-amber-400 text-xs font-mono">Waiting for payment...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Error display #}
+        <div id="tunnel-error" class="hidden mt-3 text-red-400 text-xs font-mono"></div>
     </div>
 
     {# ── LNbits Database + System Update row ── #}
@@ -1314,5 +1422,237 @@ function startReconnect() {
         }
     } catch (e) {}
 })();
+
+// ── Remote Tunnel ──────────────────────────────────────────────
+let tunnelPaymentRequest = '';
+let tunnelPollTimer = null;
+let tunnelPrevStatus = null;
+
+const TUNNEL_SECTIONS = [
+    'tunnel-section-none',
+    'tunnel-section-pending',
+    'tunnel-section-active-stopped',
+    'tunnel-section-active-running',
+    'tunnel-section-renewal-pending',
+];
+
+function showTunnelSection(id) {
+    for (const s of TUNNEL_SECTIONS) {
+        document.getElementById(s).classList.toggle('hidden', s !== id);
+    }
+}
+
+function tunnelStatusBadge(status, running) {
+    const el = document.getElementById('tunnel-status-badge');
+    const configs = {
+        none:    { text: 'none',    cls: 'text-ln-muted border-ln-border' },
+        pending: { text: 'pending', cls: 'text-amber-400 border-amber-400/30 bg-amber-400/5' },
+        active:  { text: running ? 'running' : 'stopped',
+                   cls: running ? 'text-emerald-400 border-emerald-400/30 bg-emerald-400/5'
+                                : 'text-ln-muted border-ln-border' },
+        expired: { text: 'expired', cls: 'text-red-400 border-red-400/30 bg-red-400/5' },
+    };
+    const cfg = configs[status] || configs.none;
+    el.textContent = cfg.text;
+    el.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border ' + cfg.cls;
+}
+
+function renderTunnelState(state) {
+    const status = state.tunnel_status || 'none';
+    const running = !!state.process_running;
+    const pending = state.pending;
+    tunnelStatusBadge(status, running);
+
+    // Show client note hint
+    const noteEl = document.getElementById('tunnel-client-note');
+    if (state.client_note) {
+        noteEl.textContent = 'Box ID: ' + state.client_note;
+    }
+
+    const errEl = document.getElementById('tunnel-error');
+    errEl.classList.add('hidden');
+
+    if (status === 'none' || status === 'expired') {
+        showTunnelSection('tunnel-section-none');
+        stopTunnelPoll();
+
+    } else if (status === 'pending') {
+        const hasRenewalUrl = !!(state.public_url);
+        const isRenewal = hasRenewalUrl && pending && !pending.ssh_private_key;
+        tunnelPaymentRequest = (pending && pending.payment_request) || '';
+
+        if (isRenewal) {
+            showTunnelSection('tunnel-section-renewal-pending');
+            document.getElementById('tunnel-url-renewal').textContent = state.public_url || '';
+            renderQR('tunnel-renewal-qr', tunnelPaymentRequest);
+        } else {
+            showTunnelSection('tunnel-section-pending');
+            renderQR('tunnel-qr', tunnelPaymentRequest);
+        }
+        startTunnelPoll();
+
+    } else if (status === 'active') {
+        stopTunnelPoll();
+        const url = state.public_url || '';
+        const expires = state.expires_at ? new Date(state.expires_at).toUTCString().replace(' GMT','  UTC') : '';
+        if (running) {
+            showTunnelSection('tunnel-section-active-running');
+            document.getElementById('tunnel-url-running').textContent = url;
+            document.getElementById('tunnel-expires-running').textContent = expires ? 'Expires: ' + expires : '';
+            const openLink = document.getElementById('tunnel-open-link');
+            openLink.href = url;
+        } else {
+            showTunnelSection('tunnel-section-active-stopped');
+            document.getElementById('tunnel-url-stopped').textContent = url;
+            document.getElementById('tunnel-expires-stopped').textContent = expires ? 'Expires: ' + expires : '';
+        }
+    }
+}
+
+function renderQR(canvasId, text) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !text) return;
+    try {
+        QRCode.toCanvas(canvas, text.toUpperCase(), { width: 180, margin: 1 }, function(err) {});
+    } catch (e) {}
+}
+
+async function loadTunnelState() {
+    try {
+        const resp = await fetch('/box/api/tunnel/state');
+        if (!resp.ok) return;
+        const state = await resp.json();
+        renderTunnelState(state);
+    } catch (e) {}
+}
+
+async function createTunnel() {
+    const days = parseInt(document.getElementById('tunnel-days-input').value, 10) || 1;
+    try {
+        const resp = await fetch('/box/api/tunnel/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({days}),
+        });
+        const state = await resp.json();
+        if (state.error) {
+            showTunnelError(state.error);
+            return;
+        }
+        renderTunnelState(state);
+    } catch (e) {
+        showTunnelError('Request failed: ' + e);
+    }
+}
+
+function startTunnelPoll() {
+    if (tunnelPollTimer) return;
+    tunnelPollTimer = setInterval(pollTunnelPayment, 3000);
+}
+
+function stopTunnelPoll() {
+    if (tunnelPollTimer) {
+        clearInterval(tunnelPollTimer);
+        tunnelPollTimer = null;
+    }
+}
+
+async function pollTunnelPayment() {
+    try {
+        const resp = await fetch('/box/api/tunnel/poll', { method: 'POST' });
+        if (!resp.ok) return;
+        const state = await resp.json();
+        if (state.tunnel_status !== 'pending') {
+            stopTunnelPoll();
+        }
+        renderTunnelState(state);
+    } catch (e) {}
+}
+
+async function startTunnel() {
+    try {
+        await fetch('/box/api/tunnel/start', { method: 'POST' });
+        await loadTunnelState();
+    } catch (e) {
+        showTunnelError('Failed to start tunnel');
+    }
+}
+
+async function stopTunnel() {
+    try {
+        await fetch('/box/api/tunnel/stop', { method: 'POST' });
+        await loadTunnelState();
+    } catch (e) {
+        showTunnelError('Failed to stop tunnel');
+    }
+}
+
+async function renewTunnel() {
+    const days = parseInt(document.getElementById('tunnel-renew-days-input').value, 10) || 1;
+    try {
+        const resp = await fetch('/box/api/tunnel/renew', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({days}),
+        });
+        const state = await resp.json();
+        if (state.error) {
+            showTunnelError(state.error);
+            return;
+        }
+        renderTunnelState(state);
+    } catch (e) {
+        showTunnelError('Request failed: ' + e);
+    }
+}
+
+async function copyTunnelInvoice() {
+    if (!tunnelPaymentRequest) return;
+    await copyToClipboard(tunnelPaymentRequest, 'tunnel-copy-invoice-btn', 'Copy Invoice');
+    await copyToClipboard(tunnelPaymentRequest, 'tunnel-copy-renewal-btn', 'Copy Invoice');
+}
+
+async function copyTunnelUrl() {
+    const urlEl = document.getElementById('tunnel-url-running') || document.getElementById('tunnel-url-stopped');
+    const url = urlEl ? urlEl.textContent : '';
+    if (!url) return;
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+}
+
+async function copyToClipboard(text, btnId, resetLabel) {
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = resetLabel; }, 1500);
+    }
+}
+
+function showTunnelError(msg) {
+    const el = document.getElementById('tunnel-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+}
+
+// Load tunnel state on page load
+loadTunnelState();
 </script>
 {% endblock %}

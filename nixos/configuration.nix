@@ -133,10 +133,17 @@
     ./wifi-config.nix
     ./welcome-screen.nix
     ./update-service.nix
+    ./tunnel-service.nix
   ];
 
   # Auto-migration for existing LNbits installations
   # If database exists but no marker file, create marker to skip wizard
+  system.activationScripts.lnbitsbox-tunnel-dir = ''
+    mkdir -p /var/lib/lnbitsbox-tunnel
+    chmod 700 /var/lib/lnbitsbox-tunnel
+    chown root:root /var/lib/lnbitsbox-tunnel
+  '';
+
   system.activationScripts.lnbits-migration = ''
     if [ -f /var/lib/lnbits/database.sqlite3 ] && [ ! -f /var/lib/lnbits/.configured ]; then
       echo "Existing LNbits installation detected, auto-migrating..."

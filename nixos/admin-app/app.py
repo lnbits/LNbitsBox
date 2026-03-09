@@ -3,6 +3,7 @@
 
 import json
 import os
+import secrets
 import sys
 import tempfile
 import time
@@ -43,6 +44,15 @@ LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
 GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
+
+# Tunnel constants
+LNPRO_API_BASE = "https://lnbits.lnpro.xyz/reverse_proxy/api/v1"
+LNPRO_PUBLIC_ID = "aE4CBGPeRqcJufpWDVh53G"
+LNPRO_LOCAL_PORT = 5000
+TUNNEL_STATE_DIR = Path("/var/lib/lnbitsbox-tunnel")
+TUNNEL_KEY_PATH = TUNNEL_STATE_DIR / "key"
+TUNNEL_COMMAND_PATH = TUNNEL_STATE_DIR / "command"
+TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
 
 # Stats history — 2 hours at 30s intervals = 240 data points
 STATS_INTERVAL = 30
@@ -934,6 +944,303 @@ def api_update_status():
         "log_lines": log_lines,
         "target_version": target_version,
     })
+
+
+# ── Tunnel Helpers ───────────────────────────────────────────────
+
+def get_tunnel_state() -> dict:
+    """Load tunnel state from JSON file, return empty defaults if not found."""
+    try:
+        return json.loads(TUNNEL_STATE_FILE.read_text())
+    except Exception:
+        return {
+            "client_note": None,
+            "tunnel_id": None,
+            "subdomain": None,
+            "public_url": None,
+            "remote_port": None,
+            "expires_at": None,
+            "tunnel_status": "none",
+            "pending": None,
+        }
+
+
+def save_tunnel_state(state: dict) -> None:
+    """Write tunnel state to JSON. Creates dir if needed."""
+    TUNNEL_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    TUNNEL_STATE_FILE.write_text(json.dumps(state, indent=2))
+
+
+def get_or_create_client_note() -> str:
+    """Get existing client_note from state or generate a new 12-char urlsafe ID."""
+    state = get_tunnel_state()
+    if state.get("client_note"):
+        return state["client_note"]
+    note = secrets.token_urlsafe(9)  # ~12 chars
+    state["client_note"] = note
+    save_tunnel_state(state)
+    return note
+
+
+def write_tunnel_files(ssh_private_key: str, ssh_command: str) -> None:
+    """Write key (chmod 600) and adjusted command to state dir files."""
+    TUNNEL_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    TUNNEL_KEY_PATH.write_text(ssh_private_key)
+    TUNNEL_KEY_PATH.chmod(0o600)
+
+    # Replace any '-i <keyfile>' reference with our absolute key path,
+    # and inject keepalive options if not already present.
+    import re
+    cmd = ssh_command
+    # Replace -i flag if present
+    cmd = re.sub(r'-i\s+\S+', f'-i {TUNNEL_KEY_PATH}', cmd)
+    if f'-i {TUNNEL_KEY_PATH}' not in cmd:
+        cmd = cmd.replace('ssh ', f'ssh -i {TUNNEL_KEY_PATH} ', 1)
+    # Add options after 'ssh'
+    if 'StrictHostKeyChecking' not in cmd:
+        cmd = cmd.replace('ssh ', 'ssh -o StrictHostKeyChecking=no ', 1)
+    if 'ServerAliveInterval' not in cmd:
+        cmd = cmd.replace('ssh ', 'ssh -o ServerAliveInterval=30 ', 1)
+    if 'ExitOnForwardFailure' not in cmd:
+        cmd = cmd.replace('ssh ', 'ssh -o ExitOnForwardFailure=yes ', 1)
+
+    TUNNEL_COMMAND_PATH.write_text(cmd)
+
+
+def clear_tunnel_files() -> None:
+    """Remove key and command files (disables auto-start on next reboot)."""
+    for p in (TUNNEL_KEY_PATH, TUNNEL_COMMAND_PATH):
+        try:
+            p.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def get_tunnel_process_running() -> bool:
+    """Return True if lnbitsbox-tunnel.service is active."""
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", "lnbitsbox-tunnel.service"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.stdout.strip() == "active"
+    except Exception:
+        return False
+
+
+# ── Tunnel API Endpoints ─────────────────────────────────────────
+
+@app.route("/box/api/tunnel/state")
+@login_required
+def api_tunnel_state():
+    state = get_tunnel_state()
+    state["process_running"] = get_tunnel_process_running() if not DEV_MODE else False
+    return jsonify(state)
+
+
+@app.route("/box/api/tunnel/create", methods=["POST"])
+@login_required
+def api_tunnel_create():
+    data = request.get_json(silent=True) or {}
+    days = int(data.get("days", 1))
+    public_id = data.get("public_id", LNPRO_PUBLIC_ID)
+    client_note = get_or_create_client_note()
+
+    if DEV_MODE:
+        state = get_tunnel_state()
+        state["client_note"] = client_note
+        state["tunnel_status"] = "pending"
+        state["pending"] = {
+            "payment_request": "lnbcrt500u1pn7vwvhpp5mock_invoice_for_dev_mode_testing_only",
+            "payment_hash": "mockhash123456789",
+            "tunnel_id": "mock-tunnel-id-001",
+            "subdomain": "devtunnel123",
+            "ssh_private_key": "-----BEGIN OPENSSH PRIVATE KEY-----\nmock\n-----END OPENSSH PRIVATE KEY-----",
+            "ssh_command": "ssh -i /tmp/key -N -R 10006:localhost:5000 user@lnpro.xyz",
+        }
+        save_tunnel_state(state)
+        state["process_running"] = False
+        return jsonify(state)
+
+    try:
+        import requests as req_lib
+        resp = req_lib.post(
+            f"{LNPRO_API_BASE}/tunnels",
+            json={"public_id": public_id, "days": days, "client_note": client_note},
+            timeout=15,
+        )
+        if not resp.ok:
+            return jsonify({"error": f"lnpro.xyz error: {resp.status_code} {resp.text}"}), 502
+        result = resp.json()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    state = get_tunnel_state()
+    state["client_note"] = client_note
+    state["tunnel_status"] = "pending"
+    state["pending"] = {
+        "payment_request": result.get("payment_request", ""),
+        "payment_hash": result.get("payment_hash", ""),
+        "tunnel_id": result.get("tunnel_id", ""),
+        "subdomain": result.get("subdomain", ""),
+        "ssh_private_key": result.get("ssh_private_key", ""),
+        "ssh_command": result.get("ssh_command", ""),
+    }
+    save_tunnel_state(state)
+    state["process_running"] = False
+    return jsonify(state)
+
+
+@app.route("/box/api/tunnel/poll", methods=["POST"])
+@login_required
+def api_tunnel_poll():
+    state = get_tunnel_state()
+    client_note = state.get("client_note")
+    if not client_note:
+        return jsonify({"error": "No client_note set"}), 400
+
+    if DEV_MODE:
+        # Simulate payment received after first real poll attempt
+        pending = state.get("pending") or {}
+        if pending:
+            state["tunnel_status"] = "active"
+            state["tunnel_id"] = pending.get("tunnel_id", "mock-tunnel-id-001")
+            state["subdomain"] = pending.get("subdomain", "devtunnel123")
+            state["public_url"] = f"https://{state['subdomain']}.lnpro.xyz"
+            state["remote_port"] = 10006
+            state["expires_at"] = "2026-04-09T12:00:00Z"
+            state["pending"] = None
+            save_tunnel_state(state)
+        state["process_running"] = False
+        return jsonify(state)
+
+    try:
+        import requests as req_lib
+        resp = req_lib.get(
+            f"{LNPRO_API_BASE}/tunnels/client/{client_note}",
+            timeout=10,
+        )
+        if not resp.ok:
+            return jsonify({"error": f"lnpro.xyz error: {resp.status_code}"}), 502
+        tunnels = resp.json()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    if not tunnels:
+        state["process_running"] = get_tunnel_process_running()
+        return jsonify(state)
+
+    tunnel = tunnels[0]
+    pending = state.get("pending") or {}
+
+    state["tunnel_status"] = "active"
+    state["tunnel_id"] = tunnel.get("id", "")
+    state["subdomain"] = tunnel.get("subdomain", "")
+    state["public_url"] = f"https://{state['subdomain']}.lnpro.xyz"
+    state["remote_port"] = tunnel.get("remote_port", 0)
+    state["expires_at"] = tunnel.get("expires_at", "")
+
+    # Write SSH files if we have keys from pending
+    ssh_key = pending.get("ssh_private_key", "") or tunnel.get("ssh_private_key", "")
+    ssh_cmd = pending.get("ssh_command", "") or tunnel.get("ssh_command", "")
+    if ssh_key and ssh_cmd:
+        write_tunnel_files(ssh_key, ssh_cmd)
+
+    state["pending"] = None
+    save_tunnel_state(state)
+
+    # Auto-start the tunnel service
+    try:
+        subprocess.run(
+            ["systemctl", "start", "lnbitsbox-tunnel.service"],
+            capture_output=True, timeout=10,
+        )
+    except Exception:
+        pass
+
+    state["process_running"] = get_tunnel_process_running()
+    return jsonify(state)
+
+
+@app.route("/box/api/tunnel/start", methods=["POST"])
+@login_required
+def api_tunnel_start():
+    if DEV_MODE:
+        return jsonify({"status": "ok", "message": "DEV MODE: would start tunnel"})
+    try:
+        subprocess.run(
+            ["systemctl", "start", "lnbitsbox-tunnel.service"],
+            check=True, capture_output=True, timeout=10,
+        )
+        return jsonify({"status": "ok"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+
+
+@app.route("/box/api/tunnel/stop", methods=["POST"])
+@login_required
+def api_tunnel_stop():
+    if DEV_MODE:
+        return jsonify({"status": "ok", "message": "DEV MODE: would stop tunnel"})
+    try:
+        subprocess.run(
+            ["systemctl", "stop", "lnbitsbox-tunnel.service"],
+            check=True, capture_output=True, timeout=10,
+        )
+        return jsonify({"status": "ok"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+
+
+@app.route("/box/api/tunnel/renew", methods=["POST"])
+@login_required
+def api_tunnel_renew():
+    data = request.get_json(silent=True) or {}
+    days = int(data.get("days", 1))
+    state = get_tunnel_state()
+    tunnel_id = state.get("tunnel_id")
+    if not tunnel_id:
+        return jsonify({"error": "No active tunnel to renew"}), 400
+
+    if DEV_MODE:
+        state["tunnel_status"] = "pending"
+        state["pending"] = {
+            "payment_request": "lnbcrt250u1pn7renewal_mock_invoice_for_dev_mode",
+            "payment_hash": "renewalhash789",
+            "tunnel_id": tunnel_id,
+            "subdomain": state.get("subdomain", ""),
+            "ssh_private_key": "",
+            "ssh_command": "",
+        }
+        save_tunnel_state(state)
+        state["process_running"] = False
+        return jsonify(state)
+
+    try:
+        import requests as req_lib
+        resp = req_lib.put(
+            f"{LNPRO_API_BASE}/payments/public/{tunnel_id}",
+            json={"days": days},
+            timeout=15,
+        )
+        if not resp.ok:
+            return jsonify({"error": f"lnpro.xyz error: {resp.status_code} {resp.text}"}), 502
+        result = resp.json()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    state["tunnel_status"] = "pending"
+    state["pending"] = {
+        "payment_request": result.get("payment_request", ""),
+        "payment_hash": result.get("payment_hash", ""),
+        "tunnel_id": tunnel_id,
+        "subdomain": state.get("subdomain", ""),
+        "ssh_private_key": "",
+        "ssh_command": "",
+    }
+    save_tunnel_state(state)
+    state["process_running"] = get_tunnel_process_running()
+    return jsonify(state)
 
 
 if __name__ == "__main__":
