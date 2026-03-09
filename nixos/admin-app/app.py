@@ -3,6 +3,7 @@
 
 import json
 import os
+import shlex
 import sys
 import tempfile
 import time
@@ -18,12 +19,22 @@ from collections import deque
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
+from typing import Any
 
 from flask import (
     Flask, render_template, request, redirect,
     url_for, flash, session, jsonify, send_file
 )
 from flask_wtf.csrf import CSRFProtect
+from tunnel_utils import (
+    build_connect_script,
+    choose_invoice_action,
+    generate_client_id,
+    is_pending_invoice_paid,
+    read_json,
+    select_canonical_tunnel,
+    write_secure_json,
+)
 
 app = Flask(__name__, static_url_path="/box/static")
 app.secret_key = os.urandom(24)
@@ -43,6 +54,21 @@ LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
 GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
+TUNNEL_SERVICE_NAME = "lnbitsbox-reverse-tunnel"
+TUNNEL_API_BASE_URL = os.environ.get(
+    "LNBITSBOX_TUNNEL_API_BASE_URL",
+    "https://lnbits.lnpro.xyz/reverse_proxy/api/v1",
+).rstrip("/")
+TUNNEL_PUBLIC_ID = os.environ.get("LNBITSBOX_TUNNEL_PUBLIC_ID", "aE4CBGPeRqcJufpWDVh53G")
+TUNNEL_SSH_USER_FALLBACK = os.environ.get("LNBITSBOX_TUNNEL_SSH_USER", "ubuntu")
+TUNNEL_SSH_HOST_FALLBACK = os.environ.get("LNBITSBOX_TUNNEL_SSH_HOST", "lnpro.xyz")
+TUNNEL_LOCAL_PORT = int(os.environ.get("LNBITSBOX_TUNNEL_LOCAL_PORT", "5000"))
+TUNNEL_STATE_DIR = (
+    Path("/tmp/lnbitspi-test/tunnel") if DEV_MODE else Path("/var/lib/lnbitsbox-tunnel")
+)
+TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
+TUNNEL_KEY_FILE = TUNNEL_STATE_DIR / "reverse-proxy-key"
+TUNNEL_RUNTIME_ENV = TUNNEL_STATE_DIR / "runtime.env"
 
 # Stats history — 2 hours at 30s intervals = 240 data points
 STATS_INTERVAL = 30
@@ -53,6 +79,144 @@ stats_lock = threading.Lock()
 # WiFi connection state
 wifi_connect_status = {"status": "idle", "message": "", "ip": ""}
 wifi_connect_lock = threading.Lock()
+
+
+# ── Tunnel Helpers ──────────────────────────────────────────────────
+
+def _ensure_tunnel_state_dir():
+    TUNNEL_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(TUNNEL_STATE_DIR, 0o700)
+    except Exception:
+        pass
+
+
+def _load_tunnel_state() -> dict[str, Any]:
+    _ensure_tunnel_state_dir()
+    state = read_json(TUNNEL_STATE_FILE, default={})
+    if "client_id" not in state:
+        state["client_id"] = ""
+    if "current_tunnel" not in state:
+        state["current_tunnel"] = None
+    if "pending_invoice" not in state:
+        state["pending_invoice"] = None
+    return state
+
+
+def _save_tunnel_state(state: dict[str, Any]):
+    _ensure_tunnel_state_dir()
+    write_secure_json(TUNNEL_STATE_FILE, state, mode=0o600)
+
+
+def _get_or_create_tunnel_client_id() -> tuple[str, dict[str, Any]]:
+    state = _load_tunnel_state()
+    client_id = state.get("client_id", "")
+    if client_id:
+        return client_id, state
+
+    client_id = generate_client_id()
+    state["client_id"] = client_id
+    _save_tunnel_state(state)
+    return client_id, state
+
+
+def _tunnel_service_status() -> str:
+    if DEV_MODE:
+        return "inactive"
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", f"{TUNNEL_SERVICE_NAME}.service"],
+            capture_output=True, text=True, timeout=5
+        )
+        return result.stdout.strip() or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _lnpro_request(method: str, endpoint: str, json_body: dict[str, Any] | None = None):
+    import requests
+
+    url = f"{TUNNEL_API_BASE_URL}/{endpoint.lstrip('/')}"
+    return requests.request(method, url, json=json_body, timeout=20)
+
+
+def _normalize_tunnel(remote: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "tunnel_id": remote.get("tunnel_id"),
+        "subdomain": remote.get("subdomain"),
+        "remote_port": remote.get("remote_port"),
+        "ssh_user": remote.get("ssh_user") or TUNNEL_SSH_USER_FALLBACK,
+        "ssh_host": remote.get("ssh_host") or TUNNEL_SSH_HOST_FALLBACK,
+        "public_url": remote.get("public_url"),
+        "expires_at": remote.get("expires_at"),
+        "status": remote.get("status", "unknown"),
+        "client_note": remote.get("client_note"),
+    }
+
+
+def _sync_tunnel_state_from_remote(state: dict[str, Any], client_id: str) -> dict[str, Any]:
+    if DEV_MODE:
+        return state
+    try:
+        resp = _lnpro_request("GET", f"tunnels/client/{client_id}")
+        if not resp.ok:
+            return state
+        payload = resp.json()
+        if not isinstance(payload, list):
+            return state
+        canonical = select_canonical_tunnel(payload)
+        if canonical:
+            canonical_local = _normalize_tunnel(canonical)
+            state["current_tunnel"] = canonical_local
+            if is_pending_invoice_paid(state.get("pending_invoice"), canonical_local):
+                state["pending_invoice"] = None
+            _save_tunnel_state(state)
+    except Exception:
+        pass
+    return state
+
+
+def _write_key_file(private_key: str):
+    _ensure_tunnel_state_dir()
+    TUNNEL_KEY_FILE.write_text(private_key, encoding="utf-8")
+    os.chmod(TUNNEL_KEY_FILE, 0o600)
+
+
+def _read_key_file() -> str | None:
+    try:
+        return TUNNEL_KEY_FILE.read_text(encoding="utf-8")
+    except Exception:
+        return None
+
+
+def _runtime_env_content(tunnel: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            f"REMOTE_PORT={int(tunnel.get('remote_port', 0))}",
+            f"SSH_USER={shlex.quote(str(tunnel.get('ssh_user') or TUNNEL_SSH_USER_FALLBACK))}",
+            f"SSH_HOST={shlex.quote(str(tunnel.get('ssh_host') or TUNNEL_SSH_HOST_FALLBACK))}",
+            f"KEY_FILE={shlex.quote(str(TUNNEL_KEY_FILE))}",
+            f"LOCAL_PORT={TUNNEL_LOCAL_PORT}",
+            "AUTOSSH_GATETIME=0",
+            "AUTOSSH_POLL=30",
+            "AUTOSSH_FIRST_POLL=30",
+        ]
+    ) + "\n"
+
+
+def _write_runtime_env(tunnel: dict[str, Any]):
+    _ensure_tunnel_state_dir()
+    TUNNEL_RUNTIME_ENV.write_text(_runtime_env_content(tunnel), encoding="utf-8")
+    os.chmod(TUNNEL_RUNTIME_ENV, 0o600)
+
+
+def _tunnel_connect_script(tunnel: dict[str, Any] | None) -> str | None:
+    if not tunnel:
+        return None
+    private_key = _read_key_file()
+    if not private_key:
+        return None
+    return build_connect_script(private_key, tunnel, local_port=TUNNEL_LOCAL_PORT)
 
 
 # ── Network Helpers ─────────────────────────────────────────────────
@@ -794,6 +958,259 @@ def api_wifi_connect():
 def api_wifi_connect_status():
     with wifi_connect_lock:
         return jsonify(dict(wifi_connect_status))
+
+
+# ── Tunnel Endpoints ────────────────────────────────────────────
+
+@app.route("/box/api/tunnel/status")
+@login_required
+def api_tunnel_status():
+    client_id, state = _get_or_create_tunnel_client_id()
+    state = _sync_tunnel_state_from_remote(state, client_id)
+    current = state.get("current_tunnel")
+    pending = state.get("pending_invoice")
+    return jsonify({
+        "client_id": client_id,
+        "current_tunnel": current,
+        "pending_invoice": pending,
+        "service_status": _tunnel_service_status(),
+        "connect_script": _tunnel_connect_script(current),
+        "has_key": TUNNEL_KEY_FILE.exists(),
+    })
+
+
+@app.route("/box/api/tunnel/create-invoice", methods=["POST"])
+@login_required
+def api_tunnel_create_invoice():
+    data = request.get_json(silent=True) or {}
+    days = int(data.get("days") or 0)
+    if days <= 0:
+        return jsonify({"status": "error", "message": "Days must be greater than zero"}), 400
+
+    client_id, state = _get_or_create_tunnel_client_id()
+    state = _sync_tunnel_state_from_remote(state, client_id)
+    action = choose_invoice_action(state.get("current_tunnel"))
+    if action != "create":
+        return jsonify({"status": "error", "message": "Tunnel already exists. Use renewal."}), 409
+
+    if DEV_MODE:
+        now_iso = datetime.now().isoformat()
+        tunnel = {
+            "tunnel_id": "dev-tunnel-id",
+            "subdomain": "devtunnel",
+            "remote_port": 10005,
+            "ssh_user": TUNNEL_SSH_USER_FALLBACK,
+            "ssh_host": TUNNEL_SSH_HOST_FALLBACK,
+            "public_url": "https://devtunnel.lnpro.xyz",
+            "expires_at": now_iso,
+            "status": "pending",
+            "client_note": client_id,
+        }
+        _write_key_file("-----BEGIN OPENSSH PRIVATE KEY-----\nDEV\n-----END OPENSSH PRIVATE KEY-----\n")
+        state["current_tunnel"] = tunnel
+        state["pending_invoice"] = {
+            "action": "create",
+            "tunnel_id": tunnel["tunnel_id"],
+            "days": days,
+            "payment_hash": "dev-payment-hash",
+            "payment_request": "lnbc1devinvoice",
+            "created_at": now_iso,
+            "baseline_expires_at": tunnel.get("expires_at"),
+        }
+        _save_tunnel_state(state)
+        return jsonify({
+            "status": "ok",
+            "invoice": state["pending_invoice"],
+            "current_tunnel": tunnel,
+            "connect_script": _tunnel_connect_script(tunnel),
+        })
+
+    try:
+        resp = _lnpro_request("POST", "tunnels", {
+            "public_id": TUNNEL_PUBLIC_ID,
+            "days": days,
+            "client_note": client_id,
+        })
+        if not resp.ok:
+            return jsonify({"status": "error", "message": f"lnpro API error ({resp.status_code})"}), 502
+        payload = resp.json()
+        if not payload.get("tunnel_id") or not payload.get("payment_request"):
+            return jsonify({"status": "error", "message": "Invalid lnpro response"}), 502
+
+        tunnel = _normalize_tunnel(payload)
+        tunnel["status"] = "pending"
+        private_key = payload.get("ssh_private_key") or ""
+        if not private_key:
+            return jsonify({"status": "error", "message": "Missing SSH private key in lnpro response"}), 502
+
+        _write_key_file(private_key)
+        state["current_tunnel"] = tunnel
+        state["pending_invoice"] = {
+            "action": "create",
+            "tunnel_id": payload.get("tunnel_id"),
+            "days": days,
+            "payment_hash": payload.get("payment_hash"),
+            "payment_request": payload.get("payment_request"),
+            "created_at": datetime.now().isoformat(),
+            "baseline_expires_at": payload.get("expires_at"),
+        }
+        _save_tunnel_state(state)
+        return jsonify({
+            "status": "ok",
+            "invoice": state["pending_invoice"],
+            "current_tunnel": tunnel,
+            "connect_script": _tunnel_connect_script(tunnel),
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/box/api/tunnel/renew-invoice", methods=["POST"])
+@login_required
+def api_tunnel_renew_invoice():
+    data = request.get_json(silent=True) or {}
+    days = int(data.get("days") or 0)
+    if days <= 0:
+        return jsonify({"status": "error", "message": "Days must be greater than zero"}), 400
+
+    client_id, state = _get_or_create_tunnel_client_id()
+    state = _sync_tunnel_state_from_remote(state, client_id)
+    current = state.get("current_tunnel") or {}
+    tunnel_id = current.get("tunnel_id")
+    if not tunnel_id:
+        return jsonify({"status": "error", "message": "No existing tunnel found to renew"}), 404
+
+    if DEV_MODE:
+        state["pending_invoice"] = {
+            "action": "renew",
+            "tunnel_id": tunnel_id,
+            "days": days,
+            "payment_hash": "dev-topup-hash",
+            "payment_request": "lnbc1devtopup",
+            "created_at": datetime.now().isoformat(),
+            "baseline_expires_at": current.get("expires_at"),
+        }
+        _save_tunnel_state(state)
+        return jsonify({
+            "status": "ok",
+            "invoice": state["pending_invoice"],
+            "current_tunnel": current,
+            "connect_script": _tunnel_connect_script(current),
+        })
+
+    try:
+        resp = _lnpro_request("PUT", f"payments/public/{tunnel_id}", {"days": days})
+        if not resp.ok:
+            return jsonify({"status": "error", "message": f"lnpro API error ({resp.status_code})"}), 502
+        payload = resp.json()
+        if not payload.get("payment_request"):
+            return jsonify({"status": "error", "message": "Invalid renewal response"}), 502
+
+        state["pending_invoice"] = {
+            "action": "renew",
+            "tunnel_id": tunnel_id,
+            "days": days,
+            "payment_hash": payload.get("payment_hash"),
+            "payment_request": payload.get("payment_request"),
+            "created_at": datetime.now().isoformat(),
+            "baseline_expires_at": current.get("expires_at"),
+        }
+        _save_tunnel_state(state)
+        return jsonify({
+            "status": "ok",
+            "invoice": state["pending_invoice"],
+            "current_tunnel": current,
+            "connect_script": _tunnel_connect_script(current),
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/box/api/tunnel/poll", methods=["POST"])
+@login_required
+def api_tunnel_poll():
+    client_id, state = _get_or_create_tunnel_client_id()
+    state = _sync_tunnel_state_from_remote(state, client_id)
+    current = state.get("current_tunnel")
+    pending = state.get("pending_invoice")
+
+    if DEV_MODE and pending and pending.get("action") == "renew":
+        # Simple mock progression for local UI development
+        current = current or {}
+        current["status"] = "active"
+        state["current_tunnel"] = current
+
+    paid = pending is None
+    if pending and current and is_pending_invoice_paid(pending, current):
+        state["pending_invoice"] = None
+        _save_tunnel_state(state)
+        pending = None
+        paid = True
+
+    return jsonify({
+        "status": "ok",
+        "paid": paid,
+        "client_id": client_id,
+        "current_tunnel": state.get("current_tunnel"),
+        "pending_invoice": pending,
+        "service_status": _tunnel_service_status(),
+        "connect_script": _tunnel_connect_script(state.get("current_tunnel")),
+    })
+
+
+@app.route("/box/api/tunnel/start", methods=["POST"])
+@login_required
+def api_tunnel_start():
+    client_id, state = _get_or_create_tunnel_client_id()
+    state = _sync_tunnel_state_from_remote(state, client_id)
+    current = state.get("current_tunnel") or {}
+    pending = state.get("pending_invoice")
+
+    if not current.get("tunnel_id"):
+        return jsonify({"status": "error", "message": "No tunnel configured"}), 404
+    if pending:
+        return jsonify({"status": "error", "message": "Tunnel invoice is still unpaid"}), 409
+    if not current.get("remote_port"):
+        return jsonify({"status": "error", "message": "Tunnel remote port missing"}), 400
+    if not TUNNEL_KEY_FILE.exists():
+        return jsonify({"status": "error", "message": "Tunnel key not found. Create tunnel again."}), 400
+
+    if DEV_MODE:
+        return jsonify({"status": "ok", "message": "DEV MODE: would start tunnel service"})
+
+    try:
+        _write_runtime_env(current)
+        subprocess.run(
+            ["systemctl", "enable", f"{TUNNEL_SERVICE_NAME}.service"],
+            check=True, capture_output=True, timeout=20
+        )
+        subprocess.run(
+            ["systemctl", "restart", f"{TUNNEL_SERVICE_NAME}.service"],
+            check=True, capture_output=True, timeout=20
+        )
+        return jsonify({"status": "ok", "message": "Reverse tunnel service restarted"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/box/api/tunnel/stop", methods=["POST"])
+@login_required
+def api_tunnel_stop():
+    if DEV_MODE:
+        return jsonify({"status": "ok", "message": "DEV MODE: would stop tunnel service"})
+
+    try:
+        subprocess.run(
+            ["systemctl", "stop", f"{TUNNEL_SERVICE_NAME}.service"],
+            check=True, capture_output=True, timeout=20
+        )
+        return jsonify({"status": "ok", "message": "Reverse tunnel service stopped"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # ── OTA Update Endpoints ─────────────────────────────────────────
