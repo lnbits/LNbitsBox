@@ -105,13 +105,13 @@
                     </button>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="startTunnelService()"
+                    <button id="tunnel-start-btn" onclick="startTunnelService()"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Start / Restart
+                        Start Tunnel
                     </button>
-                    <button onclick="stopTunnelService()"
-                            class="text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-red-400/30">
-                        Stop
+                    <button id="tunnel-stop-btn" onclick="stopTunnelService()"
+                            class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-red-400/30">
+                        Stop Tunnel
                     </button>
                 </div>
             </div>
@@ -325,6 +325,17 @@
                         <span class="text-ln-muted font-mono text-xs" id="svc-tor-status">--</span>
                     </div>
                     <button onclick="confirmAction('restart/tor', 'Restart Tor?')"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                        Restart
+                    </button>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2.5 h-2.5 rounded-full" id="svc-tunnel-dot"></div>
+                        <span class="font-mono text-sm">Tunnel</span>
+                        <span class="text-ln-muted font-mono text-xs" id="svc-tunnel-status">--</span>
+                    </div>
+                    <button id="svc-tunnel-restart-btn" onclick="confirmAction('tunnel/start', 'Restart Tunnel Me Out service?')"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Restart
                     </button>
@@ -994,6 +1005,9 @@ function renderTunnel(data) {
     document.getElementById('tunnel-service-status').textContent = 'service: ' + (data.service_status || '--');
     document.getElementById('tunnel-status-text').textContent = hasTunnel ? status : 'No tunnel yet';
     setTunnelStatusDot(status);
+    const tunnelServiceActive = (data.service_status || '') === 'active';
+    document.getElementById('tunnel-start-btn').classList.toggle('hidden', tunnelServiceActive);
+    document.getElementById('tunnel-stop-btn').classList.toggle('hidden', !tunnelServiceActive);
 
     const urlEl = document.getElementById('tunnel-public-url');
     if (current.public_url) {
@@ -1010,6 +1024,10 @@ function renderTunnel(data) {
     document.getElementById('tunnel-days-section').classList.toggle('hidden', hasPending);
     document.getElementById('tunnel-pending-row').classList.toggle('hidden', !hasPending);
     document.getElementById('tunnel-pending-row').classList.toggle('flex', hasPending);
+    document.getElementById('svc-tunnel-dot').className = 'w-2.5 h-2.5 rounded-full ' + svcColor(data.service_status || 'inactive');
+    document.getElementById('svc-tunnel-status').textContent = data.service_status || 'unknown';
+    document.getElementById('svc-tunnel-restart-btn').disabled = !hasTunnel;
+    document.getElementById('svc-tunnel-restart-btn').classList.toggle('opacity-50', !hasTunnel);
 
     if (!hasPending) {
         stopTunnelPoll();
