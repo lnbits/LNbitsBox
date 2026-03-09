@@ -9,3 +9,4 @@ gh-pages/.nuxt
 manifest.json
 __pycache__
 tunnel-screens
+reverse_proxy
