@@ -11,8 +11,8 @@
 
     # LNbits flake input - using dev branch
     # To update: nix flake lock --update-input lnbits
-    #lnbits.url = "github:lnbits/lnbits/refs/tags/v1.5.0";
-    lnbits.url = "github:lnbits/lnbits/dev";
+    lnbits.url = "github:lnbits/lnbits/refs/tags/v1.5.1-rc1";
+    #lnbits.url = "github:lnbits/lnbits/dev";
 
     # Spark sidecar for L2 Lightning integration
     spark-sidecar.url = "github:lnbits/spark_sidecar/main";
