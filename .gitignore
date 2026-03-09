@@ -8,3 +8,5 @@ gh-pages/.output
 gh-pages/.nuxt
 manifest.json
 __pycache__
+reverse_proxy
+tunnel-screens
