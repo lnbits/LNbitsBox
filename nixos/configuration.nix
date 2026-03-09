@@ -130,6 +130,7 @@
     ./caddy-proxy.nix
     ./admin-service.nix
     ./tor-service.nix
+    ./tunnel-service.nix
     ./wifi-config.nix
     ./welcome-screen.nix
     ./update-service.nix
