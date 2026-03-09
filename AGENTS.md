@@ -73,9 +73,32 @@ The marker file `/var/lib/lnbits/.configured` controls the entire system:
 | Configurator (wizard) | 8080 | `configurator-service.nix` | Marker absent |
 | LNbits | 5000 | `lnbits-service.nix` | Marker present |
 | Spark sidecar | 8765 | `spark-sidecar-service.nix` | Marker present |
+| Tunnel Me Out reverse tunnel | local 5000 (remote port assigned by provider) | `reverse-tunnel-service.nix` | Tunnel configured + started |
 | Admin dashboard | 8090 | `admin-service.nix` | Marker present |
 | Tor | — | `tor-service.nix` | Always |
 | Wi-Fi config | — | `wifi-config.nix` | First boot |
+
+### Tunnel Me Out Feature
+
+LNbitsBox supports paid reverse tunnels via Tunnel Me Out (lnpro API). The admin app (`nixos/admin-app/app.py`) manages tunnel lifecycle, invoice generation/renewal, and service control.
+
+- Provider API base: `LNBITSBOX_TUNNEL_API_BASE_URL` (default `https://lnbits.lnpro.xyz/reverse_proxy/api/v1`)
+- Public product id: `LNBITSBOX_TUNNEL_PUBLIC_ID`
+- Tunnel systemd service: `lnbitsbox-reverse-tunnel.service`
+- Local forwarded target: `LNBITSBOX_TUNNEL_LOCAL_PORT` (default `5000`)
+
+Admin API endpoints:
+- `GET /box/api/tunnel/status` — current tunnel, pending invoice, service status, connect script
+- `POST /box/api/tunnel/create-invoice` — create first tunnel invoice
+- `POST /box/api/tunnel/renew-invoice` — add days to existing tunnel
+- `POST /box/api/tunnel/poll` — check payment status and sync pending invoice state
+- `POST /box/api/tunnel/start` — enable + restart reverse tunnel service (requires tunnel + key)
+- `POST /box/api/tunnel/stop` — stop reverse tunnel service
+
+UI notes (`nixos/admin-app/templates/dashboard.html`):
+- Service row actions are status-driven: `Start` when stopped, `Stop` + `Restart` when active.
+- Tunnel service row shows `Create Tunnel` when no tunnel is configured.
+- Polling is adaptive (faster when invoice is pending, slower when stable, reduced when tab is hidden).
 
 ### Key File Paths (on device)
 
@@ -86,6 +109,9 @@ The marker file `/var/lib/lnbits/.configured` controls the entire system:
 - `/etc/lnbits/lnbits.env` — LNbits environment config
 - `/var/lib/caddy/ca-cert.pem` — self-signed Root CA (persists across reboots)
 - `/var/lib/lnbitsbox-update/` — OTA update state (`status`, `log`, `target-version`)
+- `/var/lib/lnbitsbox-tunnel/state.json` — tunnel state (`client_id`, `current_tunnel`, `pending_invoice`)
+- `/var/lib/lnbitsbox-tunnel/reverse-proxy-key` — private SSH key for tunnel connection
+- `/var/lib/lnbitsbox-tunnel/runtime.env` — generated runtime env consumed by reverse tunnel service
 - `/etc/lnbitsbox-version` — current version string (written from `flake.nix` `version`)
 
 ### Caddy TLS
