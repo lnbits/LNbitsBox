@@ -293,10 +293,20 @@
                         <span class="font-mono text-sm">LNbits</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-lnbits-status">--</span>
                     </div>
-                    <button onclick="confirmAction('restart/lnbits', 'Restart LNbits?')"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Restart
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="svc-lnbits-restart-btn" onclick="confirmAction('restart/lnbits', 'Restart LNbits?')"
+                                class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                            Restart
+                        </button>
+                        <button id="svc-lnbits-start-btn" onclick="confirmAction('start/lnbits', 'Start LNbits?')"
+                                class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                            Start
+                        </button>
+                        <button id="svc-lnbits-stop-btn" onclick="confirmAction('stop/lnbits', 'Stop LNbits?')"
+                                class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                            Stop
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -304,10 +314,20 @@
                         <span class="font-mono text-sm">Spark</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-spark-sidecar-status">--</span>
                     </div>
-                    <button onclick="confirmAction('restart/spark-sidecar', 'Restart Spark?')"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Restart
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="svc-spark-sidecar-restart-btn" onclick="confirmAction('restart/spark-sidecar', 'Restart Spark?')"
+                                class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                            Restart
+                        </button>
+                        <button id="svc-spark-sidecar-start-btn" onclick="confirmAction('start/spark-sidecar', 'Start Spark?')"
+                                class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                            Start
+                        </button>
+                        <button id="svc-spark-sidecar-stop-btn" onclick="confirmAction('stop/spark-sidecar', 'Stop Spark?')"
+                                class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                            Stop
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -315,10 +335,20 @@
                         <span class="font-mono text-sm">Tor</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-tor-status">--</span>
                     </div>
-                    <button onclick="confirmAction('restart/tor', 'Restart Tor?')"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Restart
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="svc-tor-restart-btn" onclick="confirmAction('restart/tor', 'Restart Tor?')"
+                                class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                            Restart
+                        </button>
+                        <button id="svc-tor-start-btn" onclick="confirmAction('start/tor', 'Start Tor?')"
+                                class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                            Start
+                        </button>
+                        <button id="svc-tor-stop-btn" onclick="confirmAction('stop/tor', 'Stop Tor?')"
+                                class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                            Stop
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -326,10 +356,20 @@
                         <span class="font-mono text-sm">Tunnel</span>
                         <span class="text-ln-muted font-mono text-xs" id="svc-tunnel-status">--</span>
                     </div>
-                    <button id="svc-tunnel-restart-btn" onclick="confirmAction('tunnel/start', 'Restart Tunnel Me Out service?')"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Restart
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="svc-tunnel-restart-btn" onclick="confirmAction('tunnel/start', 'Restart Tunnel Me Out service?')"
+                                class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                            Restart
+                        </button>
+                        <button id="svc-tunnel-start-btn" onclick="startTunnelService()"
+                                class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                            Start
+                        </button>
+                        <button id="svc-tunnel-stop-btn" onclick="stopTunnelService()"
+                                class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                            Stop
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -718,6 +758,17 @@ function svcColor(status) {
     return status === 'active' ? 'bg-emerald-400' : 'bg-red-400';
 }
 
+function setServiceActionVisibility(service, status) {
+    const restartBtn = document.getElementById('svc-' + service + '-restart-btn');
+    const startBtn = document.getElementById('svc-' + service + '-start-btn');
+    const stopBtn = document.getElementById('svc-' + service + '-stop-btn');
+    if (!startBtn || !stopBtn || !restartBtn) return;
+    const isActive = status === 'active';
+    restartBtn.classList.toggle('hidden', !isActive);
+    startBtn.classList.toggle('hidden', isActive);
+    stopBtn.classList.toggle('hidden', !isActive);
+}
+
 async function fetchStats() {
     try {
         const resp = await fetch('/box/api/stats');
@@ -767,11 +818,11 @@ async function fetchStats() {
 
         // Services
         for (const svc of ['lnbits', 'spark-sidecar', 'tor']) {
-            const key = svc.replace('-', '-');
             const status = s.services[svc] || 'unknown';
             document.getElementById('svc-' + svc + '-dot').className =
                 'w-2.5 h-2.5 rounded-full ' + svcColor(status);
             document.getElementById('svc-' + svc + '-status').textContent = status;
+            setServiceActionVisibility(svc, status);
         }
 
         // Network
@@ -1039,6 +1090,7 @@ function renderTunnel(data) {
     const tunnelServiceActive = (data.service_status || '') === 'active';
     document.getElementById('tunnel-start-btn').classList.toggle('hidden', tunnelServiceActive);
     document.getElementById('tunnel-stop-btn').classList.toggle('hidden', !tunnelServiceActive);
+    setServiceActionVisibility('tunnel', data.service_status || 'inactive');
 
     const urlEl = document.getElementById('tunnel-public-url');
     if (current.public_url) {
@@ -1063,6 +1115,10 @@ function renderTunnel(data) {
     document.getElementById('svc-tunnel-status').textContent = data.service_status || 'unknown';
     document.getElementById('svc-tunnel-restart-btn').disabled = !hasTunnel;
     document.getElementById('svc-tunnel-restart-btn').classList.toggle('opacity-50', !hasTunnel);
+    document.getElementById('svc-tunnel-start-btn').disabled = !hasTunnel;
+    document.getElementById('svc-tunnel-start-btn').classList.toggle('opacity-50', !hasTunnel);
+    document.getElementById('svc-tunnel-stop-btn').disabled = !hasTunnel;
+    document.getElementById('svc-tunnel-stop-btn').classList.toggle('opacity-50', !hasTunnel);
 
     if (!hasPending) {
         stopTunnelPoll();

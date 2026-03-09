@@ -602,18 +602,34 @@ def api_reboot():
 @app.route("/box/api/restart/<service>", methods=["POST"])
 @login_required
 def api_restart_service(service):
+    return _service_action(service, "restart", "restarting")
+
+
+@app.route("/box/api/start/<service>", methods=["POST"])
+@login_required
+def api_start_service(service):
+    return _service_action(service, "start", "starting")
+
+
+@app.route("/box/api/stop/<service>", methods=["POST"])
+@login_required
+def api_stop_service(service):
+    return _service_action(service, "stop", "stopping")
+
+
+def _service_action(service, action, verb):
     if service not in ALLOWED_SERVICES:
         return jsonify({"status": "error", "message": "Invalid service"}), 400
 
     if DEV_MODE:
-        return jsonify({"status": "ok", "message": f"DEV MODE: would restart {service}"})
+        return jsonify({"status": "ok", "message": f"DEV MODE: would {action} {service}"})
 
     try:
         subprocess.run(
-            ["systemctl", "restart", f"{service}.service"],
+            ["systemctl", action, f"{service}.service"],
             check=True, capture_output=True, timeout=30
         )
-        return jsonify({"status": "ok", "message": f"{service} is restarting"})
+        return jsonify({"status": "ok", "message": f"{service} is {verb}"})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
 
