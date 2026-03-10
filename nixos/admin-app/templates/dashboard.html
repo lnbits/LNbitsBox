@@ -70,6 +70,13 @@
                 </div>
                 <div><span class="text-ln-muted">Public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
                 <div><span class="text-ln-muted">Expires:</span> <span id="tunnel-expires-at">--</span></div>
+                <div class="flex items-center gap-2 pt-1">
+                    <button id="tunnel-alert-enable-btn" onclick="enableTunnelExpiryAlerts()"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-2.5 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                        Enable Alerts
+                    </button>
+                    <span id="tunnel-alert-status" class="text-ln-muted text-xs font-mono">Browser notifications off</span>
+                </div>
             </div>
             <div>
                 <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-1.5">Add Credit</div>
@@ -1103,6 +1110,125 @@ let tunnelState = null;
 let tunnelPollTimer = null;
 let tunnelInvoiceQr = null;
 let tunnelInvoiceLoading = false;
+const TUNNEL_EXPIRY_ALERT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function isTunnelAlertSupported() {
+    return typeof window !== 'undefined' && 'Notification' in window;
+}
+
+function formatExpiryCountdown(msLeft) {
+    if (msLeft <= 0) return 'already expired';
+    const hours = Math.ceil(msLeft / (60 * 60 * 1000));
+    if (hours < 24) return `in ${hours}h`;
+    const days = Math.ceil(hours / 24);
+    return `in ${days}d`;
+}
+
+function tunnelAlertStorageKey(tunnelId, expiresAt) {
+    return `lnbitsbox:tunnel-expiry-alert:${tunnelId || 'unknown'}:${expiresAt || 'unknown'}`;
+}
+
+function tunnelAlertAlreadySent(key) {
+    try {
+        return !!localStorage.getItem(key);
+    } catch (e) {
+        return false;
+    }
+}
+
+function markTunnelAlertSent(key) {
+    try {
+        localStorage.setItem(key, new Date().toISOString());
+    } catch (e) {
+        // localStorage unavailable; skip persistence and avoid crashing
+    }
+}
+
+function updateTunnelAlertStatus(hasTunnel, expiresAt) {
+    const statusEl = document.getElementById('tunnel-alert-status');
+    const buttonEl = document.getElementById('tunnel-alert-enable-btn');
+    if (!statusEl || !buttonEl) return;
+    if (!isTunnelAlertSupported()) {
+        statusEl.textContent = 'Browser notifications unsupported';
+        buttonEl.disabled = true;
+        buttonEl.classList.add('opacity-50');
+        return;
+    }
+
+    const permission = Notification.permission;
+    if (permission === 'granted') {
+        if (!hasTunnel || !expiresAt) {
+            statusEl.textContent = 'Alerts enabled';
+        } else {
+            const msLeft = new Date(expiresAt).getTime() - Date.now();
+            statusEl.textContent = msLeft <= TUNNEL_EXPIRY_ALERT_WINDOW_MS
+                ? `Expiry warning active (${formatExpiryCountdown(msLeft)})`
+                : 'Alerts enabled';
+        }
+        buttonEl.classList.add('hidden');
+        return;
+    }
+
+    if (permission === 'denied') {
+        statusEl.textContent = 'Blocked in browser settings';
+        buttonEl.classList.add('hidden');
+        return;
+    }
+
+    statusEl.textContent = hasTunnel ? 'Browser notifications off' : 'No active tunnel';
+    buttonEl.classList.remove('hidden');
+    buttonEl.disabled = false;
+    buttonEl.classList.remove('opacity-50');
+}
+
+async function enableTunnelExpiryAlerts() {
+    if (!isTunnelAlertSupported()) {
+        showNotice('Browser notifications are not supported on this device.', 'Tunnel Alerts');
+        return;
+    }
+    try {
+        const result = await Notification.requestPermission();
+        updateTunnelAlertStatus(
+            !!(tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id),
+            tunnelState && tunnelState.current_tunnel ? tunnelState.current_tunnel.expires_at : null
+        );
+        if (result === 'granted') {
+            showNotice('Tunnel expiry alerts enabled for this browser.', 'Tunnel Alerts');
+        } else if (result === 'denied') {
+            showNotice('Notifications are blocked. Enable them in browser settings.', 'Tunnel Alerts');
+        }
+    } catch (e) {
+        showNotice('Failed to enable notifications.', 'Tunnel Alerts');
+    }
+}
+
+function maybeNotifyTunnelExpiry(currentTunnel) {
+    if (!isTunnelAlertSupported() || Notification.permission !== 'granted') return;
+    if (!currentTunnel || !currentTunnel.tunnel_id || !currentTunnel.expires_at) return;
+    const expiresAt = new Date(currentTunnel.expires_at);
+    const expiresMs = expiresAt.getTime();
+    if (Number.isNaN(expiresMs)) return;
+    const msLeft = expiresMs - Date.now();
+    if (msLeft > TUNNEL_EXPIRY_ALERT_WINDOW_MS) return;
+
+    const key = tunnelAlertStorageKey(currentTunnel.tunnel_id, currentTunnel.expires_at);
+    if (tunnelAlertAlreadySent(key)) return;
+
+    const countdown = formatExpiryCountdown(msLeft);
+    const label = currentTunnel.subdomain || currentTunnel.tunnel_id;
+    try {
+        const n = new Notification('Tunnel expires soon', {
+            body: `${label} ${countdown}. Open LNbitsBox to renew.`,
+            tag: key,
+        });
+        if (n && typeof n.close === 'function') {
+            setTimeout(() => n.close(), 12000);
+        }
+        markTunnelAlertSent(key);
+    } catch (e) {
+        // Ignore notification errors; UI status remains available.
+    }
+}
 
 function setTunnelInvoiceButtonLoading(isLoading) {
     tunnelInvoiceLoading = isLoading;
@@ -1210,6 +1336,8 @@ function renderTunnel(data) {
     const tunnelStatusLabel = (tunnelStatusRaw === 'pending') ? 'pending payment' : tunnelStatusRaw;
     const hasTunnel = !!current.tunnel_id;
     const hasPending = !!data.pending_invoice;
+    updateTunnelAlertStatus(hasTunnel, current.expires_at);
+    maybeNotifyTunnelExpiry(current);
 
     if (el('tunnel-client-id')) el('tunnel-client-id').textContent = data.client_id || '--';
     if (el('tunnel-remote-port')) el('tunnel-remote-port').textContent = current.remote_port || '--';
