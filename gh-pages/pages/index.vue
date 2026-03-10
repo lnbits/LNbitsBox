@@ -24,8 +24,8 @@
         <!-- Headline -->
         <h1 class="font-display font-bold text-ln-text leading-[1.1] tracking-tight mb-6"
             style="font-size: clamp(2.4rem, 7vw, 4.5rem);">
-          LNbits.<br>
-          <span class="text-ln-pink">Running where you are.</span>
+          LNbitsBox.<br>
+          <span class="text-ln-pink">Plug'n'Play LNbits.</span>
         </h1>
 
         <!-- Sub -->
@@ -56,7 +56,7 @@
         <!-- Hero image -->
         <div class="rounded-2xl overflow-hidden border border-ln-border max-w-3xl">
           <img
-            src="~/assets/img/lnbits-box-on-desk.jpg"
+            src="~/assets/img/lnbits-box-on-desk.png"
             alt="LNbitsBox device on a desk"
             title="LNbitsBox — clean product photo in a friendly home setting"
             class="w-full h-auto"
