@@ -34,10 +34,18 @@ in
 LNBITS_ADMIN_UI=true
 LNBITS_HOST=127.0.0.1
 LNBITS_PORT=5000
+LNBITS_RESERVE_FEE_MIN=15000
+LNBITS_RESERVE_FEE_PERCENT=1.0
+LNBITS_FUNDING_SOURCE_PAY_INVOICE_WAIT_SECONDS=20
 EOF
       chmod 0640 ${envFile}
       chown root:root ${envFile}
     fi
+
+    # Backfill default settings for existing installs without overriding user values.
+    grep -q '^LNBITS_RESERVE_FEE_MIN=' ${envFile} || echo 'LNBITS_RESERVE_FEE_MIN=15000' >> ${envFile}
+    grep -q '^LNBITS_RESERVE_FEE_PERCENT=' ${envFile} || echo 'LNBITS_RESERVE_FEE_PERCENT=1.0' >> ${envFile}
+    grep -q '^LNBITS_FUNDING_SOURCE_PAY_INVOICE_WAIT_SECONDS=' ${envFile} || echo 'LNBITS_FUNDING_SOURCE_PAY_INVOICE_WAIT_SECONDS=20' >> ${envFile}
   '';
 
   systemd.services.lnbits = {
