@@ -80,6 +80,15 @@ stats_lock = threading.Lock()
 wifi_connect_status = {"status": "idle", "message": "", "ip": ""}
 wifi_connect_lock = threading.Lock()
 
+# Tunnel remote sync state
+TUNNEL_REMOTE_SYNC_MIN_INTERVAL = 10
+_tunnel_remote_sync_lock = threading.Lock()
+_tunnel_remote_sync = {
+    "in_flight": False,
+    "last_started_at": 0.0,
+    "last_finished_at": 0.0,
+}
+
 
 def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200, **payload):
     body = dict(payload)
@@ -185,6 +194,50 @@ def _sync_tunnel_state_from_remote(state: dict[str, Any], client_id: str) -> dic
     except Exception:
         pass
     return state
+
+
+def _refresh_tunnel_state_from_remote(client_id: str):
+    try:
+        state = _load_tunnel_state()
+        _sync_tunnel_state_from_remote(state, client_id)
+    finally:
+        with _tunnel_remote_sync_lock:
+            _tunnel_remote_sync["in_flight"] = False
+            _tunnel_remote_sync["last_finished_at"] = time.monotonic()
+
+
+def _schedule_tunnel_state_refresh(client_id: str):
+    if DEV_MODE:
+        return
+    now = time.monotonic()
+    with _tunnel_remote_sync_lock:
+        if _tunnel_remote_sync["in_flight"]:
+            return
+        last_attempt = max(
+            _tunnel_remote_sync["last_started_at"],
+            _tunnel_remote_sync["last_finished_at"],
+        )
+        if last_attempt and (now - last_attempt) < TUNNEL_REMOTE_SYNC_MIN_INTERVAL:
+            return
+        _tunnel_remote_sync["in_flight"] = True
+        _tunnel_remote_sync["last_started_at"] = now
+    threading.Thread(
+        target=_refresh_tunnel_state_from_remote,
+        args=(client_id,),
+        daemon=True,
+    ).start()
+
+
+def _build_tunnel_status_payload(client_id: str, state: dict[str, Any]) -> dict[str, Any]:
+    current = state.get("current_tunnel")
+    return {
+        "client_id": client_id,
+        "current_tunnel": current,
+        "pending_invoice": state.get("pending_invoice"),
+        "service_status": _tunnel_service_status(),
+        "connect_script": _tunnel_connect_script(current),
+        "has_key": TUNNEL_KEY_FILE.exists(),
+    }
 
 
 def _write_key_file(private_key: str):
@@ -559,15 +612,8 @@ def logout():
 @login_required
 def dashboard():
     client_id, state = _get_or_create_tunnel_client_id()
-    current = state.get("current_tunnel")
-    initial_tunnel_status = {
-        "client_id": client_id,
-        "current_tunnel": current,
-        "pending_invoice": state.get("pending_invoice"),
-        "service_status": "unknown",
-        "connect_script": _tunnel_connect_script(current),
-        "has_key": TUNNEL_KEY_FILE.exists(),
-    }
+    initial_tunnel_status = _build_tunnel_status_payload(client_id, state)
+    initial_tunnel_status["service_status"] = "unknown"
     return render_template(
         "dashboard.html",
         dev_mode=DEV_MODE,
@@ -1010,17 +1056,8 @@ def api_wifi_connect_status():
 @login_required
 def api_tunnel_status():
     client_id, state = _get_or_create_tunnel_client_id()
-    state = _sync_tunnel_state_from_remote(state, client_id)
-    current = state.get("current_tunnel")
-    pending = state.get("pending_invoice")
-    payload = {
-        "client_id": client_id,
-        "current_tunnel": current,
-        "pending_invoice": pending,
-        "service_status": _tunnel_service_status(),
-        "connect_script": _tunnel_connect_script(current),
-        "has_key": TUNNEL_KEY_FILE.exists(),
-    }
+    payload = _build_tunnel_status_payload(client_id, state)
+    _schedule_tunnel_state_refresh(client_id)
     return _json_response(data=payload, **payload)
 
 

@@ -343,9 +343,7 @@
     };
 
     D.loadInitialTunnelStatus();
-    if (typeof D.restartStatusPollLoops === 'function') {
-        D.restartStatusPollLoops();
-    } else {
+    if (typeof D.fetchTunnelStatus === 'function') {
         D.fetchTunnelStatus();
     }
 })();

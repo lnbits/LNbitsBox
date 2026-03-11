@@ -197,26 +197,11 @@
         }
     };
 
-    D.config.tunnelPollFastMs = 5000;
-    D.config.tunnelPollSlowMs = 30000;
     D.config.lnbitsPollMs = 15000;
     D.config.hiddenTabPollMs = 60000;
 
-    D.nextTunnelPollDelay = function () {
-        if (document.hidden) return D.config.hiddenTabPollMs;
-        const hasPending = !!(D.state.tunnel && D.state.tunnel.pending_invoice);
-        return hasPending ? D.config.tunnelPollFastMs : D.config.tunnelPollSlowMs;
-    };
-
     D.nextLnbitsPollDelay = function () {
         return document.hidden ? D.config.hiddenTabPollMs : D.config.lnbitsPollMs;
-    };
-
-    D.runTunnelPollLoop = async function () {
-        if (typeof D.fetchTunnelStatus === 'function') {
-            await D.fetchTunnelStatus();
-        }
-        D.timers.tunnelPollLoop = setTimeout(D.runTunnelPollLoop, D.nextTunnelPollDelay());
     };
 
     D.runLnbitsPollLoop = async function () {
@@ -224,12 +209,9 @@
         D.timers.lnbitsPollLoop = setTimeout(D.runLnbitsPollLoop, D.nextLnbitsPollDelay());
     };
 
-    D.restartStatusPollLoops = function () {
-        clearTimeout(D.timers.tunnelPollLoop);
+    D.restartLnbitsPollLoop = function () {
         clearTimeout(D.timers.lnbitsPollLoop);
-        D.timers.tunnelPollLoop = null;
         D.timers.lnbitsPollLoop = null;
-        D.runTunnelPollLoop();
         D.runLnbitsPollLoop();
     };
 
@@ -253,6 +235,6 @@
 
     D.fetchStats();
     setInterval(D.fetchStats, 10000);
-    D.restartStatusPollLoops();
-    document.addEventListener('visibilitychange', D.restartStatusPollLoops);
+    D.restartLnbitsPollLoop();
+    document.addEventListener('visibilitychange', D.restartLnbitsPollLoop);
 })();
