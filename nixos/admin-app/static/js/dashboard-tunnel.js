@@ -226,6 +226,17 @@
         }
     };
 
+    D.loadInitialTunnelStatus = function () {
+        const el = document.getElementById('initial-tunnel-status');
+        if (!el || !el.textContent) return;
+        try {
+            const data = JSON.parse(el.textContent);
+            if (data) D.renderTunnel(data);
+        } catch (error) {
+            console.error('Initial tunnel status parse failed:', error);
+        }
+    };
+
     D.openTunnelInvoiceModal = function (bolt11) {
         D.el('tunnel-invoice-modal').classList.remove('hidden');
         D.el('tunnel-invoice-text').value = bolt11 || '';
@@ -330,4 +341,11 @@
             D.showNotice('Failed to copy connect script', 'Error');
         }
     };
+
+    D.loadInitialTunnelStatus();
+    if (typeof D.restartStatusPollLoops === 'function') {
+        D.restartStatusPollLoops();
+    } else {
+        D.fetchTunnelStatus();
+    }
 })();

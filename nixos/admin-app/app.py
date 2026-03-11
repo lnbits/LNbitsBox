@@ -558,7 +558,21 @@ def logout():
 @app.route("/box/")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", dev_mode=DEV_MODE)
+    client_id, state = _get_or_create_tunnel_client_id()
+    current = state.get("current_tunnel")
+    initial_tunnel_status = {
+        "client_id": client_id,
+        "current_tunnel": current,
+        "pending_invoice": state.get("pending_invoice"),
+        "service_status": "unknown",
+        "connect_script": _tunnel_connect_script(current),
+        "has_key": TUNNEL_KEY_FILE.exists(),
+    }
+    return render_template(
+        "dashboard.html",
+        dev_mode=DEV_MODE,
+        initial_tunnel_status=initial_tunnel_status,
+    )
 
 
 @app.route("/box/api/stats")
