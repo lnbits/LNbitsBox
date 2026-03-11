@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Enable QEMU for aarch64 builds on x86 runners
       - name: Set up QEMU
@@ -85,9 +87,34 @@ jobs:
           cat dist/manifest.json
         continue-on-error: true
 
+      - name: Generate release notes
+        run: |
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREVIOUS_TAG="$(git tag --sort=-creatordate | grep -Fxv "$CURRENT_TAG" | head -n 1 || true)"
+
+          {
+            echo "## Changes"
+            echo
+
+            if [ -n "$PREVIOUS_TAG" ]; then
+              echo "Changes since \`$PREVIOUS_TAG\`:"
+              echo
+              git log "$PREVIOUS_TAG..$CURRENT_TAG" --pretty=format:'- %s (%h)'
+            else
+              echo "No previous tag found. Included commits:"
+              echo
+              git log "$CURRENT_TAG" --pretty=format:'- %s (%h)'
+            fi
+            echo
+          } > dist/release-notes.md
+
+          echo "Generated release notes:"
+          cat dist/release-notes.md
+
       - name: Create GitHub Release and upload
         uses: softprops/action-gh-release@v2
         with:
+          body_path: dist/release-notes.md
           files: |
             dist/*.img.zst
             dist/SHA256SUMS.txt
