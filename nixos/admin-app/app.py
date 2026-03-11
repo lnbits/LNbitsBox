@@ -81,6 +81,17 @@ wifi_connect_status = {"status": "idle", "message": "", "ip": ""}
 wifi_connect_lock = threading.Lock()
 
 
+def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200, **payload):
+    body = dict(payload)
+    if data is not None:
+        body["data"] = data
+    return jsonify(body), status_code
+
+
+def _json_error(message: str, status_code: int = 500, **payload):
+    return _json_response(status="error", message=message, status_code=status_code, **payload)
+
+
 # ── Tunnel Helpers ──────────────────────────────────────────────────
 
 def _ensure_tunnel_state_dir():
@@ -556,7 +567,7 @@ def api_stats():
     current = collect_stats()
     with stats_lock:
         history = list(stats_history)
-    return jsonify({
+    payload = {
         "current": current,
         "history": {
             "timestamps": [s["timestamp"] for s in history],
@@ -564,7 +575,8 @@ def api_stats():
             "ram": [s["ram"]["percent"] for s in history],
             "temp": [s["cpu_temp"] for s in history],
         }
-    })
+    }
+    return _json_response(data=payload, **payload)
 
 
 @app.route("/box/api/lnbits-status")
@@ -572,13 +584,13 @@ def api_stats():
 def api_lnbits_status():
     code = get_lnbits_http_status()
     if code == 200:
-        return jsonify({"status": "running"})
+        return _json_response(data={"status": "running"}, status="running")
     elif code == 502:
-        return jsonify({"status": "starting"})
+        return _json_response(data={"status": "starting"}, status="starting")
     elif code is not None:
-        return jsonify({"status": "error", "code": code})
+        return _json_response(data={"status": "error", "code": code}, status="error", code=code)
     else:
-        return jsonify({"status": "stopped"})
+        return _json_response(data={"status": "stopped"}, status="stopped")
 
 
 @app.route("/box/api/shutdown", methods=["POST"])
@@ -619,19 +631,19 @@ def api_stop_service(service):
 
 def _service_action(service, action, verb):
     if service not in ALLOWED_SERVICES:
-        return jsonify({"status": "error", "message": "Invalid service"}), 400
+        return _json_error("Invalid service", 400)
 
     if DEV_MODE:
-        return jsonify({"status": "ok", "message": f"DEV MODE: would {action} {service}"})
+        return _json_response(status="ok", message=f"DEV MODE: would {action} {service}", data={"service": service, "action": action})
 
     try:
         subprocess.run(
             ["systemctl", action, f"{service}.service"],
             check=True, capture_output=True, timeout=30
         )
-        return jsonify({"status": "ok", "message": f"{service} is {verb}"})
+        return _json_response(status="ok", message=f"{service} is {verb}", data={"service": service, "action": action})
     except subprocess.CalledProcessError as e:
-        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+        return _json_error(e.stderr.decode(), 500)
 
 
 # ── Database Backup & Restore ────────────────────────────────
@@ -640,14 +652,14 @@ def _service_action(service, action, verb):
 @login_required
 def api_db_info():
     if DEV_MODE:
-        return jsonify({"size": 4_520_000})
+        return _json_response(size=4_520_000, data={"size": 4_520_000})
     try:
         size = LNBITS_DB_PATH.stat().st_size
-        return jsonify({"size": size})
+        return _json_response(size=size, data={"size": size})
     except FileNotFoundError:
-        return jsonify({"size": 0, "error": "Database file not found"})
+        return _json_response(size=0, error="Database file not found", data={"size": 0})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _json_error(str(e), 500)
 
 
 @app.route("/box/api/db/backup", methods=["POST"])
@@ -821,23 +833,24 @@ def api_db_restore():
 @login_required
 def api_wifi_scan():
     if DEV_MODE:
-        return jsonify({"networks": [
+        networks = [
             {"ssid": "HomeNetwork", "signal": -45, "flags": "[WPA2-PSK-CCMP][ESS]"},
             {"ssid": "CoffeeShop_Free", "signal": -62, "flags": "[ESS]"},
             {"ssid": "Neighbor5G", "signal": -70, "flags": "[WPA2-PSK-CCMP][WPS][ESS]"},
             {"ssid": "OfficeWiFi", "signal": -78, "flags": "[WPA2-EAP-CCMP][ESS]"},
-        ]})
+        ]
+        return _json_response(networks=networks, data={"networks": networks})
 
     wifi_iface = get_wifi_interface()
     if not wifi_iface:
-        return jsonify({"error": "No wireless interface found"}), 404
+        return _json_error("No wireless interface found", 404)
 
     try:
         wpa_cli(wifi_iface, "scan")
         time.sleep(3)
         result = wpa_cli(wifi_iface, "scan_results")
         if result.returncode != 0:
-            return jsonify({"error": "Scan failed"}), 500
+            return _json_error("Scan failed", 500)
 
         # Parse scan results: bssid / frequency / signal / flags / ssid
         networks = {}
@@ -855,9 +868,9 @@ def api_wifi_scan():
                 networks[ssid] = {"ssid": ssid, "signal": signal, "flags": flags}
 
         sorted_networks = sorted(networks.values(), key=lambda n: n["signal"], reverse=True)
-        return jsonify({"networks": sorted_networks})
+        return _json_response(networks=sorted_networks, data={"networks": sorted_networks})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _json_error(str(e), 500)
 
 
 @app.route("/box/api/wifi/connect", methods=["POST"])
@@ -868,7 +881,7 @@ def api_wifi_connect():
     password = data.get("password", "")
 
     if not ssid:
-        return jsonify({"status": "error", "message": "SSID is required"}), 400
+        return _json_error("SSID is required", 400)
 
     if DEV_MODE:
         with wifi_connect_lock:
@@ -879,15 +892,15 @@ def api_wifi_connect():
             with wifi_connect_lock:
                 wifi_connect_status.update({"status": "success", "message": f"Connected to {ssid}", "ip": "192.168.1.42"})
         threading.Thread(target=mock_connect, daemon=True).start()
-        return jsonify({"status": "connecting"})
+        return _json_response(status="connecting", data={"status": "connecting"})
 
     wifi_iface = get_wifi_interface()
     if not wifi_iface:
-        return jsonify({"status": "error", "message": "No wireless interface found"}), 404
+        return _json_error("No wireless interface found", 404)
 
     with wifi_connect_lock:
         if wifi_connect_status["status"] == "connecting":
-            return jsonify({"status": "error", "message": "Connection attempt already in progress"}), 409
+            return _json_error("Connection attempt already in progress", 409)
         wifi_connect_status.update({"status": "connecting", "message": f"Connecting to {ssid}...", "ip": ""})
 
     def do_connect():
@@ -966,14 +979,15 @@ def api_wifi_connect():
                 })
 
     threading.Thread(target=do_connect, daemon=True).start()
-    return jsonify({"status": "connecting"})
+    return _json_response(status="connecting", data={"status": "connecting"})
 
 
 @app.route("/box/api/wifi/connect/status")
 @login_required
 def api_wifi_connect_status():
     with wifi_connect_lock:
-        return jsonify(dict(wifi_connect_status))
+        payload = dict(wifi_connect_status)
+        return _json_response(data=payload, **payload)
 
 
 # ── Tunnel Endpoints ────────────────────────────────────────────
@@ -985,14 +999,15 @@ def api_tunnel_status():
     state = _sync_tunnel_state_from_remote(state, client_id)
     current = state.get("current_tunnel")
     pending = state.get("pending_invoice")
-    return jsonify({
+    payload = {
         "client_id": client_id,
         "current_tunnel": current,
         "pending_invoice": pending,
         "service_status": _tunnel_service_status(),
         "connect_script": _tunnel_connect_script(current),
         "has_key": TUNNEL_KEY_FILE.exists(),
-    })
+    }
+    return _json_response(data=payload, **payload)
 
 
 @app.route("/box/api/tunnel/create-invoice", methods=["POST"])
@@ -1001,13 +1016,13 @@ def api_tunnel_create_invoice():
     data = request.get_json(silent=True) or {}
     days = int(data.get("days") or 0)
     if days <= 0:
-        return jsonify({"status": "error", "message": "Days must be greater than zero"}), 400
+        return _json_error("Days must be greater than zero", 400)
 
     client_id, state = _get_or_create_tunnel_client_id()
     state = _sync_tunnel_state_from_remote(state, client_id)
     action = choose_invoice_action(state.get("current_tunnel"))
     if action != "create":
-        return jsonify({"status": "error", "message": "Tunnel already exists. Use renewal."}), 409
+        return _json_error("Tunnel already exists. Use renewal.", 409)
 
     if DEV_MODE:
         now_iso = datetime.now().isoformat()
@@ -1034,12 +1049,12 @@ def api_tunnel_create_invoice():
             "baseline_expires_at": tunnel.get("expires_at"),
         }
         _save_tunnel_state(state)
-        return jsonify({
-            "status": "ok",
+        payload = {
             "invoice": state["pending_invoice"],
             "current_tunnel": tunnel,
             "connect_script": _tunnel_connect_script(tunnel),
-        })
+        }
+        return _json_response(status="ok", data=payload, **payload)
 
     try:
         resp = _lnpro_request("POST", "tunnels", {
@@ -1048,16 +1063,16 @@ def api_tunnel_create_invoice():
             "client_note": client_id,
         })
         if not resp.ok:
-            return jsonify({"status": "error", "message": f"lnpro API error ({resp.status_code})"}), 502
+            return _json_error(f"lnpro API error ({resp.status_code})", 502)
         payload = resp.json()
         if not payload.get("tunnel_id") or not payload.get("payment_request"):
-            return jsonify({"status": "error", "message": "Invalid lnpro response"}), 502
+            return _json_error("Invalid lnpro response", 502)
 
         tunnel = _normalize_tunnel(payload)
         tunnel["status"] = "pending"
         private_key = payload.get("ssh_private_key") or ""
         if not private_key:
-            return jsonify({"status": "error", "message": "Missing SSH private key in lnpro response"}), 502
+            return _json_error("Missing SSH private key in lnpro response", 502)
 
         _write_key_file(private_key)
         state["current_tunnel"] = tunnel
@@ -1071,14 +1086,14 @@ def api_tunnel_create_invoice():
             "baseline_expires_at": payload.get("expires_at"),
         }
         _save_tunnel_state(state)
-        return jsonify({
-            "status": "ok",
+        response_payload = {
             "invoice": state["pending_invoice"],
             "current_tunnel": tunnel,
             "connect_script": _tunnel_connect_script(tunnel),
-        })
+        }
+        return _json_response(status="ok", data=response_payload, **response_payload)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return _json_error(str(e), 500)
 
 
 @app.route("/box/api/tunnel/renew-invoice", methods=["POST"])
@@ -1087,14 +1102,14 @@ def api_tunnel_renew_invoice():
     data = request.get_json(silent=True) or {}
     days = int(data.get("days") or 0)
     if days <= 0:
-        return jsonify({"status": "error", "message": "Days must be greater than zero"}), 400
+        return _json_error("Days must be greater than zero", 400)
 
     client_id, state = _get_or_create_tunnel_client_id()
     state = _sync_tunnel_state_from_remote(state, client_id)
     current = state.get("current_tunnel") or {}
     tunnel_id = current.get("tunnel_id")
     if not tunnel_id:
-        return jsonify({"status": "error", "message": "No existing tunnel found to renew"}), 404
+        return _json_error("No existing tunnel found to renew", 404)
 
     if DEV_MODE:
         state["pending_invoice"] = {
@@ -1107,20 +1122,20 @@ def api_tunnel_renew_invoice():
             "baseline_expires_at": current.get("expires_at"),
         }
         _save_tunnel_state(state)
-        return jsonify({
-            "status": "ok",
+        payload = {
             "invoice": state["pending_invoice"],
             "current_tunnel": current,
             "connect_script": _tunnel_connect_script(current),
-        })
+        }
+        return _json_response(status="ok", data=payload, **payload)
 
     try:
         resp = _lnpro_request("PUT", f"payments/public/{tunnel_id}", {"days": days})
         if not resp.ok:
-            return jsonify({"status": "error", "message": f"lnpro API error ({resp.status_code})"}), 502
+            return _json_error(f"lnpro API error ({resp.status_code})", 502)
         payload = resp.json()
         if not payload.get("payment_request"):
-            return jsonify({"status": "error", "message": "Invalid renewal response"}), 502
+            return _json_error("Invalid renewal response", 502)
 
         state["pending_invoice"] = {
             "action": "renew",
@@ -1132,14 +1147,14 @@ def api_tunnel_renew_invoice():
             "baseline_expires_at": current.get("expires_at"),
         }
         _save_tunnel_state(state)
-        return jsonify({
-            "status": "ok",
+        response_payload = {
             "invoice": state["pending_invoice"],
             "current_tunnel": current,
             "connect_script": _tunnel_connect_script(current),
-        })
+        }
+        return _json_response(status="ok", data=response_payload, **response_payload)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return _json_error(str(e), 500)
 
 
 @app.route("/box/api/tunnel/poll", methods=["POST"])
@@ -1163,15 +1178,15 @@ def api_tunnel_poll():
         pending = None
         paid = True
 
-    return jsonify({
-        "status": "ok",
+    payload = {
         "paid": paid,
         "client_id": client_id,
         "current_tunnel": state.get("current_tunnel"),
         "pending_invoice": pending,
         "service_status": _tunnel_service_status(),
         "connect_script": _tunnel_connect_script(state.get("current_tunnel")),
-    })
+    }
+    return _json_response(status="ok", data=payload, **payload)
 
 
 @app.route("/box/api/tunnel/start", methods=["POST"])
@@ -1242,13 +1257,14 @@ def get_current_version():
 @login_required
 def api_update_check():
     if DEV_MODE:
-        return jsonify({
+        payload = {
             "current_version": "1.0.0",
             "latest_version": "1.1.0",
             "update_available": True,
             "release_notes": "DEV MODE: Mock update available.\n- Bug fixes\n- Performance improvements",
             "release_tag": "v1.1.0",
-        })
+        }
+        return _json_response(data=payload, **payload)
 
     current = get_current_version()
     try:
@@ -1257,7 +1273,7 @@ def api_update_check():
             "Accept": "application/vnd.github.v3+json",
         })
         if not resp.ok:
-            return jsonify({"error": "Failed to check for updates", "status_code": resp.status_code}), 502
+            return _json_error("Failed to check for updates", 502, upstream_status_code=resp.status_code)
 
         release = resp.json()
         latest_tag = release.get("tag_name", "")
@@ -1269,15 +1285,16 @@ def api_update_check():
             for a in release.get("assets", [])
         )
 
-        return jsonify({
+        payload = {
             "current_version": current,
             "latest_version": latest_version,
             "update_available": latest_version != current and has_manifest,
             "release_notes": release_notes,
             "release_tag": latest_tag,
-        })
+        }
+        return _json_response(data=payload, **payload)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _json_error(str(e), 500)
 
 
 @app.route("/box/api/update/start", methods=["POST"])
@@ -1336,11 +1353,12 @@ def api_update_start():
 @login_required
 def api_update_status():
     if DEV_MODE:
-        return jsonify({
+        payload = {
             "status": "idle",
             "log_lines": ["DEV MODE: No update in progress"],
             "target_version": "",
-        })
+        }
+        return _json_response(data=payload, **payload)
 
     status = "idle"
     log_lines = []
@@ -1362,11 +1380,12 @@ def api_update_status():
     except Exception:
         pass
 
-    return jsonify({
+    payload = {
         "status": status,
         "log_lines": log_lines,
         "target_version": target_version,
-    })
+    }
+    return _json_response(data=payload, **payload)
 
 
 if __name__ == "__main__":

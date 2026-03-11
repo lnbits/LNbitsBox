@@ -6,33 +6,11 @@
     <meta name="color-scheme" content="light dark">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}LNbitsBox{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block head %}{% endblock %}
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'ln-pink':       'rgb(var(--ln-pink) / <alpha-value>)',
-                        'ln-pink-dim':   'rgb(var(--ln-pink-dim) / <alpha-value>)',
-                        'ln-surface':    'rgb(var(--ln-surface) / <alpha-value>)',
-                        'ln-card':       'rgb(var(--ln-card) / <alpha-value>)',
-                        'ln-card-hover': 'rgb(var(--ln-card-hover) / <alpha-value>)',
-                        'ln-border':     'rgb(var(--ln-border) / <alpha-value>)',
-                        'ln-text':       'rgb(var(--ln-text) / <alpha-value>)',
-                        'ln-muted':      'rgb(var(--ln-muted) / <alpha-value>)',
-                    },
-                    fontFamily: {
-                        mono: ['JetBrains Mono', 'monospace'],
-                        display: ['Space Grotesk', 'sans-serif'],
-                    },
-                },
-            },
-        }
-    </script>
     <style>
         :root {
             --ln-pink:       255 30 230;

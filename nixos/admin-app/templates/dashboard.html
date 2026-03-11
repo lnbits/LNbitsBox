@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6" id="dashboard-root" data-dev-mode="{{ 'true' if dev_mode else 'false' }}">
 
     {# ── Header ── #}
     <div class="flex items-center justify-between mb-8">
@@ -71,7 +71,7 @@
                 <div><span class="text-ln-muted">Public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
                 <div><span class="text-ln-muted">Expires:</span> <span id="tunnel-expires-at">--</span></div>
                 <div class="flex items-center gap-2 pt-1">
-                    <button id="tunnel-alert-enable-btn" onclick="enableTunnelExpiryAlerts()"
+                    <button id="tunnel-alert-enable-btn"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-2.5 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Enable Alerts
                     </button>
@@ -86,7 +86,7 @@
                         <input type="number" min="1" step="1" id="tunnel-days-input"
                                class="w-24 bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
                                value="1">
-                        <button id="tunnel-invoice-btn" onclick="openTunnelInvoiceFlow()"
+                        <button id="tunnel-invoice-btn"
                                 class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-3 rounded-lg transition-colors">
                             Create Tunnel
                         </button>
@@ -94,13 +94,13 @@
                 </div>
                 <div id="tunnel-pending-row" class="hidden items-center gap-2 mb-3">
                     <span class="text-amber-400 text-xs font-mono uppercase tracking-wider">Pending payment</span>
-                    <button onclick="payPendingTunnelInvoice()"
+                    <button id="tunnel-pay-invoice-btn"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Pay Invoice
                     </button>
                 </div>
             </div>
-            <a href="#" id="tunnel-more-btn" onclick="toggleTunnelDetails()" class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase transition-colorshover:border-ln-pink/30">
+            <a href="#" id="tunnel-more-btn" class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase transition-colorshover:border-ln-pink/30">
                 More
             </a>
         </div>
@@ -110,7 +110,7 @@
                 <div><span class="text-ln-muted">Session key:</span> <span class="text-ln-text" id="tunnel-client-id">--</span></div>
                 <div><span class="text-ln-muted">Port:</span> <span id="tunnel-remote-port">--</span></div>
                 <div>
-                    <button id="tunnel-copy-script-btn" onclick="copyTunnelScript()"
+                    <button id="tunnel-copy-script-btn"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
                         Copy Connect Script
                     </button>
@@ -125,7 +125,7 @@
         <div class="flex items-center gap-3">
             <div class="w-2.5 h-2.5 rounded-full" id="tor-dot"></div>
             <code class="text-sm sm:text-base font-mono text-ln-text truncate flex-1" id="stat-tor-address">--</code>
-            <button onclick="copyOnion()" id="tor-copy-btn"
+            <button id="tor-copy-btn"
                     class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0">
                 Copy
             </button>
@@ -155,11 +155,11 @@
         </div>
 
         <div class="flex gap-3" id="db-buttons">
-            <button onclick="confirmDbBackup()" id="db-backup-btn"
+            <button id="db-backup-btn"
                     class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
                 Download Backup
             </button>
-            <button onclick="openRestoreModal()" id="db-restore-btn"
+            <button id="db-restore-btn"
                     class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
                 Restore Backup
             </button>
@@ -182,7 +182,7 @@
                 <span class="text-sm font-mono text-ln-text" id="update-latest-version"></span>
             </div>
             <div class="text-ln-muted text-xs font-mono mb-3 max-h-24 overflow-y-auto whitespace-pre-wrap border border-ln-border rounded-lg p-2" id="update-release-notes"></div>
-            <button onclick="confirmUpdate()"
+            <button id="update-now-btn"
                     class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
                 Update Now
             </button>
@@ -208,7 +208,7 @@
 
         {# Idle / check state #}
         <div class="flex items-center gap-3 mt-3" id="update-check-section">
-            <button onclick="checkForUpdate()"
+            <button
                     class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
                     id="update-check-btn">
                 Check for updates
@@ -302,15 +302,15 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="svc-lnbits-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
-                        <button id="svc-lnbits-restart-btn" onclick="confirmAction('restart/lnbits', 'Restart LNbits?', 'svc-lnbits-restart-btn')"
+                        <button id="svc-lnbits-restart-btn" data-confirm-action="restart/lnbits" data-confirm-message="Restart LNbits?"
                                 class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                             Restart
                         </button>
-                        <button id="svc-lnbits-start-btn" onclick="executeAction('start/lnbits', 'svc-lnbits-start-btn')"
+                        <button id="svc-lnbits-start-btn" data-run-action="start/lnbits"
                                 class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
                             Start
                         </button>
-                        <button id="svc-lnbits-stop-btn" onclick="confirmAction('stop/lnbits', 'Stop LNbits?', 'svc-lnbits-stop-btn')"
+                        <button id="svc-lnbits-stop-btn" data-confirm-action="stop/lnbits" data-confirm-message="Stop LNbits?"
                                 class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
                             Stop
                         </button>
@@ -324,15 +324,15 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="svc-spark-sidecar-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
-                        <button id="svc-spark-sidecar-restart-btn" onclick="confirmAction('restart/spark-sidecar', 'Restart Spark?', 'svc-spark-sidecar-restart-btn')"
+                        <button id="svc-spark-sidecar-restart-btn" data-confirm-action="restart/spark-sidecar" data-confirm-message="Restart Spark?"
                                 class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                             Restart
                         </button>
-                        <button id="svc-spark-sidecar-start-btn" onclick="executeAction('start/spark-sidecar', 'svc-spark-sidecar-start-btn')"
+                        <button id="svc-spark-sidecar-start-btn" data-run-action="start/spark-sidecar"
                                 class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
                             Start
                         </button>
-                        <button id="svc-spark-sidecar-stop-btn" onclick="confirmAction('stop/spark-sidecar', 'Stop Spark?', 'svc-spark-sidecar-stop-btn')"
+                        <button id="svc-spark-sidecar-stop-btn" data-confirm-action="stop/spark-sidecar" data-confirm-message="Stop Spark?"
                                 class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
                             Stop
                         </button>
@@ -346,15 +346,15 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="svc-tor-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
-                        <button id="svc-tor-restart-btn" onclick="confirmAction('restart/tor', 'Restart Tor?', 'svc-tor-restart-btn')"
+                        <button id="svc-tor-restart-btn" data-confirm-action="restart/tor" data-confirm-message="Restart Tor?"
                                 class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                             Restart
                         </button>
-                        <button id="svc-tor-start-btn" onclick="executeAction('start/tor', 'svc-tor-start-btn')"
+                        <button id="svc-tor-start-btn" data-run-action="start/tor"
                                 class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
                             Start
                         </button>
-                        <button id="svc-tor-stop-btn" onclick="confirmAction('stop/tor', 'Stop Tor?', 'svc-tor-stop-btn')"
+                        <button id="svc-tor-stop-btn" data-confirm-action="stop/tor" data-confirm-message="Stop Tor?"
                                 class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
                             Stop
                         </button>
@@ -368,19 +368,19 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span id="svc-tunnel-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
-                        <button id="svc-tunnel-create-btn" onclick="focusTunnelCreate()"
+                        <button id="svc-tunnel-create-btn"
                                 class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                             Create Tunnel
                         </button>
-                        <button id="svc-tunnel-restart-btn" onclick="confirmAction('tunnel/start', 'Restart Tunnel Me Out service?', 'svc-tunnel-restart-btn')"
+                        <button id="svc-tunnel-restart-btn" data-confirm-action="tunnel/start" data-confirm-message="Restart Tunnel Me Out service?"
                                 class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
                             Restart
                         </button>
-                        <button id="svc-tunnel-start-btn" onclick="executeAction('tunnel/start', 'svc-tunnel-start-btn')"
+                        <button id="svc-tunnel-start-btn" data-run-action="tunnel/start"
                                 class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
                             Start
                         </button>
-                        <button id="svc-tunnel-stop-btn" onclick="confirmAction('tunnel/stop', 'Stop Tunnel Me Out service?', 'svc-tunnel-stop-btn')"
+                        <button id="svc-tunnel-stop-btn" data-confirm-action="tunnel/stop" data-confirm-message="Stop Tunnel Me Out service?"
                                 class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
                             Stop
                         </button>
@@ -404,7 +404,7 @@
                         <span class="font-mono text-sm shrink-0">WiFi</span>
                         <span class="text-ln-muted font-mono text-xs truncate" id="net-wifi-status">--</span>
                     </div>
-                    <button onclick="openWifiScan()"
+                    <button id="wifi-open-scan-btn"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0 ml-2">
                         Scan
                     </button>
@@ -421,11 +421,11 @@
         <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
             <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-4">System</div>
             <div class="grid grid-cols-2 gap-3">
-                <button onclick="confirmAction('reboot', 'Reboot LNbitsBox?')"
+                <button id="system-reboot-btn" data-confirm-action="reboot" data-confirm-message="Reboot LNbitsBox?"
                         class="bg-ln-surface hover:bg-ln-card-hover border border-ln-border hover:border-amber-500/30 text-ln-text font-mono text-sm py-3 px-4 rounded-lg transition-all duration-200">
                     Restart
                 </button>
-                <button onclick="confirmAction('shutdown', 'Shut down LNbitsBox?')"
+                <button id="system-shutdown-btn" data-confirm-action="shutdown" data-confirm-message="Shut down LNbitsBox?"
                         class="bg-ln-surface hover:bg-ln-card-hover border border-ln-border hover:border-red-500/30 text-ln-text font-mono text-sm py-3 px-4 rounded-lg transition-all duration-200">
                     Shutdown
                 </button>
@@ -447,7 +447,7 @@
         <p class="text-lg font-display font-semibold mb-2" id="confirm-title">Are you sure?</p>
         <p class="text-ln-muted text-sm font-mono mb-6" id="confirm-message"></p>
         <div class="flex gap-3">
-            <button onclick="closeModal()"
+            <button id="confirm-cancel-btn"
                     class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
                 Cancel
             </button>
@@ -464,7 +464,7 @@
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-sm w-full glow-pink">
         <p class="text-lg font-display font-semibold mb-2" id="notice-title">Notice</p>
         <p class="text-ln-muted text-sm font-mono mb-6" id="notice-message"></p>
-        <button onclick="closeNoticeModal()"
+        <button id="notice-close-btn"
                 class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
             Close
         </button>
@@ -476,7 +476,7 @@
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
         <div class="flex items-center justify-between mb-4">
             <p class="text-lg font-display font-semibold">WiFi Networks</p>
-            <button onclick="closeWifiModal()" class="text-ln-muted hover:text-ln-text transition-colors">
+            <button id="wifi-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -490,30 +490,30 @@
         </div>
 
         {# Connect form (hidden initially) #}
-        <div id="wifi-connect-form" class="hidden">
+        <form id="wifi-connect-form" class="hidden" novalidate>
             <div class="flex items-center gap-2 mb-4">
-                <button onclick="showScanList()" class="text-ln-muted hover:text-ln-text transition-colors">
+                <button type="button" id="wifi-back-btn" class="text-ln-muted hover:text-ln-text transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                 </button>
                 <span class="font-mono text-sm font-semibold" id="wifi-connect-ssid"></span>
             </div>
             <div id="wifi-password-group" class="mb-4">
-                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Password</label>
-                <input type="password" id="wifi-password"
+                <label for="wifi-password" class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Password</label>
+                <input type="password" id="wifi-password" name="wifi_password" autocomplete="current-password"
                        class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
                        placeholder="Enter password">
             </div>
             <div class="flex gap-3">
-                <button onclick="showScanList()"
+                <button type="button" id="wifi-cancel-btn"
                         class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
                     Cancel
                 </button>
-                <button onclick="connectToWifi()"
+                <button type="submit" id="wifi-connect-btn"
                         class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
                     Connect
                 </button>
             </div>
-        </div>
+        </form>
 
         {# Connecting status #}
         <div id="wifi-connecting" class="hidden">
@@ -531,11 +531,11 @@
                 <span class="text-ln-muted font-mono text-xs" id="wifi-result-ip"></span>
             </div>
             <div class="flex gap-3" id="wifi-result-actions">
-                <button onclick="showScanList()"
+                <button id="wifi-try-another-btn"
                         class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
                     Try Another
                 </button>
-                <button onclick="closeWifiModal()"
+                <button id="wifi-done-btn"
                         class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
                     Done
                 </button>
@@ -549,7 +549,7 @@
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
         <div class="flex items-center justify-between mb-4">
             <p class="text-lg font-display font-semibold">Restore Database</p>
-            <button onclick="closeRestoreModal()" class="text-ln-muted hover:text-ln-text transition-colors">
+            <button id="restore-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -567,11 +567,11 @@
                    class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
 
             <div class="flex gap-3">
-                <button onclick="closeRestoreModal()"
+                <button id="restore-cancel-btn"
                         class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
                     Cancel
                 </button>
-                <button onclick="startRestore()" id="restore-confirm-btn"
+                <button id="restore-confirm-btn"
                         class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
                     Restore
                 </button>
@@ -592,7 +592,7 @@
                 <div class="w-8 h-8 rounded-full mb-3" id="restore-result-icon"></div>
                 <span class="font-mono text-sm mb-1" id="restore-result-text"></span>
             </div>
-            <button onclick="closeRestoreModal()"
+            <button id="restore-result-close-btn"
                     class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
                 Close
             </button>
@@ -605,7 +605,7 @@
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
         <div class="flex items-center justify-between mb-4">
             <p class="text-lg font-display font-semibold">Pay to Add Tunnel Credit</p>
-            <button onclick="closeTunnelInvoiceModal()" class="text-ln-muted hover:text-ln-text transition-colors">
+            <button id="tunnel-invoice-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -615,7 +615,7 @@
         <textarea id="tunnel-invoice-text" readonly
                   class="w-full h-24 bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-xs font-mono text-ln-text mb-3"></textarea>
         <div class="flex gap-2">
-            <button onclick="copyTunnelInvoice()"
+            <button id="tunnel-invoice-copy-btn"
                     class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-3 rounded-lg transition-colors">
                 Copy
             </button>
@@ -623,1404 +623,11 @@
         </div>
     </div>
 </div>
-
-<script>
-// ── CSRF Protection ────────────────────────────────────────────
-// Wrap fetch() to automatically include the CSRF token on mutating requests
-(function() {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    if (!csrfToken) return;
-    const _fetch = window.fetch;
-    window.fetch = function(url, opts) {
-        opts = opts || {};
-        const method = (opts.method || 'GET').toUpperCase();
-        if (method !== 'GET' && method !== 'HEAD') {
-            opts.headers = Object.assign({}, opts.headers, {'X-CSRFToken': csrfToken});
-        }
-        return _fetch.call(this, url, opts);
-    };
-})();
-
-// ── Theme-aware colors ─────────────────────────────────────────
-const _cs = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim().split(' ').join(',');
-const thBorder = _cs('--ln-border');
-const thMuted  = _cs('--ln-muted');
-
-// ── Chart Setup ────────────────────────────────────────────────
-const chartOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 300 },
-    plugins: {
-        legend: { display: false },
-        tooltip: {
-            enabled: true,
-            backgroundColor: 'rgb(' + _cs('--ln-card') + ')',
-            titleColor: 'rgb(' + thMuted + ')',
-            bodyColor: 'rgb(' + _cs('--ln-text') + ')',
-            borderColor: 'rgb(' + thBorder + ')',
-            borderWidth: 1,
-            titleFont: { family: 'JetBrains Mono', size: 11 },
-            bodyFont: { family: 'JetBrains Mono', size: 12 },
-            padding: 8,
-            displayColors: false,
-            callbacks: {
-                label: ctx => ctx.parsed.y.toFixed(1) + '%',
-            },
-        },
-    },
-    interaction: {
-        mode: 'index',
-        intersect: false,
-    },
-    scales: {
-        x: {
-            display: true,
-            grid: { display: false },
-            ticks: {
-                color: 'rgb(' + thMuted + ')',
-                font: { family: 'JetBrains Mono', size: 9 },
-                maxTicksLimit: 6,
-            },
-        },
-        y: {
-            min: 0, max: 100,
-            grid: { color: 'rgba(' + thBorder + ',0.5)' },
-            ticks: {
-                color: 'rgb(' + thMuted + ')',
-                font: { family: 'JetBrains Mono', size: 10 },
-                callback: v => v + '%',
-            },
-        },
-    },
-    elements: {
-        point: { radius: 0, hoverRadius: 5, hitRadius: 20, hoverBorderWidth: 2 },
-        line: { tension: 0.3, borderWidth: 2 },
-    },
-};
-
-const cpuChart = new Chart(document.getElementById('chart-cpu'), {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            data: [],
-            borderColor: '#FF1EE6',
-            backgroundColor: 'rgba(255,30,230,0.08)',
-            fill: true,
-        }],
-    },
-    options: { ...chartOpts },
-});
-
-const ramChart = new Chart(document.getElementById('chart-ram'), {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            data: [],
-            borderColor: '#22d3ee',
-            backgroundColor: 'rgba(34,211,238,0.08)',
-            fill: true,
-        }],
-    },
-    options: { ...chartOpts },
-});
-
-const tempChartOpts = JSON.parse(JSON.stringify(chartOpts));
-tempChartOpts.scales.y = {
-    min: 20, max: 90,
-    grid: { color: 'rgba(' + thBorder + ',0.5)' },
-    ticks: {
-        color: 'rgb(' + thMuted + ')',
-        font: { family: 'JetBrains Mono', size: 10 },
-        callback: v => v + '°',
-    },
-};
-tempChartOpts.plugins.tooltip.callbacks = { label: ctx => ctx.parsed.y.toFixed(1) + '°C' };
-
-const tempChart = new Chart(document.getElementById('chart-temp'), {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            data: [],
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245,158,11,0.08)',
-            fill: true,
-        }],
-    },
-    options: tempChartOpts,
-});
-
-// ── Stats Polling ──────────────────────────────────────────────
-function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i];
-}
-
-function tempColor(temp) {
-    if (temp === null) return 'text-ln-muted';
-    if (temp < 55) return 'text-emerald-400';
-    if (temp < 70) return 'text-amber-400';
-    return 'text-red-400';
-}
-
-function svcColor(status) {
-    return status === 'active' ? 'bg-emerald-400' : 'bg-red-400';
-}
-
-function serviceStatusLabel(status) {
-    const s = status || 'unknown';
-    if (s === 'active') return 'Running';
-    if (s === 'inactive') return 'Stopped';
-    if (s === 'activating') return 'Starting';
-    if (s === 'deactivating') return 'Stopping';
-    if (s === 'failed') return 'Error';
-    return s;
-}
-
-function setServiceActionVisibility(service, status, options = {}) {
-    const loading = document.getElementById('svc-' + service + '-actions-loading');
-    const createBtn = document.getElementById('svc-' + service + '-create-btn');
-    const restartBtn = document.getElementById('svc-' + service + '-restart-btn');
-    const startBtn = document.getElementById('svc-' + service + '-start-btn');
-    const stopBtn = document.getElementById('svc-' + service + '-stop-btn');
-    if (!startBtn || !stopBtn || !restartBtn) return;
-    if (loading) loading.classList.add('hidden');
-    if (createBtn) createBtn.classList.add('hidden');
-    if (service === 'tunnel' && options.hasTunnel === false) {
-        restartBtn.classList.add('hidden');
-        startBtn.classList.add('hidden');
-        stopBtn.classList.add('hidden');
-        if (createBtn) createBtn.classList.remove('hidden');
-        return;
-    }
-    const isActive = status === 'active';
-    restartBtn.classList.toggle('hidden', !isActive);
-    startBtn.classList.toggle('hidden', isActive);
-    stopBtn.classList.toggle('hidden', !isActive);
-}
-
-async function fetchStats() {
-    try {
-        const resp = await fetch('/box/api/stats');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const s = data.current;
-
-        // Balance
-        const bal = s.spark_balance;
-        document.getElementById('stat-balance').textContent =
-            bal && bal.balance !== undefined ? Number(bal.balance).toLocaleString() : '--';
-
-        // Uptime
-        document.getElementById('stat-uptime').textContent = s.uptime.formatted;
-
-        // Temperature
-        const tempEl = document.getElementById('stat-temp');
-        tempEl.textContent = s.cpu_temp !== null ? s.cpu_temp : '--';
-        tempEl.className = 'text-2xl sm:text-3xl font-display font-bold ' + tempColor(s.cpu_temp);
-
-        // Disk
-        document.getElementById('stat-disk').textContent = s.disk.percent + '%';
-        document.getElementById('stat-disk-bar').style.width = s.disk.percent + '%';
-        document.getElementById('stat-disk-detail').textContent =
-            formatBytes(s.disk.used) + ' / ' + formatBytes(s.disk.total);
-
-        // RAM
-        document.getElementById('stat-ram').textContent = s.ram.percent + '%';
-        document.getElementById('stat-ram-bar').style.width = s.ram.percent + '%';
-        document.getElementById('stat-ram-detail').textContent =
-            formatBytes(s.ram.used) + ' / ' + formatBytes(s.ram.total);
-
-        // Tor
-        const onion = s.tor_onion;
-        const torAddr = document.getElementById('stat-tor-address');
-        const torDot = document.getElementById('tor-dot');
-        const torCopyBtn = document.getElementById('tor-copy-btn');
-        if (onion) {
-            torAddr.textContent = onion;
-            torDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-400';
-            torCopyBtn.classList.remove('hidden');
-        } else {
-            torAddr.textContent = 'Waiting for Tor...';
-            torDot.className = 'w-2.5 h-2.5 rounded-full bg-ln-muted animate-pulse';
-            torCopyBtn.classList.add('hidden');
-        }
-
-        // Services
-        for (const svc of ['lnbits', 'spark-sidecar', 'tor']) {
-            const status = s.services[svc] || 'unknown';
-            document.getElementById('svc-' + svc + '-dot').className =
-                'w-2.5 h-2.5 rounded-full ' + svcColor(status);
-            document.getElementById('svc-' + svc + '-status').textContent = serviceStatusLabel(status);
-            setServiceActionVisibility(svc, status);
-        }
-
-        // Network
-        if (s.network) {
-            const net = s.network;
-            // Internet
-            document.getElementById('net-internet-dot').className =
-                'w-2.5 h-2.5 rounded-full ' + (net.internet ? 'bg-emerald-400' : 'bg-red-400');
-            document.getElementById('net-internet-status').textContent =
-                net.internet ? 'Connected' : 'Disconnected';
-            // WiFi
-            if (net.wifi) {
-                document.getElementById('net-wifi-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
-                document.getElementById('net-wifi-status').textContent =
-                    '"' + net.wifi.ssid + '" (' + net.wifi.ip + ')';
-            } else {
-                document.getElementById('net-wifi-dot').className = 'w-2.5 h-2.5 rounded-full bg-gray-600 shrink-0';
-                document.getElementById('net-wifi-status').textContent = 'Not connected';
-            }
-            // Ethernet
-            if (net.ethernet) {
-                document.getElementById('net-eth-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-                document.getElementById('net-eth-status').textContent = net.ethernet.ip;
-            } else {
-                document.getElementById('net-eth-dot').className = 'w-2.5 h-2.5 rounded-full bg-gray-600';
-                document.getElementById('net-eth-status').textContent = 'Not connected';
-            }
-        }
-
-        // LNbits status card is updated by its own poller (updateLnbitsStatus)
-
-        // Charts
-        const labels = data.history.timestamps.map(t => {
-            const d = new Date(t);
-            return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-        });
-
-        cpuChart.data.labels = labels;
-        cpuChart.data.datasets[0].data = data.history.cpu;
-        cpuChart.update('none');
-
-        ramChart.data.labels = labels;
-        ramChart.data.datasets[0].data = data.history.ram;
-        ramChart.update('none');
-
-        tempChart.data.labels = labels;
-        tempChart.data.datasets[0].data = data.history.temp;
-        tempChart.update('none');
-
-    } catch (e) {
-        console.error('Stats fetch failed:', e);
-    }
-}
-
-// ── DEV_MODE: seed charts with mock data ───────────────────────
-{% if dev_mode %}
-(function seedMockData() {
-    const now = Date.now();
-    const points = 60;
-    const labels = [];
-    const cpu = [];
-    const ram = [];
-    const temp = [];
-    for (let i = points; i > 0; i--) {
-        const t = new Date(now - i * 30000);
-        labels.push(t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0'));
-        cpu.push(Math.round(15 + 40 * Math.sin(i / 8) ** 2 + Math.random() * 10));
-        ram.push(Math.round(45 + 15 * Math.sin(i / 12) + Math.random() * 5));
-        temp.push(Math.round(42 + 12 * Math.sin(i / 10) + Math.random() * 3));
-    }
-    cpuChart.data.labels = labels;
-    cpuChart.data.datasets[0].data = cpu;
-    cpuChart.update('none');
-    ramChart.data.labels = labels;
-    ramChart.data.datasets[0].data = ram;
-    ramChart.update('none');
-    tempChart.data.labels = labels;
-    tempChart.data.datasets[0].data = temp;
-    tempChart.update('none');
-})();
-{% endif %}
-
-// Initial fetch + poll every 10s
-fetchStats();
-setInterval(fetchStats, 10000);
-
-// ── LNbits HTTP Status Polling (every 2s) ─────────────────────
-async function updateLnbitsStatus() {
-    const statusDot = document.getElementById('lnbits-status-dot');
-    const statusText = document.getElementById('lnbits-status-text');
-    const statusBadge = document.getElementById('lnbits-status-badge');
-    const statusCard = document.getElementById('lnbits-status-card');
-    const openLink = document.getElementById('lnbits-open-link');
-
-    try {
-        const resp = await fetch('/box/api/lnbits-status');
-        if (!resp.ok) return;
-        const data = await resp.json();
-
-        if (data.status === 'running') {
-            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse transition-colors duration-300';
-            statusText.textContent = 'LNbits is running';
-            statusText.className = 'text-emerald-400/70 text-sm transition-colors duration-300';
-            statusBadge.textContent = 'running';
-            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-emerald-400 border-emerald-400/30 bg-emerald-400/5';
-            statusCard.className = 'bg-ln-surface border border-emerald-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
-            openLink.classList.remove('opacity-50', 'pointer-events-none');
-        } else if (data.status === 'starting') {
-            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse transition-colors duration-300';
-            statusText.textContent = 'LNbits is starting...';
-            statusText.className = 'text-amber-400/70 text-sm transition-colors duration-300';
-            statusBadge.textContent = 'starting';
-            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-amber-400 border-amber-400/30 bg-amber-400/5';
-            statusCard.className = 'bg-ln-surface border border-amber-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
-            openLink.classList.add('opacity-50', 'pointer-events-none');
-        } else {
-            statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-400 transition-colors duration-300';
-            statusText.textContent = data.status === 'error' ? 'LNbits error (HTTP ' + data.code + ')' : 'LNbits is stopped';
-            statusText.className = 'text-red-400/70 text-sm transition-colors duration-300';
-            statusBadge.textContent = data.status;
-            statusBadge.className = 'text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border transition-all duration-300 text-red-400 border-red-400/30 bg-red-400/5';
-            statusCard.className = 'bg-ln-surface border border-red-400/20 rounded-xl p-4 mb-6 transition-all duration-500';
-            openLink.classList.add('opacity-50', 'pointer-events-none');
-        }
-    } catch (e) {
-        console.error('LNbits status check failed:', e);
-    }
-}
-
-const TUNNEL_POLL_FAST_MS = 5000;
-const TUNNEL_POLL_SLOW_MS = 30000;
-const LNBITS_POLL_MS = 15000;
-const HIDDEN_TAB_POLL_MS = 60000;
-let tunnelPollLoopTimer = null;
-let lnbitsPollLoopTimer = null;
-
-function nextTunnelPollDelay() {
-    if (document.hidden) return HIDDEN_TAB_POLL_MS;
-    const hasPending = !!(tunnelState && tunnelState.pending_invoice);
-    return hasPending ? TUNNEL_POLL_FAST_MS : TUNNEL_POLL_SLOW_MS;
-}
-
-function nextLnbitsPollDelay() {
-    return document.hidden ? HIDDEN_TAB_POLL_MS : LNBITS_POLL_MS;
-}
-
-async function runTunnelPollLoop() {
-    await fetchTunnelStatus();
-    tunnelPollLoopTimer = setTimeout(runTunnelPollLoop, nextTunnelPollDelay());
-}
-
-async function runLnbitsPollLoop() {
-    await updateLnbitsStatus();
-    lnbitsPollLoopTimer = setTimeout(runLnbitsPollLoop, nextLnbitsPollDelay());
-}
-
-function restartStatusPollLoops() {
-    if (tunnelPollLoopTimer) {
-        clearTimeout(tunnelPollLoopTimer);
-        tunnelPollLoopTimer = null;
-    }
-    if (lnbitsPollLoopTimer) {
-        clearTimeout(lnbitsPollLoopTimer);
-        lnbitsPollLoopTimer = null;
-    }
-    runTunnelPollLoop();
-    runLnbitsPollLoop();
-}
-
-restartStatusPollLoops();
-document.addEventListener('visibilitychange', restartStatusPollLoops);
-
-// ── Actions ────────────────────────────────────────────────────
-let pendingAction = null;
-let pendingActionButtonId = null;
-
-function confirmAction(action, message, buttonId) {
-    pendingAction = action;
-    pendingActionButtonId = buttonId || null;
-    document.getElementById('confirm-message').textContent = message;
-    document.getElementById('confirm-modal').classList.remove('hidden');
-    document.getElementById('confirm-btn').onclick = () => executeAction(action, pendingActionButtonId);
-}
-
-function closeModal() {
-    document.getElementById('confirm-modal').classList.add('hidden');
-    pendingAction = null;
-    pendingActionButtonId = null;
-}
-
-function showNotice(message, title) {
-    document.getElementById('notice-title').textContent = title || 'Notice';
-    document.getElementById('notice-message').textContent = message || '';
-    document.getElementById('notice-modal').classList.remove('hidden');
-}
-
-function closeNoticeModal() {
-    document.getElementById('notice-modal').classList.add('hidden');
-}
-
-async function executeAction(action, sourceButtonId) {
-    closeModal();
-    const releaseBusy = setActionBusy(action, sourceButtonId);
-    try {
-        const resp = await fetch('/box/api/' + action, { method: 'POST' });
-        const data = await resp.json();
-        if (data.status === 'ok') {
-            setTimeout(fetchStats, 1200);
-            if (action.startsWith('tunnel/')) {
-                setTimeout(fetchTunnelStatus, 1200);
-            }
-            // Show brief feedback
-            const msg = action === 'shutdown' ? 'Shutting down...' :
-                        action === 'reboot' ? 'Rebooting...' : data.message;
-            showNotice(msg, 'Success');
-        } else {
-            showNotice('Error: ' + data.message, 'Error');
-        }
-    } catch (e) {
-        showNotice('Request failed', 'Error');
-    } finally {
-        releaseBusy();
-    }
-}
-
-async function copyOnion() {
-    const addr = document.getElementById('stat-tor-address').textContent;
-    if (!addr || addr === '--' || addr.startsWith('Waiting')) return;
-    try {
-        await navigator.clipboard.writeText('http://' + addr);
-        const btn = document.getElementById('tor-copy-btn');
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-    } catch (e) {
-        // Fallback for non-HTTPS contexts
-        const ta = document.createElement('textarea');
-        ta.value = 'http://' + addr;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        const btn = document.getElementById('tor-copy-btn');
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-    }
-}
-
-// ── Reverse Tunnel ─────────────────────────────────────────────
-let tunnelState = null;
-let tunnelPollTimer = null;
-let tunnelInvoiceQr = null;
-let tunnelInvoiceLoading = false;
-const TUNNEL_EXPIRY_ALERT_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-function isTunnelAlertSupported() {
-    return typeof window !== 'undefined' && 'Notification' in window;
-}
-
-function formatExpiryCountdown(msLeft) {
-    if (msLeft <= 0) return 'already expired';
-    const hours = Math.ceil(msLeft / (60 * 60 * 1000));
-    if (hours < 24) return `in ${hours}h`;
-    const days = Math.ceil(hours / 24);
-    return `in ${days}d`;
-}
-
-function tunnelAlertStorageKey(tunnelId, expiresAt) {
-    return `lnbitsbox:tunnel-expiry-alert:${tunnelId || 'unknown'}:${expiresAt || 'unknown'}`;
-}
-
-function tunnelAlertAlreadySent(key) {
-    try {
-        return !!localStorage.getItem(key);
-    } catch (e) {
-        return false;
-    }
-}
-
-function markTunnelAlertSent(key) {
-    try {
-        localStorage.setItem(key, new Date().toISOString());
-    } catch (e) {
-        // localStorage unavailable; skip persistence and avoid crashing
-    }
-}
-
-function updateTunnelAlertStatus(hasTunnel, expiresAt) {
-    const statusEl = document.getElementById('tunnel-alert-status');
-    const buttonEl = document.getElementById('tunnel-alert-enable-btn');
-    if (!statusEl || !buttonEl) return;
-    if (!isTunnelAlertSupported()) {
-        statusEl.textContent = 'Browser notifications unsupported';
-        buttonEl.disabled = true;
-        buttonEl.classList.add('opacity-50');
-        return;
-    }
-
-    const permission = Notification.permission;
-    if (permission === 'granted') {
-        if (!hasTunnel || !expiresAt) {
-            statusEl.textContent = 'Alerts enabled';
-        } else {
-            const msLeft = new Date(expiresAt).getTime() - Date.now();
-            statusEl.textContent = msLeft <= TUNNEL_EXPIRY_ALERT_WINDOW_MS
-                ? `Expiry warning active (${formatExpiryCountdown(msLeft)})`
-                : 'Alerts enabled';
-        }
-        buttonEl.classList.add('hidden');
-        return;
-    }
-
-    if (permission === 'denied') {
-        statusEl.textContent = 'Blocked in browser settings';
-        buttonEl.classList.add('hidden');
-        return;
-    }
-
-    statusEl.textContent = hasTunnel ? 'Browser notifications off' : 'No active tunnel';
-    buttonEl.classList.remove('hidden');
-    buttonEl.disabled = false;
-    buttonEl.classList.remove('opacity-50');
-}
-
-async function enableTunnelExpiryAlerts() {
-    if (!isTunnelAlertSupported()) {
-        showNotice('Browser notifications are not supported on this device.', 'Tunnel Alerts');
-        return;
-    }
-    try {
-        const result = await Notification.requestPermission();
-        updateTunnelAlertStatus(
-            !!(tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id),
-            tunnelState && tunnelState.current_tunnel ? tunnelState.current_tunnel.expires_at : null
-        );
-        if (result === 'granted') {
-            showNotice('Tunnel expiry alerts enabled for this browser.', 'Tunnel Alerts');
-        } else if (result === 'denied') {
-            showNotice('Notifications are blocked. Enable them in browser settings.', 'Tunnel Alerts');
-        }
-    } catch (e) {
-        showNotice('Failed to enable notifications.', 'Tunnel Alerts');
-    }
-}
-
-function maybeNotifyTunnelExpiry(currentTunnel) {
-    if (!isTunnelAlertSupported() || Notification.permission !== 'granted') return;
-    if (!currentTunnel || !currentTunnel.tunnel_id || !currentTunnel.expires_at) return;
-    const expiresAt = new Date(currentTunnel.expires_at);
-    const expiresMs = expiresAt.getTime();
-    if (Number.isNaN(expiresMs)) return;
-    const msLeft = expiresMs - Date.now();
-    if (msLeft > TUNNEL_EXPIRY_ALERT_WINDOW_MS) return;
-
-    const key = tunnelAlertStorageKey(currentTunnel.tunnel_id, currentTunnel.expires_at);
-    if (tunnelAlertAlreadySent(key)) return;
-
-    const countdown = formatExpiryCountdown(msLeft);
-    const label = currentTunnel.subdomain || currentTunnel.tunnel_id;
-    try {
-        const n = new Notification('Tunnel expires soon', {
-            body: `${label} ${countdown}. Open LNbitsBox to renew.`,
-            tag: key,
-        });
-        if (n && typeof n.close === 'function') {
-            setTimeout(() => n.close(), 12000);
-        }
-        markTunnelAlertSent(key);
-    } catch (e) {
-        // Ignore notification errors; UI status remains available.
-    }
-}
-
-function setTunnelInvoiceButtonLoading(isLoading) {
-    tunnelInvoiceLoading = isLoading;
-    const btn = document.getElementById('tunnel-invoice-btn');
-    if (!btn) return;
-    if (isLoading) {
-        btn.disabled = true;
-        btn.classList.add('opacity-70', 'cursor-not-allowed');
-        btn.innerHTML = '<span class="inline-flex items-center gap-2"><span class="w-3.5 h-3.5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"></span><span>Getting invoice</span></span>';
-        return;
-    }
-    btn.disabled = false;
-    btn.classList.remove('opacity-70', 'cursor-not-allowed');
-    const hasTunnel = tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id;
-    btn.textContent = hasTunnel ? 'Add Days' : 'Create Tunnel';
-}
-
-function focusTunnelCreate() {
-    const card = document.getElementById('tunnel-card');
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const input = document.getElementById('tunnel-days-input');
-    if (input) input.focus();
-}
-
-function setActionBusy(action, sourceButtonId) {
-    const actionVerb = action.startsWith('start/') ? 'start'
-        : action.startsWith('stop/') ? 'stop'
-            : action.startsWith('restart/') ? 'restart'
-                : action === 'tunnel/stop' ? 'stop'
-                    : action === 'tunnel/start' && sourceButtonId === 'svc-tunnel-restart-btn' ? 'restart'
-                        : action === 'tunnel/start' ? 'start'
-                        : null;
-    const service = action.startsWith('start/') || action.startsWith('stop/') || action.startsWith('restart/')
-        ? action.split('/')[1]
-        : action.startsWith('tunnel/')
-            ? 'tunnel'
-            : null;
-    if (!service || !actionVerb) return () => {};
-
-    const ids = [
-        'svc-' + service + '-start-btn',
-        'svc-' + service + '-stop-btn',
-        'svc-' + service + '-restart-btn',
-    ];
-    const labels = { start: 'Starting...', stop: 'Stopping...', restart: 'Restarting...' };
-    const spinner = '<span class="inline-flex items-center gap-2"><span class="w-3.5 h-3.5 border-2 border-white/70 border-t-transparent rounded-full animate-spin"></span><span>' + labels[actionVerb] + '</span></span>';
-    const btns = ids.map(id => document.getElementById(id)).filter(Boolean);
-    const target = document.getElementById(sourceButtonId || ('svc-' + service + '-' + actionVerb + '-btn'));
-    btns.forEach(btn => {
-        btn.dataset.prevDisabled = btn.disabled ? '1' : '0';
-        btn.disabled = true;
-        btn.classList.add('opacity-60', 'cursor-not-allowed');
-    });
-    if (target) {
-        target.dataset.prevHtml = target.innerHTML;
-        target.innerHTML = spinner;
-    }
-    return () => {
-        btns.forEach(btn => {
-            const wasDisabled = btn.dataset.prevDisabled === '1';
-            btn.disabled = wasDisabled;
-            btn.classList.remove('opacity-60', 'cursor-not-allowed');
-            delete btn.dataset.prevDisabled;
-        });
-        if (target && target.dataset.prevHtml) {
-            target.innerHTML = target.dataset.prevHtml;
-            delete target.dataset.prevHtml;
-        }
-    };
-}
-
-function toggleTunnelDetails() {
-    const panel = document.getElementById('tunnel-details');
-    const btn = document.getElementById('tunnel-more-btn');
-    const isHidden = panel.classList.contains('hidden');
-    panel.classList.toggle('hidden', !isHidden);
-    btn.textContent = isHidden ? 'Less' : 'More';
-}
-
-function formatTunnelDate(value) {
-    if (!value) return '--';
-    const dt = new Date(value);
-    if (Number.isNaN(dt.getTime())) return value;
-    return dt.toLocaleString();
-}
-
-function setTunnelStatusDot(status) {
-    const dot = document.getElementById('tunnel-status-dot');
-    if (status === 'active') {
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-        return;
-    }
-    if (status === 'pending') {
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
-        return;
-    }
-    dot.className = 'w-2.5 h-2.5 rounded-full bg-gray-600';
-}
-
-function renderTunnel(data) {
-    tunnelState = data;
-    const el = (id) => document.getElementById(id);
-    const current = data.current_tunnel || {};
-    const tunnelStatusRaw = current.status || 'unknown';
-    const tunnelStatusLabel = (tunnelStatusRaw === 'pending') ? 'pending payment' : tunnelStatusRaw;
-    const hasTunnel = !!current.tunnel_id;
-    const hasPending = !!data.pending_invoice;
-    updateTunnelAlertStatus(hasTunnel, current.expires_at);
-    maybeNotifyTunnelExpiry(current);
-
-    if (el('tunnel-client-id')) el('tunnel-client-id').textContent = data.client_id || '--';
-    if (el('tunnel-remote-port')) el('tunnel-remote-port').textContent = current.remote_port || '--';
-    if (el('tunnel-expires-at')) el('tunnel-expires-at').textContent = formatTunnelDate(current.expires_at);
-    if (el('tunnel-service-status')) el('tunnel-service-status').textContent = 'service: ' + serviceStatusLabel(data.service_status || '--');
-    if (el('tunnel-status-text')) el('tunnel-status-text').textContent = hasTunnel ? tunnelStatusLabel : 'No tunnel yet';
-    setTunnelStatusDot(tunnelStatusRaw);
-    const tunnelServiceActive = (data.service_status || '') === 'active';
-    if (el('tunnel-start-btn')) el('tunnel-start-btn').classList.toggle('hidden', tunnelServiceActive);
-    if (el('tunnel-stop-btn')) el('tunnel-stop-btn').classList.toggle('hidden', !tunnelServiceActive);
-    setServiceActionVisibility('tunnel', data.service_status || 'inactive', { hasTunnel });
-
-    const urlEl = el('tunnel-public-url');
-    const publicUrl = (current.public_url || '').trim();
-    if (publicUrl) {
-        if (urlEl) {
-            urlEl.href = publicUrl;
-            urlEl.textContent = publicUrl;
-            urlEl.rel = 'noopener noreferrer';
-        }
-    } else {
-        if (urlEl) {
-            urlEl.href = '#';
-            urlEl.textContent = '--';
-        }
-    }
-
-    if (tunnelInvoiceLoading) {
-        setTunnelInvoiceButtonLoading(true);
-    } else {
-        setTunnelInvoiceButtonLoading(false);
-    }
-    if (el('tunnel-copy-script-btn')) {
-        el('tunnel-copy-script-btn').disabled = !data.connect_script;
-        el('tunnel-copy-script-btn').classList.toggle('opacity-50', !data.connect_script);
-    }
-    if (el('tunnel-days-section')) el('tunnel-days-section').classList.toggle('hidden', hasPending);
-    if (el('tunnel-pending-row')) {
-        el('tunnel-pending-row').classList.toggle('hidden', !hasPending);
-        el('tunnel-pending-row').classList.toggle('flex', hasPending);
-    }
-    if (el('svc-tunnel-dot')) el('svc-tunnel-dot').className = 'w-2.5 h-2.5 rounded-full ' + svcColor(data.service_status || 'inactive');
-    if (el('svc-tunnel-status')) el('svc-tunnel-status').textContent = serviceStatusLabel(data.service_status || 'unknown');
-    if (el('svc-tunnel-restart-btn')) {
-        el('svc-tunnel-restart-btn').disabled = !hasTunnel;
-        el('svc-tunnel-restart-btn').classList.toggle('opacity-50', !hasTunnel);
-    }
-    if (el('svc-tunnel-start-btn')) {
-        el('svc-tunnel-start-btn').disabled = !hasTunnel;
-        el('svc-tunnel-start-btn').classList.toggle('opacity-50', !hasTunnel);
-    }
-    if (el('svc-tunnel-stop-btn')) {
-        el('svc-tunnel-stop-btn').disabled = !hasTunnel;
-        el('svc-tunnel-stop-btn').classList.toggle('opacity-50', !hasTunnel);
-    }
-    if (el('svc-tunnel-create-btn')) {
-        el('svc-tunnel-create-btn').disabled = hasPending;
-        el('svc-tunnel-create-btn').classList.toggle('opacity-50', hasPending);
-    }
-
-    if (!hasPending) {
-        stopTunnelPoll();
-    }
-}
-
-async function fetchTunnelStatus() {
-    try {
-        const resp = await fetch('/box/api/tunnel/status');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        renderTunnel(data);
-    } catch (e) {
-        console.error('Tunnel status fetch failed:', e);
-    }
-}
-
-function openTunnelInvoiceModal(bolt11) {
-    document.getElementById('tunnel-invoice-modal').classList.remove('hidden');
-    document.getElementById('tunnel-invoice-text').value = bolt11 || '';
-    document.getElementById('tunnel-invoice-status').textContent = 'Waiting for payment...';
-    const qrEl = document.getElementById('tunnel-invoice-qr');
-    qrEl.innerHTML = '';
-    if (bolt11) {
-        tunnelInvoiceQr = new QRCode(qrEl, {
-            text: bolt11,
-            width: 220,
-            height: 220,
-            correctLevel: QRCode.CorrectLevel.M,
-        });
-    }
-}
-
-function closeTunnelInvoiceModal() {
-    document.getElementById('tunnel-invoice-modal').classList.add('hidden');
-    stopTunnelPoll();
-}
-
-function payPendingTunnelInvoice() {
-    const pending = tunnelState && tunnelState.pending_invoice;
-    if (!pending || !pending.payment_request) {
-        return;
-    }
-    openTunnelInvoiceModal(pending.payment_request);
-    startTunnelPoll();
-}
-
-async function copyTunnelInvoice() {
-    const txt = document.getElementById('tunnel-invoice-text').value;
-    if (!txt) return;
-    await navigator.clipboard.writeText(txt);
-    const status = document.getElementById('tunnel-invoice-status');
-    status.textContent = 'Copied';
-    setTimeout(() => {
-        status.textContent = 'Waiting for payment...';
-    }, 1500);
-}
-
-function stopTunnelPoll() {
-    if (tunnelPollTimer) {
-        clearInterval(tunnelPollTimer);
-        tunnelPollTimer = null;
-    }
-}
-
-function startTunnelPoll() {
-    if (tunnelPollTimer) return;
-    tunnelPollTimer = setInterval(async () => {
-        try {
-            const resp = await fetch('/box/api/tunnel/poll', { method: 'POST' });
-            if (!resp.ok) return;
-            const data = await resp.json();
-            renderTunnel(data);
-            if (data.paid) {
-                document.getElementById('tunnel-invoice-status').textContent = 'Payment confirmed.';
-                setTimeout(() => closeTunnelInvoiceModal(), 1200);
-                stopTunnelPoll();
-            }
-        } catch (e) {
-            // keep polling while modal is open
-        }
-    }, 2500);
-}
-
-async function openTunnelInvoiceFlow() {
-    const days = parseInt(document.getElementById('tunnel-days-input').value || '0', 10);
-    if (!days || days <= 0) {
-        showNotice('Days must be greater than zero', 'Validation');
-        return;
-    }
-    setTunnelInvoiceButtonLoading(true);
-    const hasTunnel = tunnelState && tunnelState.current_tunnel && tunnelState.current_tunnel.tunnel_id;
-    const endpoint = hasTunnel ? '/box/api/tunnel/renew-invoice' : '/box/api/tunnel/create-invoice';
-    try {
-        const resp = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ days }),
-        });
-        const data = await resp.json();
-        if (!resp.ok || data.status !== 'ok') {
-            showNotice('Error: ' + (data.message || 'request failed'), 'Error');
-            return;
-        }
-        renderTunnel({
-            ...tunnelState,
-            current_tunnel: data.current_tunnel,
-            pending_invoice: data.invoice,
-            connect_script: data.connect_script,
-        });
-        openTunnelInvoiceModal(data.invoice.payment_request);
-        startTunnelPoll();
-    } catch (e) {
-        showNotice('Invoice request failed', 'Error');
-    } finally {
-        setTunnelInvoiceButtonLoading(false);
-    }
-}
-
-async function startTunnelService() {
-    try {
-        const resp = await fetch('/box/api/tunnel/start', { method: 'POST' });
-        const data = await resp.json();
-        if (!resp.ok || data.status !== 'ok') {
-            showNotice('Error: ' + (data.message || 'failed to start service'), 'Error');
-            return;
-        }
-        await fetchTunnelStatus();
-    } catch (e) {
-        showNotice('Failed to start tunnel service', 'Error');
-    }
-}
-
-async function stopTunnelService() {
-    try {
-        const resp = await fetch('/box/api/tunnel/stop', { method: 'POST' });
-        const data = await resp.json();
-        if (!resp.ok || data.status !== 'ok') {
-            showNotice('Error: ' + (data.message || 'failed to stop service'), 'Error');
-            return;
-        }
-        await fetchTunnelStatus();
-    } catch (e) {
-        showNotice('Failed to stop tunnel service', 'Error');
-    }
-}
-
-async function copyTunnelScript() {
-    const script = tunnelState && tunnelState.connect_script;
-    if (!script) return;
-    try {
-        await navigator.clipboard.writeText(script);
-        const btn = document.getElementById('tunnel-copy-script-btn');
-        const old = btn.textContent;
-        btn.textContent = 'Copied';
-        setTimeout(() => { btn.textContent = old; }, 1500);
-    } catch (e) {
-        showNotice('Failed to copy connect script', 'Error');
-    }
-}
-
-// ── WiFi Scan & Connect ────────────────────────────────────────
-let wifiSelectedSsid = '';
-let wifiSelectedFlags = '';
-let wifiConnectPoll = null;
-
-function signalBars(dbm) {
-    if (dbm >= -50) return '\u2582\u2584\u2586\u2588';
-    if (dbm >= -60) return '\u2582\u2584\u2586\u2007';
-    if (dbm >= -70) return '\u2582\u2584\u2007\u2007';
-    return '\u2582\u2007\u2007\u2007';
-}
-
-function isEncrypted(flags) {
-    return flags && (flags.includes('WPA') || flags.includes('WEP'));
-}
-
-function showWifiView(id) {
-    for (const v of ['wifi-scan-list', 'wifi-connect-form', 'wifi-connecting', 'wifi-result']) {
-        document.getElementById(v).classList.toggle('hidden', v !== id);
-    }
-}
-
-async function openWifiScan() {
-    document.getElementById('wifi-modal').classList.remove('hidden');
-    showWifiView('wifi-scan-list');
-    document.getElementById('wifi-scan-list').innerHTML =
-        '<div class="flex items-center justify-center py-8">' +
-        '<div class="w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3"></div>' +
-        '<span class="text-ln-muted font-mono text-sm">Scanning...</span></div>';
-
-    try {
-        const resp = await fetch('/box/api/wifi/scan', { method: 'POST' });
-        if (!resp.ok) throw new Error('Scan failed');
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error);
-
-        if (!data.networks || data.networks.length === 0) {
-            document.getElementById('wifi-scan-list').innerHTML =
-                '<p class="text-ln-muted font-mono text-sm text-center py-8">No networks found</p>';
-            return;
-        }
-
-        let html = '<div class="space-y-1 max-h-72 overflow-y-auto">';
-        for (const net of data.networks) {
-            const encrypted = isEncrypted(net.flags);
-            const lock = encrypted ? '<svg class="w-3.5 h-3.5 text-ln-muted shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>' : '';
-            html += '<button onclick="selectWifiNetwork(\'' + net.ssid.replace(/'/g, "\\'") + '\', \'' + net.flags.replace(/'/g, "\\'") + '\')" ' +
-                'class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-ln-surface transition-colors group">' +
-                '<div class="flex items-center gap-2 min-w-0">' + lock +
-                '<span class="font-mono text-sm truncate">' + net.ssid + '</span></div>' +
-                '<span class="font-mono text-sm text-ln-muted shrink-0 ml-2">' + signalBars(net.signal) + '</span></button>';
-        }
-        html += '</div>';
-        document.getElementById('wifi-scan-list').innerHTML = html;
-    } catch (e) {
-        document.getElementById('wifi-scan-list').innerHTML =
-            '<p class="text-red-400 font-mono text-sm text-center py-8">Scan failed: ' + e.message + '</p>';
-    }
-}
-
-function selectWifiNetwork(ssid, flags) {
-    wifiSelectedSsid = ssid;
-    wifiSelectedFlags = flags;
-    document.getElementById('wifi-connect-ssid').textContent = ssid;
-    document.getElementById('wifi-password').value = '';
-
-    if (isEncrypted(flags)) {
-        document.getElementById('wifi-password-group').classList.remove('hidden');
-    } else {
-        document.getElementById('wifi-password-group').classList.add('hidden');
-    }
-    showWifiView('wifi-connect-form');
-}
-
-function showScanList() {
-    showWifiView('wifi-scan-list');
-}
-
-async function connectToWifi() {
-    const password = document.getElementById('wifi-password').value;
-    showWifiView('wifi-connecting');
-    document.getElementById('wifi-connecting-text').textContent = 'Connecting to ' + wifiSelectedSsid + '...';
-
-    try {
-        const resp = await fetch('/box/api/wifi/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ssid: wifiSelectedSsid, password: password }),
-        });
-        const data = await resp.json();
-        if (data.status === 'error') {
-            showWifiResult(false, data.message, '');
-            return;
-        }
-    } catch (e) {
-        showWifiResult(false, 'Failed to start connection', '');
-        return;
-    }
-
-    // Poll for status
-    wifiConnectPoll = setInterval(async () => {
-        try {
-            const resp = await fetch('/box/api/wifi/connect/status');
-            const data = await resp.json();
-            if (data.status === 'success') {
-                clearInterval(wifiConnectPoll);
-                wifiConnectPoll = null;
-                showWifiResult(true, data.message, data.ip);
-                // Refresh stats to show new connection
-                setTimeout(fetchStats, 2000);
-            } else if (data.status === 'failed') {
-                clearInterval(wifiConnectPoll);
-                wifiConnectPoll = null;
-                showWifiResult(false, data.message, '');
-            }
-        } catch (e) {
-            // keep polling
-        }
-    }, 2000);
-}
-
-function showWifiResult(success, message, ip) {
-    showWifiView('wifi-result');
-    const icon = document.getElementById('wifi-result-icon');
-    const text = document.getElementById('wifi-result-text');
-    const ipEl = document.getElementById('wifi-result-ip');
-
-    if (success) {
-        icon.className = 'w-8 h-8 rounded-full mb-3 bg-emerald-400';
-        text.textContent = message;
-        text.className = 'font-mono text-sm mb-1 text-emerald-400';
-        ipEl.textContent = ip ? 'IP: ' + ip : '';
-        // Auto-close after 3s
-        setTimeout(() => {
-            if (!document.getElementById('wifi-modal').classList.contains('hidden')) {
-                closeWifiModal();
-            }
-        }, 3000);
-    } else {
-        icon.className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
-        text.textContent = message;
-        text.className = 'font-mono text-sm mb-1 text-red-400';
-        ipEl.textContent = '';
-    }
-}
-
-function closeWifiModal() {
-    document.getElementById('wifi-modal').classList.add('hidden');
-    if (wifiConnectPoll) {
-        clearInterval(wifiConnectPoll);
-        wifiConnectPoll = null;
-    }
-}
-
-// ── Database Backup & Restore ──────────────────────────────────
-
-async function fetchDbInfo() {
-    try {
-        const resp = await fetch('/box/api/db/info');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        if (data.size !== undefined) {
-            document.getElementById('db-size').textContent = formatBytes(data.size);
-        }
-    } catch (e) {
-        console.error('DB info fetch failed:', e);
-    }
-}
-
-fetchDbInfo();
-
-function setDbBusy(busy, text) {
-    const status = document.getElementById('db-status');
-    const buttons = document.getElementById('db-buttons');
-    if (busy) {
-        status.classList.remove('hidden');
-        document.getElementById('db-status-text').textContent = text || 'Processing...';
-        buttons.querySelectorAll('button').forEach(b => { b.disabled = true; b.classList.add('opacity-50'); });
-    } else {
-        status.classList.add('hidden');
-        buttons.querySelectorAll('button').forEach(b => { b.disabled = false; b.classList.remove('opacity-50'); });
-    }
-}
-
-function confirmDbBackup() {
-    document.getElementById('confirm-title').textContent = 'Download Backup?';
-    document.getElementById('confirm-message').textContent =
-        'LNbits will be stopped while creating the backup. It will be restarted automatically.';
-    document.getElementById('confirm-modal').classList.remove('hidden');
-    document.getElementById('confirm-btn').onclick = () => { closeModal(); startDbBackup(); };
-}
-
-function startDbBackup() {
-    setDbBusy(true, 'Creating backup... LNbits is stopping.');
-
-    // Use a hidden iframe to trigger the file download
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    // We need to POST, so create a form with CSRF token
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/box/api/db/backup';
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrf_token';
-    csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    form.appendChild(csrfInput);
-    form.target = iframe.name = 'db-backup-frame-' + Date.now();
-    iframe.name = form.target;
-    document.body.appendChild(form);
-    form.submit();
-
-    // Poll to detect when download completes (check if LNbits is back)
-    setTimeout(() => {
-        setDbBusy(false);
-        document.body.removeChild(form);
-        setTimeout(() => document.body.removeChild(iframe), 5000);
-        fetchDbInfo();
-    }, 5000);
-}
-
-function openRestoreModal() {
-    document.getElementById('restore-modal').classList.remove('hidden');
-    document.getElementById('restore-file').value = '';
-    showRestoreView('restore-form');
-}
-
-function closeRestoreModal() {
-    document.getElementById('restore-modal').classList.add('hidden');
-}
-
-function showRestoreView(id) {
-    for (const v of ['restore-form', 'restore-progress', 'restore-result']) {
-        document.getElementById(v).classList.toggle('hidden', v !== id);
-    }
-}
-
-async function startRestore() {
-    const fileInput = document.getElementById('restore-file');
-    if (!fileInput.files || fileInput.files.length === 0) {
-        showNotice('Please select a backup file.', 'Validation');
-        return;
-    }
-
-    const file = fileInput.files[0];
-    if (!file.name.endsWith('.zip')) {
-        showNotice('Please select a .zip file.', 'Validation');
-        return;
-    }
-
-    showRestoreView('restore-progress');
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        const resp = await fetch('/box/api/db/restore', {
-            method: 'POST',
-            body: formData,
-        });
-        const data = await resp.json();
-
-        showRestoreView('restore-result');
-        const icon = document.getElementById('restore-result-icon');
-        const text = document.getElementById('restore-result-text');
-
-        if (resp.ok && data.status === 'ok') {
-            icon.className = 'w-8 h-8 rounded-full mb-3 bg-emerald-400';
-            text.textContent = data.message;
-            text.className = 'font-mono text-sm mb-1 text-emerald-400';
-            fetchDbInfo();
-        } else {
-            icon.className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
-            text.textContent = data.error || 'Restore failed';
-            text.className = 'font-mono text-sm mb-1 text-red-400';
-        }
-    } catch (e) {
-        showRestoreView('restore-result');
-        document.getElementById('restore-result-icon').className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
-        const text = document.getElementById('restore-result-text');
-        text.textContent = 'Request failed: ' + e.message;
-        text.className = 'font-mono text-sm mb-1 text-red-400';
-    }
-}
-
-// ── System Update ──────────────────────────────────────────────
-let updateReleaseTag = '';
-let updatePollInterval = null;
-let updateReconnectInterval = null;
-
-function showUpdateSection(id) {
-    for (const s of ['update-available', 'update-progress', 'update-done']) {
-        document.getElementById(s).classList.toggle('hidden', s !== id);
-    }
-}
-
-async function checkForUpdate() {
-    const btn = document.getElementById('update-check-btn');
-    const status = document.getElementById('update-check-status');
-    btn.disabled = true;
-    status.textContent = 'Checking...';
-
-    try {
-        const resp = await fetch('/box/api/update/check');
-        if (!resp.ok) { status.textContent = 'Check failed'; btn.disabled = false; return; }
-        const data = await resp.json();
-
-        document.getElementById('update-current-version').textContent = 'v' + data.current_version;
-
-        if (data.update_available) {
-            updateReleaseTag = data.release_tag;
-            document.getElementById('update-latest-version').textContent = 'v' + data.latest_version;
-            document.getElementById('update-release-notes').textContent = data.release_notes || 'No release notes.';
-            showUpdateSection('update-available');
-            // hide update-check-section while update is available
-            document.getElementById('update-check-section').classList.add('hidden');
-        } else {
-            status.textContent = 'Up to date';
-            setTimeout(() => { status.textContent = ''; }, 3000);
-        }
-    } catch (e) {
-        status.textContent = 'Check failed';
-    }
-    btn.disabled = false;
-}
-
-function confirmUpdate() {
-    document.getElementById('confirm-message').textContent =
-        'This will download and activate a new system version. Services will briefly restart.';
-    document.getElementById('confirm-title').textContent = 'Start System Update?';
-    document.getElementById('confirm-modal').classList.remove('hidden');
-    document.getElementById('confirm-btn').onclick = () => { closeModal(); startUpdate(); };
-}
-
-async function startUpdate() {
-    showUpdateSection('update-progress');
-    document.getElementById('update-log').textContent = '';
-    document.getElementById('update-progress-status').textContent = 'Starting update...';
-
-    try {
-        const resp = await fetch('/box/api/update/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ release_tag: updateReleaseTag }),
-        });
-        const data = await resp.json();
-        if (data.status !== 'started') {
-            document.getElementById('update-progress-status').textContent = 'Error: ' + (data.message || 'Unknown');
-            return;
-        }
-    } catch (e) {
-        document.getElementById('update-progress-status').textContent = 'Failed to start update';
-        return;
-    }
-
-    // Start polling for status
-    pollUpdateStatus();
-    updatePollInterval = setInterval(pollUpdateStatus, 2000);
-}
-
-async function pollUpdateStatus() {
-    try {
-        const resp = await fetch('/box/api/update/status');
-        if (!resp.ok) throw new Error('status fetch failed');
-        const data = await resp.json();
-
-        const logEl = document.getElementById('update-log');
-        if (data.log_lines && data.log_lines.length > 0) {
-            logEl.textContent = data.log_lines.join('\n');
-            logEl.scrollTop = logEl.scrollHeight;
-        }
-
-        const statusLabels = {
-            idle: 'Waiting for system to start update. This may take a moment...',
-            downloading: 'Downloading updates. Please wait...',
-            activating: 'Activating new system. Services will restart shortly...',
-        };
-
-        if (data.status === 'success') {
-            clearInterval(updatePollInterval);
-            updatePollInterval = null;
-            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-            document.getElementById('update-done-text').textContent = 'Update complete! Services have been restarted.';
-            document.getElementById('update-done-text').className = 'text-sm font-mono text-emerald-400';
-            showUpdateSection('update-done');
-            // Reload the page so all stats/version info refreshes
-            setTimeout(() => location.reload(), 3000);
-        } else if (data.status === 'failed') {
-            clearInterval(updatePollInterval);
-            updatePollInterval = null;
-            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-400';
-            document.getElementById('update-done-text').textContent = 'Update failed. Check logs above for details.';
-            document.getElementById('update-done-text').className = 'text-sm font-mono text-red-400';
-            showUpdateSection('update-done');
-        } else {
-            document.getElementById('update-progress-status').textContent =
-                statusLabels[data.status] || data.status;
-        }
-    } catch (e) {
-        // Connection lost — admin app may be restarting during switch-to-configuration
-        document.getElementById('update-progress-status').textContent =
-            'Reconnecting... (services restarting)';
-        startReconnect();
-    }
-}
-
-function startReconnect() {
-    if (updateReconnectInterval) return;
-    clearInterval(updatePollInterval);
-    updatePollInterval = null;
-
-    updateReconnectInterval = setInterval(async () => {
-        try {
-            const resp = await fetch('/box/api/update/status');
-            if (resp.ok) {
-                clearInterval(updateReconnectInterval);
-                updateReconnectInterval = null;
-                // Resuming — poll once immediately then start regular interval
-                pollUpdateStatus();
-                updatePollInterval = setInterval(pollUpdateStatus, 2000);
-            }
-        } catch (e) {
-            // Still disconnected, keep trying
-        }
-    }, 3000);
-}
-
-// On page load, check update status in case an update was already in progress
-(async function initUpdateCard() {
-    try {
-        const resp = await fetch('/box/api/update/status');
-        if (!resp.ok) return;
-        const data = await resp.json();
-
-        if (data.status === 'downloading' || data.status === 'activating') {
-            showUpdateSection('update-progress');
-            pollUpdateStatus();
-            updatePollInterval = setInterval(pollUpdateStatus, 2000);
-        } else if (data.status === 'success') {
-            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-            document.getElementById('update-done-text').textContent = 'The last update completed successfully.';
-            document.getElementById('update-done-text').className = 'text-sm font-mono text-emerald-400';
-            showUpdateSection('update-done');
-        } else if (data.status === 'failed') {
-            document.getElementById('update-done-dot').className = 'w-2.5 h-2.5 rounded-full bg-red-400';
-            document.getElementById('update-done-text').textContent = 'Last update failed. Check logs for details.';
-            document.getElementById('update-done-text').className = 'text-sm font-mono text-red-400';
-            showUpdateSection('update-done');
-        }
-    } catch (e) {
-        // Ignore — card stays in idle state
-    }
-
-    // Load current version
-    try {
-        const resp = await fetch('/box/api/update/check');
-        if (resp.ok) {
-            const data = await resp.json();
-            document.getElementById('update-current-version').textContent = 'v' + data.current_version;
-        }
-    } catch (e) {}
-})();
-</script>
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-wifi.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-db.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-updates.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
 {% endblock %}
