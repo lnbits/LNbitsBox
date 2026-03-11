@@ -51,6 +51,10 @@ except Exception:
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "tor"]
 LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
+SPARK_MNEMONIC_FILE = (
+    Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
+    if DEV_MODE else Path("/var/lib/spark-sidecar/mnemonic")
+)
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
 GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
@@ -249,6 +253,14 @@ def _write_key_file(private_key: str):
 def _read_key_file() -> str | None:
     try:
         return TUNNEL_KEY_FILE.read_text(encoding="utf-8")
+    except Exception:
+        return None
+
+
+def _read_spark_mnemonic() -> str | None:
+    try:
+        mnemonic = SPARK_MNEMONIC_FILE.read_text(encoding="utf-8").strip()
+        return mnemonic or None
     except Exception:
         return None
 
@@ -658,6 +670,7 @@ def advanced_page():
         page_key="advanced",
         page_title="Advanced",
         include_tunnel_status=True,
+        spark_mnemonic=_read_spark_mnemonic(),
     )
 
 
@@ -668,6 +681,7 @@ def _render_admin_page(
     page_title: str,
     page_intro: str = "",
     include_tunnel_status: bool = False,
+    **context,
 ):
     initial_tunnel_status = None
     if include_tunnel_status:
@@ -681,6 +695,7 @@ def _render_admin_page(
         page_title=page_title,
         page_intro=page_intro,
         initial_tunnel_status=initial_tunnel_status,
+        **context,
     )
 
 

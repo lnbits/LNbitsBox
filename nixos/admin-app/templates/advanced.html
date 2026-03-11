@@ -5,6 +5,9 @@
     {% include "partials/cards/services.html" %}
     {% include "partials/cards/system_actions.html" %}
 </div>
+<div class="mb-6">
+    {% include "partials/cards/spark_seed_phrase.html" %}
+</div>
 {% endblock %}
 
 {% block page_scripts %}
@@ -13,4 +16,24 @@
 <script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+<script>
+const sparkSeedValue = document.getElementById('spark-seed-value');
+const sparkSeedToggleBtn = document.getElementById('spark-seed-toggle-btn');
+
+if (sparkSeedValue && sparkSeedToggleBtn) {
+    sparkSeedToggleBtn.addEventListener('click', function () {
+        const seedPhrase = sparkSeedValue.dataset.seedPhrase || '';
+        if (!seedPhrase) {
+            return;
+        }
+
+        const isMasked = sparkSeedValue.dataset.masked === 'true';
+        sparkSeedValue.textContent = isMasked
+            ? seedPhrase
+            : '••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••';
+        sparkSeedValue.dataset.masked = isMasked ? 'false' : 'true';
+        sparkSeedToggleBtn.textContent = isMasked ? 'Hide Seed Phrase' : 'Show Seed Phrase';
+    });
+}
+</script>
 {% endblock %}
