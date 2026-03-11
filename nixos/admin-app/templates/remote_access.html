@@ -1,0 +1,21 @@
+{% extends "admin_page.html" %}
+
+{% block page_content %}
+<div class="grid">
+    <div class="admin-stack mb-6">
+    {% include "partials/cards/tunnel.html" %}
+    </div>
+    <div class="admin-stack mb-6">
+        {% include "partials/cards/tor.html" %}
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script id="initial-tunnel-status" type="application/json">{{ initial_tunnel_status|tojson }}</script>
+<script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+{% endblock %}

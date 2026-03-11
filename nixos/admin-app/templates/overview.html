@@ -1,0 +1,33 @@
+{% extends "admin_page.html" %}
+
+{% block page_actions %}
+<div class="admin-page-actions">
+    <a href="/" target="_blank" class="admin-page-action primary">Open LNbits</a>
+    <a href="{{ url_for('remote_access') }}" class="admin-page-action">Manage Remote Access</a>
+    <a href="{{ url_for('maintenance_page') }}" class="admin-page-action">Updates</a>
+</div>
+{% endblock %}
+
+{% block page_content %}
+<div class="admin-stack">
+    {% include "partials/cards/lnbits_status.html" %}
+</div>
+<div class="mb-6">
+    {% include "partials/cards/tunnel.html" %}
+</div>
+
+
+<div class="mb-6">
+    {% include "partials/cards/metrics.html" %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script id="initial-tunnel-status" type="application/json">{{ initial_tunnel_status|tojson }}</script>
+<script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-updates.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+{% endblock %}

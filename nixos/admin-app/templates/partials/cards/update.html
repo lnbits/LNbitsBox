@@ -1,0 +1,43 @@
+<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="update-card">
+    <div class="flex items-center justify-between mb-3">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">System Update</div>
+        <span class="text-xs font-mono text-ln-muted" id="update-current-version">--</span>
+    </div>
+
+    <div id="update-available" class="hidden">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border text-ln-pink border-ln-pink/30 bg-ln-pink/5">
+                Update available
+            </span>
+            <span class="text-sm font-mono text-ln-text" id="update-latest-version"></span>
+        </div>
+        <div class="text-ln-muted text-xs font-mono mb-3 max-h-24 overflow-y-auto whitespace-pre-wrap border border-ln-border rounded-lg p-2" id="update-release-notes"></div>
+        <button id="update-now-btn"
+                class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
+            Update Now
+        </button>
+    </div>
+
+    <div id="update-progress" class="hidden">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></div>
+            <span class="text-amber-400 text-sm font-mono" id="update-progress-status">Updating...</span>
+        </div>
+        <div class="bg-ln-surface border border-ln-border rounded-lg p-2 max-h-40 overflow-y-auto font-mono text-xs text-ln-muted" id="update-log"></div>
+    </div>
+
+    <div id="update-done" class="hidden">
+        <div class="flex items-center gap-2">
+            <div class="w-2.5 h-2.5 rounded-full" id="update-done-dot"></div>
+            <span class="text-sm font-mono" id="update-done-text"></span>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-3 mt-3" id="update-check-section">
+        <button class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+                id="update-check-btn">
+            Check for updates
+        </button>
+        <span class="text-ln-muted text-xs font-mono" id="update-check-status"></span>
+    </div>
+</div>

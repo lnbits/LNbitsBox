@@ -1,0 +1,66 @@
+<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="tunnel-card">
+    <div class="flex items-center justify-between mb-3">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Remote Access</div>
+        <span class="text-xs font-mono text-ln-muted" id="tunnel-service-status">service: --</span>
+    </div>
+    <p class="text-ln-muted text-xs font-mono mb-4">
+        Tunnel Me Out provides secure remote access to your LNbits instance without exposing your home network.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-2 text-sm font-mono">
+            <div class="flex items-center gap-2">
+                <div class="text-ln-muted">Status:</div>
+                <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="tunnel-status-dot"></div>
+                <span class="text-ln-muted" id="tunnel-status-text">No tunnel yet</span>
+            </div>
+            <div><span class="text-ln-muted">Public URL:</span> <a class="text-ln-pink break-all" id="tunnel-public-url" href="#" target="_blank">--</a></div>
+            <div><span class="text-ln-muted">Expires:</span> <span id="tunnel-expires-at">--</span></div>
+            <div class="flex items-center gap-2 pt-1">
+                <button id="tunnel-alert-enable-btn"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-2.5 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Enable Alerts
+                </button>
+                <span id="tunnel-alert-status" class="text-ln-muted text-xs font-mono">Browser notifications off</span>
+            </div>
+        </div>
+        <div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-1.5">Add Credit</div>
+            <div id="tunnel-days-section">
+                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Days</label>
+                <div class="flex gap-2 mb-3">
+                    <input type="number" min="1" step="1" id="tunnel-days-input"
+                           class="w-24 bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                           value="1">
+                    <button id="tunnel-invoice-btn"
+                            class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-3 rounded-lg transition-colors">
+                        Create Tunnel
+                    </button>
+                </div>
+            </div>
+            <div id="tunnel-pending-row" class="hidden items-center gap-2 mb-3">
+                <span class="text-amber-400 text-xs font-mono uppercase tracking-wider">Pending payment</span>
+                <button id="tunnel-pay-invoice-btn"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Pay Invoice
+                </button>
+            </div>
+            <a href="#" id="tunnel-more-btn" class="inline-block text-ln-muted hover:text-ln-pink text-xs font-mono uppercase transition-colors">
+                More
+            </a>
+        </div>
+    </div>
+    <div id="tunnel-details" class="hidden mt-4 border border-ln-border rounded-lg p-3 bg-ln-surface/40">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Details</div>
+        <div class="space-y-2 text-sm font-mono">
+            <div><span class="text-ln-muted">Session key:</span> <span class="text-ln-text" id="tunnel-client-id">--</span></div>
+            <div><span class="text-ln-muted">Port:</span> <span id="tunnel-remote-port">--</span></div>
+            <div>
+                <button id="tunnel-copy-script-btn"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Copy Connect Script
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

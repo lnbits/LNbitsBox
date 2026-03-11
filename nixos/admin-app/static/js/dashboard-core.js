@@ -17,6 +17,16 @@
 
     D.root = document.getElementById('dashboard-root');
     D.el = function (id) { return document.getElementById(id); };
+    D.setText = function (id, value) {
+        const el = D.el(id);
+        if (el) el.textContent = value;
+        return el;
+    };
+    D.setHtml = function (id, value) {
+        const el = D.el(id);
+        if (el) el.innerHTML = value;
+        return el;
+    };
     D.getCssVar = function (name) {
         return getComputedStyle(document.documentElement).getPropertyValue(name).trim().split(' ').join(',');
     };
@@ -26,19 +36,22 @@
     };
 
     D.showNotice = function (message, title) {
-        D.el('notice-title').textContent = title || 'Notice';
-        D.el('notice-message').textContent = message || '';
-        D.el('notice-modal').classList.remove('hidden');
+        D.setText('notice-title', title || 'Notice');
+        D.setText('notice-message', message || '');
+        const modal = D.el('notice-modal');
+        if (modal) modal.classList.remove('hidden');
     };
 
     D.closeNoticeModal = function () {
-        D.el('notice-modal').classList.add('hidden');
+        const modal = D.el('notice-modal');
+        if (modal) modal.classList.add('hidden');
     };
 
     D.closeModal = function () {
         D.state.pendingAction = null;
         D.state.pendingActionButtonId = null;
-        D.el('confirm-modal').classList.add('hidden');
+        const modal = D.el('confirm-modal');
+        if (modal) modal.classList.add('hidden');
     };
 
     D.setActionBusy = function (action, sourceButtonId) {
@@ -90,10 +103,13 @@
     D.confirmAction = function (action, message, buttonId) {
         D.state.pendingAction = action;
         D.state.pendingActionButtonId = buttonId || null;
-        D.el('confirm-title').textContent = 'Are you sure?';
-        D.el('confirm-message').textContent = message;
-        D.el('confirm-modal').classList.remove('hidden');
-        D.el('confirm-btn').onclick = function () {
+        D.setText('confirm-title', 'Are you sure?');
+        D.setText('confirm-message', message);
+        const modal = D.el('confirm-modal');
+        if (modal) modal.classList.remove('hidden');
+        const btn = D.el('confirm-btn');
+        if (!btn) return;
+        btn.onclick = function () {
             D.executeAction(action, D.state.pendingActionButtonId);
         };
     };
@@ -175,35 +191,39 @@
         },
     };
 
-    D.charts = {
-        cpu: new Chart(D.el('chart-cpu'), {
+    D.charts = { cpu: null, ram: null, temp: null };
+
+    const cpuCanvas = D.el('chart-cpu');
+    const ramCanvas = D.el('chart-ram');
+    const tempCanvas = D.el('chart-temp');
+    if (typeof Chart !== 'undefined' && cpuCanvas && ramCanvas && tempCanvas) {
+        D.charts.cpu = new Chart(cpuCanvas, {
             type: 'line',
             data: { labels: [], datasets: [{ data: [], borderColor: '#FF1EE6', backgroundColor: 'rgba(255,30,230,0.08)', fill: true }] },
             options: Object.assign({}, chartOpts),
-        }),
-        ram: new Chart(D.el('chart-ram'), {
+        });
+        D.charts.ram = new Chart(ramCanvas, {
             type: 'line',
             data: { labels: [], datasets: [{ data: [], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.08)', fill: true }] },
             options: Object.assign({}, chartOpts),
-        }),
-        temp: null,
-    };
+        });
 
-    const tempChartOpts = JSON.parse(JSON.stringify(chartOpts));
-    tempChartOpts.scales.y = {
-        min: 20,
-        max: 90,
-        grid: { color: 'rgba(' + D.theme.border + ',0.5)' },
-        ticks: {
-            color: 'rgb(' + D.theme.muted + ')',
-            font: { family: 'JetBrains Mono', size: 10 },
-            callback: function (value) { return value + '°'; },
-        },
-    };
-    tempChartOpts.plugins.tooltip.callbacks = { label: function (ctx) { return ctx.parsed.y.toFixed(1) + '°C'; } };
-    D.charts.temp = new Chart(D.el('chart-temp'), {
-        type: 'line',
-        data: { labels: [], datasets: [{ data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', fill: true }] },
-        options: tempChartOpts,
-    });
+        const tempChartOpts = JSON.parse(JSON.stringify(chartOpts));
+        tempChartOpts.scales.y = {
+            min: 20,
+            max: 90,
+            grid: { color: 'rgba(' + D.theme.border + ',0.5)' },
+            ticks: {
+                color: 'rgb(' + D.theme.muted + ')',
+                font: { family: 'JetBrains Mono', size: 10 },
+                callback: function (value) { return value + '°'; },
+            },
+        };
+        tempChartOpts.plugins.tooltip.callbacks = { label: function (ctx) { return ctx.parsed.y.toFixed(1) + '°C'; } };
+        D.charts.temp = new Chart(tempCanvas, {
+            type: 'line',
+            data: { labels: [], datasets: [{ data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', fill: true }] },
+            options: tempChartOpts,
+        });
+    }
 })();

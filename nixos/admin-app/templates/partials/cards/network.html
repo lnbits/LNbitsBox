@@ -1,0 +1,26 @@
+<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
+    <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-4">Network</div>
+    <div class="space-y-3">
+        <div class="flex items-center gap-3">
+            <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="net-internet-dot"></div>
+            <span class="font-mono text-sm">Internet</span>
+            <span class="text-ln-muted font-mono text-xs" id="net-internet-status">--</span>
+        </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-2.5 h-2.5 rounded-full bg-gray-600 shrink-0" id="net-wifi-dot"></div>
+                <span class="font-mono text-sm shrink-0">WiFi</span>
+                <span class="text-ln-muted font-mono text-xs truncate" id="net-wifi-status">--</span>
+            </div>
+            <button id="wifi-open-scan-btn"
+                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0 ml-2">
+                Scan
+            </button>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="w-2.5 h-2.5 rounded-full bg-gray-600" id="net-eth-dot"></div>
+            <span class="font-mono text-sm">Ethernet</span>
+            <span class="text-ln-muted font-mono text-xs" id="net-eth-status">--</span>
+        </div>
+    </div>
+</div>

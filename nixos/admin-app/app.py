@@ -611,12 +611,75 @@ def logout():
 @app.route("/box/")
 @login_required
 def dashboard():
-    client_id, state = _get_or_create_tunnel_client_id()
-    initial_tunnel_status = _build_tunnel_status_payload(client_id, state)
-    initial_tunnel_status["service_status"] = "unknown"
+    return _render_admin_page(
+        "overview.html",
+        page_key="overview",
+        page_title="Overview",
+        include_tunnel_status=True,
+    )
+
+
+@app.route("/box/remote-access")
+@login_required
+def remote_access():
+    return _render_admin_page(
+        "remote_access.html",
+        page_key="remote_access",
+        page_title="Remote Access",
+        include_tunnel_status=True,
+    )
+
+
+@app.route("/box/system")
+@login_required
+def system_page():
+    return _render_admin_page(
+        "system.html",
+        page_key="system",
+        page_title="System",
+    )
+
+
+@app.route("/box/maintenance")
+@login_required
+def maintenance_page():
+    return _render_admin_page(
+        "maintenance.html",
+        page_key="maintenance",
+        page_title="Maintenance",
+    )
+
+
+@app.route("/box/advanced")
+@login_required
+def advanced_page():
+    return _render_admin_page(
+        "advanced.html",
+        page_key="advanced",
+        page_title="Advanced",
+        include_tunnel_status=True,
+    )
+
+
+def _render_admin_page(
+    template_name: str,
+    *,
+    page_key: str,
+    page_title: str,
+    page_intro: str = "",
+    include_tunnel_status: bool = False,
+):
+    initial_tunnel_status = None
+    if include_tunnel_status:
+        client_id, state = _get_or_create_tunnel_client_id()
+        initial_tunnel_status = _build_tunnel_status_payload(client_id, state)
+        initial_tunnel_status["service_status"] = "unknown"
     return render_template(
-        "dashboard.html",
+        template_name,
         dev_mode=DEV_MODE,
+        active_page=page_key,
+        page_title=page_title,
+        page_intro=page_intro,
         initial_tunnel_status=initial_tunnel_status,
     )
 

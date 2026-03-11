@@ -1,0 +1,16 @@
+{% extends "admin_page.html" %}
+
+{% block page_content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-6">
+    {% include "partials/cards/services.html" %}
+    {% include "partials/cards/system_actions.html" %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script id="initial-tunnel-status" type="application/json">{{ initial_tunnel_status|tojson }}</script>
+<script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+{% endblock %}

@@ -35,6 +35,13 @@
   bindClick('update-now-btn', function () { D.confirmUpdate(); });
   bindClick('confirm-cancel-btn', function () { D.closeModal(); });
   bindClick('notice-close-btn', function () { D.closeNoticeModal(); });
+  bindClick('svc-tunnel-create-btn', function () {
+    if (document.getElementById('tunnel-card')) {
+      D.focusTunnelCreate();
+      return;
+    }
+    window.location.href = '/box/remote-access';
+  });
 
   document.querySelectorAll('[data-confirm-action]').forEach(function (button) {
     button.addEventListener('click', function () {

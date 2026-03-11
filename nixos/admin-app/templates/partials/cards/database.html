@@ -1,0 +1,28 @@
+<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="db-card">
+    <div class="flex items-center justify-between mb-3">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">LNbits Database</div>
+        <span class="text-xs font-mono text-ln-muted" id="db-size">--</span>
+    </div>
+
+    <p class="text-ln-muted text-xs font-mono mb-4">
+        LNbits will be temporarily stopped during backup and restore operations.
+    </p>
+
+    <div id="db-status" class="hidden mb-4">
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 border-2 border-ln-pink border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-ln-muted text-sm font-mono" id="db-status-text">Processing...</span>
+        </div>
+    </div>
+
+    <div class="flex gap-3" id="db-buttons">
+        <button id="db-backup-btn"
+                class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+            Download Backup
+        </button>
+        <button id="db-restore-btn"
+                class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30">
+            Restore Backup
+        </button>
+    </div>
+</div>

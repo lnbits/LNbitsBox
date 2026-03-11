@@ -60,72 +60,88 @@
             const s = payload.current;
 
             const balance = s.spark_balance;
-            D.el('stat-balance').textContent = balance && balance.balance !== undefined ? Number(balance.balance).toLocaleString() : '--';
-            D.el('stat-uptime').textContent = s.uptime.formatted;
+            D.setText('stat-balance', balance && balance.balance !== undefined ? Number(balance.balance).toLocaleString() : '--');
+            D.setText('stat-uptime', s.uptime.formatted);
 
             const tempEl = D.el('stat-temp');
-            tempEl.textContent = s.cpu_temp !== null ? s.cpu_temp : '--';
-            tempEl.className = 'text-2xl sm:text-3xl font-display font-bold ' + D.tempColor(s.cpu_temp);
+            if (tempEl) {
+                tempEl.textContent = s.cpu_temp !== null ? s.cpu_temp : '--';
+                tempEl.className = 'text-2xl sm:text-3xl font-display font-bold ' + D.tempColor(s.cpu_temp);
+            }
 
-            D.el('stat-disk').textContent = s.disk.percent + '%';
-            D.el('stat-disk-bar').style.width = s.disk.percent + '%';
-            D.el('stat-disk-detail').textContent = D.formatBytes(s.disk.used) + ' / ' + D.formatBytes(s.disk.total);
+            D.setText('stat-disk', s.disk.percent + '%');
+            const diskBar = D.el('stat-disk-bar');
+            if (diskBar) diskBar.style.width = s.disk.percent + '%';
+            D.setText('stat-disk-detail', D.formatBytes(s.disk.used) + ' / ' + D.formatBytes(s.disk.total));
 
-            D.el('stat-ram').textContent = s.ram.percent + '%';
-            D.el('stat-ram-bar').style.width = s.ram.percent + '%';
-            D.el('stat-ram-detail').textContent = D.formatBytes(s.ram.used) + ' / ' + D.formatBytes(s.ram.total);
+            D.setText('stat-ram', s.ram.percent + '%');
+            const ramBar = D.el('stat-ram-bar');
+            if (ramBar) ramBar.style.width = s.ram.percent + '%';
+            D.setText('stat-ram-detail', D.formatBytes(s.ram.used) + ' / ' + D.formatBytes(s.ram.total));
 
             const onion = s.tor_onion;
             if (onion) {
-                D.el('stat-tor-address').textContent = onion;
-                D.el('tor-dot').className = 'w-2.5 h-2.5 rounded-full bg-purple-400';
-                D.el('tor-copy-btn').classList.remove('hidden');
+                D.setText('stat-tor-address', onion);
+                const torDot = D.el('tor-dot');
+                if (torDot) torDot.className = 'w-2.5 h-2.5 rounded-full bg-purple-400';
+                const torCopy = D.el('tor-copy-btn');
+                if (torCopy) torCopy.classList.remove('hidden');
             } else {
-                D.el('stat-tor-address').textContent = 'Waiting for Tor...';
-                D.el('tor-dot').className = 'w-2.5 h-2.5 rounded-full bg-ln-muted animate-pulse';
-                D.el('tor-copy-btn').classList.add('hidden');
+                D.setText('stat-tor-address', 'Waiting for Tor...');
+                const torDot = D.el('tor-dot');
+                if (torDot) torDot.className = 'w-2.5 h-2.5 rounded-full bg-ln-muted animate-pulse';
+                const torCopy = D.el('tor-copy-btn');
+                if (torCopy) torCopy.classList.add('hidden');
             }
 
             ['lnbits', 'spark-sidecar', 'tor'].forEach(function (svc) {
                 const status = s.services[svc] || 'unknown';
-                D.el('svc-' + svc + '-dot').className = 'w-2.5 h-2.5 rounded-full ' + D.svcColor(status);
-                D.el('svc-' + svc + '-status').textContent = D.serviceStatusLabel(status);
+                const dot = D.el('svc-' + svc + '-dot');
+                if (dot) dot.className = 'w-2.5 h-2.5 rounded-full ' + D.svcColor(status);
+                D.setText('svc-' + svc + '-status', D.serviceStatusLabel(status));
                 D.setServiceActionVisibility(svc, status);
             });
 
             if (s.network) {
                 const net = s.network;
-                D.el('net-internet-dot').className = 'w-2.5 h-2.5 rounded-full ' + (net.internet ? 'bg-emerald-400' : 'bg-red-400');
-                D.el('net-internet-status').textContent = net.internet ? 'Connected' : 'Disconnected';
+                const internetDot = D.el('net-internet-dot');
+                if (internetDot) internetDot.className = 'w-2.5 h-2.5 rounded-full ' + (net.internet ? 'bg-emerald-400' : 'bg-red-400');
+                D.setText('net-internet-status', net.internet ? 'Connected' : 'Disconnected');
                 if (net.wifi) {
-                    D.el('net-wifi-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
-                    D.el('net-wifi-status').textContent = '"' + net.wifi.ssid + '" (' + net.wifi.ip + ')';
+                    const wifiDot = D.el('net-wifi-dot');
+                    if (wifiDot) wifiDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
+                    D.setText('net-wifi-status', '"' + net.wifi.ssid + '" (' + net.wifi.ip + ')');
                 } else {
-                    D.el('net-wifi-dot').className = 'w-2.5 h-2.5 rounded-full bg-gray-600 shrink-0';
-                    D.el('net-wifi-status').textContent = 'Not connected';
+                    const wifiDot = D.el('net-wifi-dot');
+                    if (wifiDot) wifiDot.className = 'w-2.5 h-2.5 rounded-full bg-gray-600 shrink-0';
+                    D.setText('net-wifi-status', 'Not connected');
                 }
                 if (net.ethernet) {
-                    D.el('net-eth-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
-                    D.el('net-eth-status').textContent = net.ethernet.ip;
+                    const ethDot = D.el('net-eth-dot');
+                    if (ethDot) ethDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                    D.setText('net-eth-status', net.ethernet.ip);
                 } else {
-                    D.el('net-eth-dot').className = 'w-2.5 h-2.5 rounded-full bg-gray-600';
-                    D.el('net-eth-status').textContent = 'Not connected';
+                    const ethDot = D.el('net-eth-dot');
+                    if (ethDot) ethDot.className = 'w-2.5 h-2.5 rounded-full bg-gray-600';
+                    D.setText('net-eth-status', 'Not connected');
                 }
             }
 
-            const labels = payload.history.timestamps.map(function (timestamp) {
-                const date = new Date(timestamp);
-                return date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
-            });
-            D.charts.cpu.data.labels = labels;
-            D.charts.cpu.data.datasets[0].data = payload.history.cpu;
-            D.charts.cpu.update('none');
-            D.charts.ram.data.labels = labels;
-            D.charts.ram.data.datasets[0].data = payload.history.ram;
-            D.charts.ram.update('none');
-            D.charts.temp.data.labels = labels;
-            D.charts.temp.data.datasets[0].data = payload.history.temp;
-            D.charts.temp.update('none');
+            if (D.charts.cpu && D.charts.ram && D.charts.temp) {
+                const labels = payload.history.timestamps.map(function (timestamp) {
+                    const date = new Date(timestamp);
+                    return date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
+                });
+                D.charts.cpu.data.labels = labels;
+                D.charts.cpu.data.datasets[0].data = payload.history.cpu;
+                D.charts.cpu.update('none');
+                D.charts.ram.data.labels = labels;
+                D.charts.ram.data.datasets[0].data = payload.history.ram;
+                D.charts.ram.update('none');
+                D.charts.temp.data.labels = labels;
+                D.charts.temp.data.datasets[0].data = payload.history.temp;
+                D.charts.temp.update('none');
+            }
         } catch (error) {
             console.error('Stats fetch failed:', error);
         }
@@ -146,6 +162,7 @@
             ram.push(Math.round(45 + 15 * Math.sin(i / 12) + Math.random() * 5));
             temp.push(Math.round(42 + 12 * Math.sin(i / 10) + Math.random() * 3));
         }
+        if (!D.charts.cpu || !D.charts.ram || !D.charts.temp) return;
         D.charts.cpu.data.labels = labels;
         D.charts.cpu.data.datasets[0].data = cpu;
         D.charts.cpu.update('none');
@@ -163,6 +180,7 @@
         const statusBadge = D.el('lnbits-status-badge');
         const statusCard = D.el('lnbits-status-card');
         const openLink = D.el('lnbits-open-link');
+        if (!statusDot || !statusText || !statusBadge || !statusCard || !openLink) return;
         try {
             const resp = await fetch('/box/api/lnbits-status');
             if (!resp.ok) return;
@@ -216,7 +234,9 @@
     };
 
     D.copyOnion = async function () {
-        const addr = D.el('stat-tor-address').textContent;
+        const addrEl = D.el('stat-tor-address');
+        if (!addrEl) return;
+        const addr = addrEl.textContent;
         if (!addr || addr === '--' || addr.startsWith('Waiting')) return;
         try {
             await navigator.clipboard.writeText('http://' + addr);
@@ -229,8 +249,10 @@
             document.body.removeChild(textarea);
         }
         const btn = D.el('tor-copy-btn');
-        btn.textContent = 'Copied!';
-        setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        if (btn) {
+            btn.textContent = 'Copied!';
+            setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        }
     };
 
     D.fetchStats();

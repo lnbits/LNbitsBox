@@ -1,0 +1,175 @@
+{# ── Confirm Modal ── #}
+<div id="confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-sm w-full glow-pink">
+        <p class="text-lg font-display font-semibold mb-2" id="confirm-title">Are you sure?</p>
+        <p class="text-ln-muted text-sm font-mono mb-6" id="confirm-message"></p>
+        <div class="flex gap-3">
+            <button id="confirm-cancel-btn"
+                    class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                Cancel
+            </button>
+            <button id="confirm-btn"
+                    class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+{# ── Notice Modal ── #}
+<div id="notice-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-sm w-full glow-pink">
+        <p class="text-lg font-display font-semibold mb-2" id="notice-title">Notice</p>
+        <p class="text-ln-muted text-sm font-mono mb-6" id="notice-message"></p>
+        <button id="notice-close-btn"
+                class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+            Close
+        </button>
+    </div>
+</div>
+
+{# ── WiFi Scan Modal ── #}
+<div id="wifi-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-lg font-display font-semibold">WiFi Networks</p>
+            <button id="wifi-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div id="wifi-scan-list">
+            <div class="flex items-center justify-center py-8">
+                <div class="w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3"></div>
+                <span class="text-ln-muted font-mono text-sm">Scanning...</span>
+            </div>
+        </div>
+
+        <form id="wifi-connect-form" class="hidden" novalidate>
+            <div class="flex items-center gap-2 mb-4">
+                <button type="button" id="wifi-back-btn" class="text-ln-muted hover:text-ln-text transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <span class="font-mono text-sm font-semibold" id="wifi-connect-ssid"></span>
+            </div>
+            <div id="wifi-password-group" class="mb-4">
+                <label for="wifi-password" class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Password</label>
+                <input type="password" id="wifi-password" name="wifi_password" autocomplete="current-password"
+                       class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                       placeholder="Enter password">
+            </div>
+            <div class="flex gap-3">
+                <button type="button" id="wifi-cancel-btn"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="wifi-connect-btn"
+                        class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                    Connect
+                </button>
+            </div>
+        </form>
+
+        <div id="wifi-connecting" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-6 h-6 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-ln-muted font-mono text-sm" id="wifi-connecting-text">Connecting...</span>
+            </div>
+        </div>
+
+        <div id="wifi-result" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-8 h-8 rounded-full mb-3" id="wifi-result-icon"></div>
+                <span class="font-mono text-sm mb-1" id="wifi-result-text"></span>
+                <span class="text-ln-muted font-mono text-xs" id="wifi-result-ip"></span>
+            </div>
+            <div class="flex gap-3" id="wifi-result-actions">
+                <button id="wifi-try-another-btn"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Try Another
+                </button>
+                <button id="wifi-done-btn"
+                        class="flex-1 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Database Restore Modal ── #}
+<div id="restore-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-lg font-display font-semibold">Restore Database</p>
+            <button id="restore-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div id="restore-form">
+            <div class="bg-red-400/5 border border-red-400/20 rounded-lg p-3 mb-4">
+                <p class="text-red-400 text-xs font-mono leading-relaxed">
+                    This will overwrite your current LNbits database. All existing data (wallets, extensions, settings) will be replaced. This action cannot be undone.
+                </p>
+            </div>
+
+            <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
+            <input type="file" id="restore-file" accept=".zip"
+                   class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+
+            <div class="flex gap-3">
+                <button id="restore-cancel-btn"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Cancel
+                </button>
+                <button id="restore-confirm-btn"
+                        class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                    Restore
+                </button>
+            </div>
+        </div>
+
+        <div id="restore-progress" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-6 h-6 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-ln-muted font-mono text-sm">Restoring database...</span>
+            </div>
+        </div>
+
+        <div id="restore-result" class="hidden">
+            <div class="flex flex-col items-center py-6">
+                <div class="w-8 h-8 rounded-full mb-3" id="restore-result-icon"></div>
+                <span class="font-mono text-sm mb-1" id="restore-result-text"></span>
+            </div>
+            <button id="restore-result-close-btn"
+                    class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+{# ── Tunnel Invoice Modal ── #}
+<div id="tunnel-invoice-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-lg font-display font-semibold">Pay to Add Tunnel Credit</p>
+            <button id="tunnel-invoice-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="flex justify-center mb-3">
+            <div id="tunnel-invoice-qr" class="bg-white p-2 rounded-lg"></div>
+        </div>
+        <textarea id="tunnel-invoice-text" readonly
+                  class="w-full h-24 bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-xs font-mono text-ln-text mb-3"></textarea>
+        <div class="flex gap-2">
+            <button id="tunnel-invoice-copy-btn"
+                    class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-3 rounded-lg transition-colors">
+                Copy
+            </button>
+            <span id="tunnel-invoice-status" class="text-ln-muted text-xs font-mono self-center">Waiting for payment...</span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} · LNbitsBox{% endblock %}
+
+{% block content %}
+<div class="admin-shell" id="dashboard-root" data-dev-mode="{{ 'true' if dev_mode else 'false' }}" data-page-key="{{ active_page }}">
+    <header class="rounded-2xl px-4 sm:px-6 py-4 mb-4 sticky top-4 z-10">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+                {% include "partials/logo.html" %}
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('maintenance_page') }}" id="header-update-link" class="header-update-link">
+                    Update available
+                </a>
+                <details class="relative power-menu">
+                    <summary class="power-menu-button">
+                        Power
+                    </summary>
+                    <div class="power-menu-panel">
+                        <button id="header-system-reboot-btn" data-confirm-action="reboot" data-confirm-message="Reboot LNbitsBox?"
+                                class="power-menu-item">
+                            Restart
+                        </button>
+                        <button id="header-system-shutdown-btn" data-confirm-action="shutdown" data-confirm-message="Shut down LNbitsBox?"
+                                class="power-menu-item">
+                            Power Off
+                        </button>
+                    </div>
+                </details>
+                {# log out #}
+                <a href="{{ url_for('logout') }}" class="header-logout-link">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="admin-mobile-bar">
+        {% include "partials/logo.html" %}
+        <button class="admin-mobile-button" id="admin-sidebar-toggle" aria-label="Open navigation">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </div>
+
+    <div class="admin-sidebar-backdrop" id="admin-sidebar-backdrop"></div>
+
+    <div class="admin-layout">
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="admin-sidebar-card">
+
+                <a href="{{ url_for('dashboard') }}" class="admin-sidebar-link {% if active_page == 'overview' %}active{% endif %}">
+                    <span class="admin-sidebar-link-label">Overview</span>
+                </a>
+                <a href="{{ url_for('remote_access') }}" class="admin-sidebar-link {% if active_page == 'remote_access' %}active{% endif %}">
+                    <span class="admin-sidebar-link-label">Remote Access</span>
+                </a>
+                <a href="{{ url_for('system_page') }}" class="admin-sidebar-link {% if active_page == 'system' %}active{% endif %}">
+                    <span class="admin-sidebar-link-label">System</span>
+                </a>
+                <a href="{{ url_for('maintenance_page') }}" class="admin-sidebar-link {% if active_page == 'maintenance' %}active{% endif %}">
+                    <span class="admin-sidebar-link-label">Maintenance</span>
+                </a>
+                <a href="{{ url_for('advanced_page') }}" class="admin-sidebar-link {% if active_page == 'advanced' %}active{% endif %}">
+                    <span class="admin-sidebar-link-label">Advanced</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="admin-content">
+            <section class="admin-page-header">
+                <h1 class="text-xl sm:text-3xl font-display font-bold text-ln-text">{{ page_title }}</h1>
+                {% if page_intro %}
+                <p class="text-ln-muted mt-3">{{ page_intro }}</p>
+                {% endif %}
+                {% block page_actions %}{% endblock %}
+            </section>
+
+            {% block page_content %}{% endblock %}
+
+            <div class="mt-8 text-center">
+                <p class="text-ln-muted text-xs font-mono tracking-wider uppercase">
+                    LNbitsBox &middot; Powered by LNbits
+                </p>
+            </div>
+        </main>
+    </div>
+</div>
+
+{% include "partials/common_modals.html" %}
+<script src="{{ url_for('static', filename='js/admin-shell.js') }}"></script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "admin_page.html" %}
+
+{% block page_content %}
+<div class="mb-6">
+    {% include "partials/cards/network.html" %}
+</div>
+<div class="mb-6">
+    {% include "partials/cards/metrics.html" %}
+</div>
+<div class="mb-6">
+    {% include "partials/cards/charts.html" %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-wifi.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+<script>
+document.getElementById('wifi-open-scan-btn-header')?.addEventListener('click', function () {
+    document.getElementById('wifi-open-scan-btn')?.click();
+});
+</script>
+{% endblock %}

@@ -133,6 +133,7 @@
     D.toggleTunnelDetails = function () {
         const panel = D.el('tunnel-details');
         const btn = D.el('tunnel-more-btn');
+        if (!panel || !btn) return;
         const isHidden = panel.classList.contains('hidden');
         panel.classList.toggle('hidden', !isHidden);
         btn.textContent = isHidden ? 'Less' : 'More';
@@ -238,18 +239,23 @@
     };
 
     D.openTunnelInvoiceModal = function (bolt11) {
-        D.el('tunnel-invoice-modal').classList.remove('hidden');
-        D.el('tunnel-invoice-text').value = bolt11 || '';
-        D.el('tunnel-invoice-status').textContent = 'Waiting for payment...';
+        const modal = D.el('tunnel-invoice-modal');
+        const textarea = D.el('tunnel-invoice-text');
+        const status = D.el('tunnel-invoice-status');
         const qrEl = D.el('tunnel-invoice-qr');
+        if (!modal || !textarea || !status || !qrEl) return;
+        modal.classList.remove('hidden');
+        textarea.value = bolt11 || '';
+        status.textContent = 'Waiting for payment...';
         qrEl.innerHTML = '';
-        if (bolt11) {
+        if (bolt11 && typeof QRCode !== 'undefined') {
             D.state.tunnelInvoiceQr = new QRCode(qrEl, { text: bolt11, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
         }
     };
 
     D.closeTunnelInvoiceModal = function () {
-        D.el('tunnel-invoice-modal').classList.add('hidden');
+        const modal = D.el('tunnel-invoice-modal');
+        if (modal) modal.classList.add('hidden');
         D.stopTunnelPoll();
     };
 
@@ -261,12 +267,16 @@
     };
 
     D.copyTunnelInvoice = async function () {
-        const text = D.el('tunnel-invoice-text').value;
+        const invoiceEl = D.el('tunnel-invoice-text');
+        if (!invoiceEl) return;
+        const text = invoiceEl.value;
         if (!text) return;
         await navigator.clipboard.writeText(text);
         const status = D.el('tunnel-invoice-status');
-        status.textContent = 'Copied';
-        setTimeout(function () { status.textContent = 'Waiting for payment...'; }, 1500);
+        if (status) {
+            status.textContent = 'Copied';
+            setTimeout(function () { status.textContent = 'Waiting for payment...'; }, 1500);
+        }
     };
 
     D.stopTunnelPoll = function () {
@@ -286,7 +296,8 @@
                 const data = payload.data || payload;
                 D.renderTunnel(data);
                 if (payload.paid || data.paid) {
-                    D.el('tunnel-invoice-status').textContent = 'Payment confirmed.';
+                    const status = D.el('tunnel-invoice-status');
+                    if (status) status.textContent = 'Payment confirmed.';
                     setTimeout(function () { D.closeTunnelInvoiceModal(); }, 1200);
                     D.stopTunnelPoll();
                 }
@@ -295,7 +306,9 @@
     };
 
     D.openTunnelInvoiceFlow = async function () {
-        const days = parseInt(D.el('tunnel-days-input').value || '0', 10);
+        const daysInput = D.el('tunnel-days-input');
+        if (!daysInput) return;
+        const days = parseInt(daysInput.value || '0', 10);
         if (!days || days <= 0) {
             D.showNotice('Days must be greater than zero', 'Validation');
             return;
