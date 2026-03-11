@@ -148,6 +148,7 @@
 
     D.setTunnelStatusDot = function (status) {
         const dot = D.el('tunnel-status-dot');
+        if (!dot) return;
         if (status === 'active') {
             dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
         } else if (status === 'pending') {
