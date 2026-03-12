@@ -694,6 +694,7 @@ def _render_admin_page(
         active_page=page_key,
         page_title=page_title,
         page_intro=page_intro,
+        version=get_current_version(),
         initial_tunnel_status=initial_tunnel_status,
         **context,
     )

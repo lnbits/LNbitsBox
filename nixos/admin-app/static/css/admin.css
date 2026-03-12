@@ -1803,6 +1803,10 @@ input:focus {
     display: none;
 }
 
+.admin-modal-layer {
+    z-index: 80;
+}
+
 body.sidebar-open {
     overflow: hidden;
 }
