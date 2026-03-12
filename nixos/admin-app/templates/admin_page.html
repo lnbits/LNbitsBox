@@ -15,7 +15,7 @@
                 </a>
                 <details class="relative power-menu">
                     <summary class="power-menu-button">
-                        Power
+                        {% include "partials/power.svg" %}
                     </summary>
                     <div class="power-menu-panel">
                         <button id="header-system-reboot-btn" data-confirm-action="reboot" data-confirm-message="Reboot LNbitsBox?"
@@ -28,10 +28,9 @@
                         </button>
                     </div>
                 </details>
-                {# log out #}
-                <a href="{{ url_for('logout') }}" class="header-logout-link">
-                    Logout
-                </a>
+                <a href="{{ url_for('logout') }}" class="header-logout-link text-sm font-mono text-ln-muted hover:text-ln-pink transition-colors">
+                        Sign out
+                    </a>
             </div>
         </div>
     </header>
@@ -65,6 +64,7 @@
                     <span class="admin-sidebar-link-label">Advanced</span>
                 </a>
             </div>
+            
         </aside>
 
         <main class="admin-content">
@@ -81,6 +81,9 @@
             <div class="mt-8 text-center">
                 <p class="text-ln-muted text-xs font-mono tracking-wider uppercase">
                     LNbitsBox &middot; Powered by LNbits
+                </p>
+                <p class="text-ln-muted text-xs font-mono tracking-wider uppercase mt-1">
+                    {{ version }}
                 </p>
             </div>
         </main>

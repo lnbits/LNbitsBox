@@ -127,7 +127,7 @@
                 if (action.startsWith('tunnel/') && typeof D.fetchTunnelStatus === 'function') {
                     setTimeout(D.fetchTunnelStatus, 1200);
                 }
-                const message = action === 'shutdown' ? 'Shutting down...'
+                const message = action === 'shutdown' ? 'LNbits Box is shutting down. Please wait 15 seconds before disconnecting the power supply.'
                     : action === 'reboot' ? 'Rebooting...'
                         : data.message;
                 D.showNotice(message, 'Success');
