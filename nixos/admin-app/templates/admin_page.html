@@ -4,13 +4,13 @@
 
 {% block content %}
 <div class="admin-shell" id="dashboard-root" data-dev-mode="{{ 'true' if dev_mode else 'false' }}" data-page-key="{{ active_page }}">
-    <header class="rounded-2xl px-4 sm:px-6 py-4 mb-4 sticky top-4 z-10">
+    <header class="admin-desktop-header rounded-2xl px-4 sm:px-6 py-4 mb-4 sticky top-4 z-10">
         <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
                 {% include "partials/logo.html" %}
             </div>
-            <div class="flex items-center gap-3">
-                <a href="{{ url_for('maintenance_page') }}" id="header-update-link" class="header-update-link">
+            <div class="admin-header-actions">
+                <a href="{{ url_for('maintenance_page') }}" id="header-update-link" data-update-link class="header-update-link">
                     Update available
                 </a>
                 <details class="relative power-menu">
@@ -47,6 +47,30 @@
     <div class="admin-layout">
         <aside class="admin-sidebar" id="admin-sidebar">
             <div class="admin-sidebar-card">
+                <div class="admin-sidebar-mobile-header">
+                    {% include "partials/logo.html" %}
+                    <button class="admin-sidebar-close" id="admin-sidebar-close" aria-label="Close navigation">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </div>
+
+                <div class="admin-sidebar-mobile-actions">
+                    <a href="{{ url_for('maintenance_page') }}" data-update-link class="header-update-link admin-mobile-update-link">
+                        Update available
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="admin-sidebar-mobile-logout">
+                        Sign out
+                    </a>
+                </div>
+
+                <div class="admin-sidebar-mobile-power">
+                    <button data-confirm-action="reboot" data-confirm-message="Reboot LNbitsBox?" class="admin-sidebar-mobile-power-btn">
+                        Restart
+                    </button>
+                    <button data-confirm-action="shutdown" data-confirm-message="Shut down LNbitsBox?" class="admin-sidebar-mobile-power-btn">
+                        Power Off
+                    </button>
+                </div>
 
                 <a href="{{ url_for('dashboard') }}" class="admin-sidebar-link {% if active_page == 'overview' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">Overview</span>

@@ -1,8 +1,9 @@
 (function () {
   const sidebar = document.getElementById('admin-sidebar');
   const toggle = document.getElementById('admin-sidebar-toggle');
+  const closeButton = document.getElementById('admin-sidebar-close');
   const backdrop = document.getElementById('admin-sidebar-backdrop');
-  const updateLink = document.getElementById('header-update-link');
+  const updateLinks = document.querySelectorAll('[data-update-link]');
 
   function closeSidebar() {
     document.body.classList.remove('sidebar-open');
@@ -14,13 +15,18 @@
     });
 
     backdrop.addEventListener('click', closeSidebar);
+    closeButton?.addEventListener('click', closeSidebar);
 
     sidebar.querySelectorAll('a').forEach(function (link) {
       link.addEventListener('click', closeSidebar);
     });
   }
 
-  if (updateLink) {
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeSidebar();
+  });
+
+  if (updateLinks.length) {
     fetch('/box/api/update/check')
       .then(function (resp) {
         if (!resp.ok) return null;
@@ -28,7 +34,9 @@
       })
       .then(function (data) {
         if (!data || !data.update_available) return;
-        updateLink.classList.add('visible');
+        updateLinks.forEach(function (link) {
+          link.classList.add('visible');
+        });
       })
       .catch(function () {});
   }
