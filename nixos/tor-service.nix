@@ -8,7 +8,7 @@
       version = 3;
       map = [{
         port = 80;
-        target = { addr = "127.0.0.1"; port = 5000; };
+        target = { addr = "127.0.0.1"; port = 80; };
       }];
     };
   };
