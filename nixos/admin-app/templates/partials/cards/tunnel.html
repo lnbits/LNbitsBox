@@ -45,6 +45,8 @@
                     Pay Invoice
                 </button>
             </div>
+        </div>
+        <div>
             <a href="#" id="tunnel-more-btn" class="inline-block text-ln-muted hover:text-ln-pink text-xs font-mono uppercase transition-colors">
                 More
             </a>
@@ -53,6 +55,10 @@
     <div id="tunnel-details" class="hidden mt-4 border border-ln-border rounded-lg p-3 bg-ln-surface/40">
         <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Details</div>
         <div class="space-y-2 text-sm font-mono">
+            <div class="flex items-center gap-2">
+                <div class="text-ln-muted">LNPro.xyz account:</div>
+                <a class="text-ln-pink break-all" id="tunnel-account-link">--</span>
+            </div>
             <div><span class="text-ln-muted">Session key:</span> <span class="text-ln-text" id="tunnel-client-id">--</span></div>
             <div><span class="text-ln-muted">Port:</span> <span id="tunnel-remote-port">--</span></div>
             <div>

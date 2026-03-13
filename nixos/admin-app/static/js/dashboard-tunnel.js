@@ -169,6 +169,19 @@
         D.updateTunnelAlertStatus(hasTunnel, current.expires_at);
         D.maybeNotifyTunnelExpiry(current);
 
+        // set https://lnpro.xyz/?id=[session-key] if there is a session key on tunnel-account-link
+        if(D.el('tunnel-account-link')) {
+            if(data.client_id) {
+                const url = 'https://lnpro.xyz/?id=' + encodeURIComponent(data.client_id);
+                D.el('tunnel-account-link').textContent = url;
+                D.el('tunnel-account-link').href = url;
+                D.el('tunnel-account-link').rel = 'noopener noreferrer';
+                D.el('tunnel-account-link').target = '_blank';
+            } else {
+                D.el('tunnel-account-link').textContent = '--';
+                D.el('tunnel-account-link').href = '#';
+            }
+        }
         if (D.el('tunnel-client-id')) D.el('tunnel-client-id').textContent = data.client_id || '--';
         if (D.el('tunnel-remote-port')) D.el('tunnel-remote-port').textContent = current.remote_port || '--';
         if (D.el('tunnel-expires-at')) D.el('tunnel-expires-at').textContent = D.formatTunnelDate(current.expires_at);
