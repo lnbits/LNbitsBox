@@ -3,6 +3,7 @@ const mobileOpen = ref(false)
 
 const navLinks = [
   { label: 'How It Works', to: '/how-it-works' },
+  { label: 'User Guide', to: '/user-guide' },
   // { label: 'For Business', to: '/lnbits-for-business' },
   { label: 'FAQs', to: '/faqs' },
 ]
