@@ -94,6 +94,31 @@ let
       "" \
       'http:// {' \
       '	header Cache-Control "no-store"' \
+      "" \
+      '	@onion-box-redir {' \
+      '		host *.onion' \
+      '		path /box' \
+      '	}' \
+      '	redir @onion-box-redir /box/ 308' \
+      "" \
+      '	@onion-box {' \
+      '		host *.onion' \
+      '		path /box/*' \
+      '	}' \
+      '	handle @onion-box {' \
+      '		reverse_proxy 127.0.0.1:8090' \
+      '	}' \
+      "" \
+      '	@onion-root host *.onion' \
+      '	handle @onion-root {' \
+      "		reverse_proxy $BACKEND {" \
+      '			transport http {' \
+      '				read_timeout 300s' \
+      '				write_timeout 300s' \
+      '			}' \
+      '		}' \
+      '	}' \
+      "" \
       '	handle /cert/download {' \
       '		header Content-Disposition "attachment; filename=\"LNbitsBox-CA.crt\""' \
       '		header Content-Type "application/x-x509-ca-cert"' \
