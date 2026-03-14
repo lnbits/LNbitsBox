@@ -7,6 +7,7 @@ import shlex
 import sys
 import tempfile
 import time
+import grp
 try:
     import crypt
 except ModuleNotFoundError:
@@ -21,6 +22,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any
 
+from mnemonic import Mnemonic
 from flask import (
     Flask, render_template, request, redirect,
     url_for, flash, session, jsonify, send_file
@@ -263,6 +265,36 @@ def _read_spark_mnemonic() -> str | None:
         return mnemonic or None
     except Exception:
         return None
+
+
+def _normalize_mnemonic(value: str) -> str:
+    return " ".join(value.strip().lower().split())
+
+
+def _write_spark_mnemonic(mnemonic: str):
+    SPARK_MNEMONIC_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
+    fd, tmp_path_str = tempfile.mkstemp(
+        prefix=".mnemonic.",
+        dir=str(SPARK_MNEMONIC_FILE.parent),
+        text=True,
+    )
+    tmp_path = Path(tmp_path_str)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(mnemonic + "\n")
+        os.chmod(tmp_path, 0o640)
+        try:
+            spark_gid = grp.getgrnam("spark-sidecar").gr_gid
+            os.chown(tmp_path, 0, spark_gid)
+        except KeyError:
+            pass
+        tmp_path.replace(SPARK_MNEMONIC_FILE)
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
 
 
 def _runtime_env_content(tunnel: dict[str, Any]) -> str:
@@ -766,6 +798,53 @@ def api_start_service(service):
 @login_required
 def api_stop_service(service):
     return _service_action(service, "stop", "stopping")
+
+
+@app.route("/box/api/spark/seed", methods=["POST"])
+@login_required
+def api_update_spark_seed():
+    payload = request.get_json(silent=True) or {}
+    new_mnemonic = _normalize_mnemonic(str(payload.get("mnemonic", "")))
+
+    if not new_mnemonic:
+        return _json_error("Enter a seed phrase.", 400)
+
+    words = new_mnemonic.split()
+    if len(words) != 12:
+        return _json_error("Enter exactly 12 words.", 400)
+
+    if not Mnemonic("english").check(new_mnemonic):
+        return _json_error("Enter a valid 12-word BIP39 seed phrase.", 400)
+
+    current_mnemonic = _normalize_mnemonic(_read_spark_mnemonic() or "")
+    if current_mnemonic and new_mnemonic == current_mnemonic:
+        return _json_error("That seed phrase is already in use.", 400)
+
+    if DEV_MODE:
+        _write_spark_mnemonic(new_mnemonic)
+        return _json_response(
+            status="ok",
+            message="Spark seed phrase updated successfully. Spark is restarting now.",
+            data={"service": "spark-sidecar", "action": "restart"},
+        )
+
+    try:
+        _write_spark_mnemonic(new_mnemonic)
+        subprocess.run(
+            ["systemctl", "restart", "spark-sidecar.service"],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        return _json_response(
+            status="ok",
+            message="Spark seed phrase updated successfully. Spark is restarting now.",
+            data={"service": "spark-sidecar", "action": "restart"},
+        )
+    except subprocess.CalledProcessError as e:
+        return _json_error(e.stderr.decode() or "Failed to restart Spark.", 500)
+    except Exception as e:
+        return _json_error(str(e), 500)
 
 
 def _service_action(service, action, verb):
