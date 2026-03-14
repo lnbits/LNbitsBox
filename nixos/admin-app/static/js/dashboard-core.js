@@ -52,6 +52,11 @@
         D.state.pendingActionButtonId = null;
         const modal = D.el('confirm-modal');
         if (modal) modal.classList.add('hidden');
+        const btn = D.el('confirm-btn');
+        if (btn) {
+            btn.textContent = 'Confirm';
+            btn.onclick = null;
+        }
     };
 
     D.setActionBusy = function (action, sourceButtonId) {
@@ -109,6 +114,7 @@
         if (modal) modal.classList.remove('hidden');
         const btn = D.el('confirm-btn');
         if (!btn) return;
+        btn.textContent = 'Confirm';
         btn.onclick = function () {
             D.executeAction(action, D.state.pendingActionButtonId);
         };
