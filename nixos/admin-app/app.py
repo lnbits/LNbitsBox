@@ -29,6 +29,7 @@ from flask import (
     url_for, flash, session, jsonify, send_file
 )
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 from tunnel_utils import (
     build_connect_script,
     choose_invoice_action,
@@ -41,6 +42,8 @@ from tunnel_utils import (
 
 app = Flask(__name__, static_url_path="/box/static")
 app.secret_key = os.urandom(24)
+# Trust the single local Caddy proxy in front of the admin app.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 csrf = CSRFProtect(app)
 
 # Configuration
