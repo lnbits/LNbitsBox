@@ -252,19 +252,50 @@
         }
     };
 
+    D.renderTunnelInvoiceQr = async function (bolt11) {
+        const qrEl = D.el('tunnel-invoice-qr');
+        if (!qrEl) return;
+        qrEl.replaceChildren();
+        if (!bolt11) return;
+
+        try {
+            const resp = await fetch('/box/api/qrcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: bolt11 }),
+            });
+            if (!resp.ok) {
+                throw new Error('QR render failed');
+            }
+            const blob = await resp.blob();
+            const imageUrl = URL.createObjectURL(blob);
+            const image = document.createElement('img');
+            image.src = imageUrl;
+            image.alt = 'Tunnel invoice QR code';
+            image.width = 220;
+            image.height = 220;
+            image.className = 'block';
+            image.addEventListener('load', function () {
+                URL.revokeObjectURL(imageUrl);
+            }, { once: true });
+            qrEl.appendChild(image);
+        } catch (error) {
+            const message = document.createElement('p');
+            message.className = 'text-red-400 font-mono text-xs text-center p-4';
+            message.textContent = 'Failed to render QR code.';
+            qrEl.appendChild(message);
+        }
+    };
+
     D.openTunnelInvoiceModal = function (bolt11) {
         const modal = D.el('tunnel-invoice-modal');
         const textarea = D.el('tunnel-invoice-text');
         const status = D.el('tunnel-invoice-status');
-        const qrEl = D.el('tunnel-invoice-qr');
-        if (!modal || !textarea || !status || !qrEl) return;
+        if (!modal || !textarea || !status) return;
         modal.classList.remove('hidden');
         textarea.value = bolt11 || '';
         status.textContent = 'Waiting for payment...';
-        qrEl.innerHTML = '';
-        if (bolt11 && typeof QRCode !== 'undefined') {
-            D.state.tunnelInvoiceQr = new QRCode(qrEl, { text: bolt11, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
-        }
+        D.renderTunnelInvoiceQr(bolt11);
     };
 
     D.closeTunnelInvoiceModal = function () {

@@ -2,6 +2,7 @@
 """LNbitsBox Admin Dashboard — system monitoring and service management"""
 
 import json
+import io
 import os
 import shlex
 import sys
@@ -1451,6 +1452,33 @@ def api_tunnel_stop():
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/box/api/qrcode", methods=["POST"])
+@login_required
+def api_qrcode():
+    payload = request.get_json(silent=True) or {}
+    text = str(payload.get("text", "")).strip()
+    if not text:
+        return _json_error("QR payload is required", 400)
+    if len(text) > 4096:
+        return _json_error("QR payload is too large", 400)
+
+    try:
+        import qrcode
+
+        qr = qrcode.QRCode(box_size=8, border=2)
+        qr.add_data(text)
+        qr.make(fit=True)
+        image = qr.make_image(fill_color="black", back_color="white")
+        image_bytes = io.BytesIO()
+        image.save(image_bytes, format="PNG")
+        image_bytes.seek(0)
+        response = send_file(image_bytes, mimetype="image/png")
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    except Exception as e:
+        return _json_error(str(e), 500)
 
 
 # ── OTA Update Endpoints ─────────────────────────────────────────

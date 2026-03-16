@@ -5,7 +5,9 @@ let
     flask
     ps."flask-wtf"  # CSRF protection
     mnemonic
+    pillow
     psutil
+    qrcode
     requests
   ]);
 in
