@@ -49,7 +49,7 @@
   services.openssh.enable = true;
   services.openssh.settings = {
     PermitRootLogin = "no";
-    PasswordAuthentication = true; # simple first boot; change to keys-only if you want
+    PasswordAuthentication = true; # disabled in practice until configurator sets a real user password
   };
 
   # Enable console on HDMI (keeps display active and shows login prompt)
@@ -80,13 +80,10 @@
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # wheel = sudo access
 
-    # Option 1: Set initial password (plaintext - stored in /nix/store)
-    # User can change it after first login with 'passwd'
-    initialPassword = "lnbits";
-
-    # Option 2: Use a hashed password (more secure - see example below)
-    # hashedPassword = "$y$j9T$...your-hashed-password-here...";
-    # Generate with: mkpasswd -m yescrypt
+    # Ship without a usable password. The configurator assigns the first
+    # real SSH password, and an optional authorized_keys file on the
+    # firmware partition can enable headless key-based access before setup.
+    hashedPassword = "$y$j9T$rJ6NmGZ7zE0U4N2hW0g2P.$e6TQ5QliNd3I.M0A2Y2vG7tUc1IQQ6pwT0nMY5myoN5";
   };
 
   security.sudo.wheelNeedsPassword = true;
@@ -97,6 +94,46 @@
     vim
     (pkgs.callPackage ./reset-configurator.nix { })
   ];
+
+  systemd.services.lnbitsbox-firstboot-authorized-keys = {
+    description = "Import optional first-boot SSH authorized_keys";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "sshd.service" ];
+    after = [ "local-fs.target" "users.target" ];
+    unitConfig = {
+      ConditionPathExists = "!/var/lib/lnbits/.configured";
+    };
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = with pkgs; [ coreutils gnused shadow ];
+    script = ''
+      KEY_SOURCE="/boot/firmware/authorized_keys"
+      TARGET_HOME="/home/lnbitsadmin"
+      TARGET_DIR="$TARGET_HOME/.ssh"
+      TARGET_FILE="$TARGET_DIR/authorized_keys"
+
+      if [ ! -s "$KEY_SOURCE" ]; then
+        echo "No first-boot authorized_keys file found."
+        exit 0
+      fi
+
+      if [ -e "$TARGET_FILE" ]; then
+        echo "authorized_keys already exists for lnbitsadmin, skipping import."
+        exit 0
+      fi
+
+      USER_GROUP="$(id -gn lnbitsadmin)"
+
+      install -d -m 0700 -o lnbitsadmin -g "$USER_GROUP" "$TARGET_DIR"
+      sed '/^[[:space:]]*$/d; s/\r$//' "$KEY_SOURCE" > "$TARGET_FILE"
+      chown lnbitsadmin:"$USER_GROUP" "$TARGET_FILE"
+      chmod 0600 "$TARGET_FILE"
+
+      echo "Imported SSH authorized_keys for lnbitsadmin from firmware partition."
+    '';
+  };
 
   # Display first-boot instructions on login
   environment.etc."motd".text = ''
@@ -111,6 +148,11 @@
       • Generating/importing your Spark wallet seed phrase
       • Setting your SSH password
       • Launching LNbits
+
+    Optional headless SSH before setup:
+      • Put your public keys in /boot/firmware/authorized_keys
+      • Sign in as lnbitsadmin using key-based auth
+      • There is no default SSH password on the image
 
     Already configured? LNbits is available at the same URL.
 

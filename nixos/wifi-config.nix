@@ -166,5 +166,18 @@ PASSWORD=YourWiFiPassword
 # Optional: Set to true if your network is hidden
 # HIDDEN=true
 EXAMPLE
+
+    cat > firmware/authorized_keys.example << 'EXAMPLE'
+# LNbitsBox first-boot SSH keys
+#
+# To enable headless SSH access before completing the web configurator:
+# 1. Rename this file to authorized_keys
+# 2. Paste one or more SSH public keys below, one per line
+# 3. Boot the device and sign in as lnbitsadmin using your SSH key
+#
+# There is no default SSH password on the image.
+
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMReplaceThisWithYourPublicKey user@example
+EXAMPLE
   '';
 }

@@ -206,13 +206,31 @@ sudo dd if=image.img of=/dev/sdX bs=4M status=progress conv=fsync
 After flashing and booting the Raspberry Pi 4:
 
 1. The Pi will automatically connect via DHCP
-2. Navigate to `http://<pi-ip-address>/` to access the setup wizard
-3. Complete the wizard to:
+2. Optional: for headless SSH before initial configuration, place an `authorized_keys` file on the firmware partition before first boot
+3. Navigate to `https://<pi-ip-address>/` to access the setup wizard
+4. Complete the wizard to:
    - Generate/import your Spark wallet seed
    - Set SSH password for `lnbitsadmin` user
    - Configure and start LNbits
 
-After setup is complete, access LNbits at: `http://<pi-ip-address>/`
+After setup is complete, access LNbits at: `https://<pi-ip-address>/`
+
+### Optional first-boot SSH access
+
+The image no longer ships with a default SSH password.
+
+If you want SSH access before completing the web configurator:
+
+1. Mount the firmware partition after flashing the SD card.
+2. Rename `authorized_keys.example` to `authorized_keys`.
+3. Paste one or more SSH public keys into that file, one per line.
+4. Boot the device and connect with:
+
+```bash
+ssh lnbitsadmin@<pi-ip-address>
+```
+
+The imported key is installed for the `lnbitsadmin` account before `sshd` starts. Password login for `lnbitsadmin` only becomes usable after you set a password in the configurator.
 
 ### Build Issues (For developers)
 
