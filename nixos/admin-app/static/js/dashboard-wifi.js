@@ -4,6 +4,89 @@
     D.state.wifiSelectedFlags = '';
     D.timers.wifiConnectPoll = null;
 
+    D.clearWifiScanList = function () {
+        const container = D.el('wifi-scan-list');
+        if (container) {
+            container.replaceChildren();
+        }
+        return container;
+    };
+
+    D.renderWifiScanMessage = function (message, className) {
+        const container = D.clearWifiScanList();
+        if (!container) return;
+        const text = document.createElement('p');
+        text.className = className;
+        text.textContent = message;
+        container.appendChild(text);
+    };
+
+    D.renderWifiScanLoading = function () {
+        const container = D.clearWifiScanList();
+        if (!container) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-center py-8';
+
+        const spinner = document.createElement('div');
+        spinner.className = 'w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3';
+
+        const label = document.createElement('span');
+        label.className = 'text-ln-muted font-mono text-sm';
+        label.textContent = 'Scanning...';
+
+        wrapper.appendChild(spinner);
+        wrapper.appendChild(label);
+        container.appendChild(wrapper);
+    };
+
+    D.renderWifiScanResults = function (networks) {
+        const container = D.clearWifiScanList();
+        if (!container) return;
+
+        const list = document.createElement('div');
+        list.className = 'space-y-1 max-h-72 overflow-y-auto';
+
+        networks.forEach(function (net) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.wifiSsid = net.ssid || '';
+            button.dataset.wifiFlags = net.flags || '';
+            button.className = 'wifi-network-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-ln-surface transition-colors group';
+
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-2 min-w-0';
+
+            if (D.isEncrypted(net.flags)) {
+                const lock = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                lock.setAttribute('class', 'w-3.5 h-3.5 text-ln-muted shrink-0');
+                lock.setAttribute('fill', 'currentColor');
+                lock.setAttribute('viewBox', '0 0 20 20');
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('fill-rule', 'evenodd');
+                path.setAttribute('clip-rule', 'evenodd');
+                path.setAttribute('d', 'M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z');
+                lock.appendChild(path);
+                left.appendChild(lock);
+            }
+
+            const ssid = document.createElement('span');
+            ssid.className = 'font-mono text-sm truncate';
+            ssid.textContent = net.ssid || '';
+            left.appendChild(ssid);
+
+            const signal = document.createElement('span');
+            signal.className = 'font-mono text-sm text-ln-muted shrink-0 ml-2';
+            signal.textContent = D.signalBars(net.signal);
+
+            button.appendChild(left);
+            button.appendChild(signal);
+            list.appendChild(button);
+        });
+
+        container.appendChild(list);
+    };
+
     D.signalBars = function (dbm) {
         if (dbm >= -50) return '\u2582\u2584\u2586\u2588';
         if (dbm >= -60) return '\u2582\u2584\u2586\u2007';
@@ -24,27 +107,20 @@
     D.openWifiScan = async function () {
         D.el('wifi-modal').classList.remove('hidden');
         D.showWifiView('wifi-scan-list');
-        D.el('wifi-scan-list').innerHTML = '<div class="flex items-center justify-center py-8"><div class="w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3"></div><span class="text-ln-muted font-mono text-sm">Scanning...</span></div>';
+        D.renderWifiScanLoading();
         try {
             const resp = await fetch('/box/api/wifi/scan', { method: 'POST' });
             if (!resp.ok) throw new Error('Scan failed');
             const data = await resp.json();
             if (data.error) throw new Error(data.error);
             if (!data.networks || data.networks.length === 0) {
-                D.el('wifi-scan-list').innerHTML = '<p class="text-ln-muted font-mono text-sm text-center py-8">No networks found</p>';
+                D.renderWifiScanMessage('No networks found', 'text-ln-muted font-mono text-sm text-center py-8');
                 return;
             }
-            let html = '<div class="space-y-1 max-h-72 overflow-y-auto">';
-            data.networks.forEach(function (net) {
-                const lock = D.isEncrypted(net.flags) ? '<svg class="w-3.5 h-3.5 text-ln-muted shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>' : '';
-                html += '<button type="button" data-wifi-ssid="' + encodeURIComponent(net.ssid) + '" data-wifi-flags="' + encodeURIComponent(net.flags || '') + '" class="wifi-network-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-ln-surface transition-colors group">' +
-                    '<div class="flex items-center gap-2 min-w-0">' + lock + '<span class="font-mono text-sm truncate">' + net.ssid + '</span></div>' +
-                    '<span class="font-mono text-sm text-ln-muted shrink-0 ml-2">' + D.signalBars(net.signal) + '</span></button>';
-            });
-            html += '</div>';
-            D.el('wifi-scan-list').innerHTML = html;
+            D.renderWifiScanResults(data.networks);
         } catch (error) {
-            D.el('wifi-scan-list').innerHTML = '<p class="text-red-400 font-mono text-sm text-center py-8">Scan failed: ' + error.message + '</p>';
+            const message = error && error.message ? error.message : 'Scan failed';
+            D.renderWifiScanMessage('Scan failed: ' + message, 'text-red-400 font-mono text-sm text-center py-8');
         }
     };
 

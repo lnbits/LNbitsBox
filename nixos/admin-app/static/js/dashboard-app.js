@@ -58,7 +58,7 @@
   document.addEventListener('click', function (event) {
     const networkButton = event.target.closest('[data-wifi-ssid]');
     if (!networkButton) return;
-    D.selectWifiNetwork(decodeURIComponent(networkButton.dataset.wifiSsid), decodeURIComponent(networkButton.dataset.wifiFlags || ''));
+    D.selectWifiNetwork(networkButton.dataset.wifiSsid || '', networkButton.dataset.wifiFlags || '');
   });
 
   const wifiForm = document.getElementById('wifi-connect-form');
