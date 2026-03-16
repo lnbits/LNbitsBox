@@ -22,6 +22,7 @@ in
       Type = "simple";
       User = "lnbitsadmin";
       Group = "users";
+      SupplementaryGroups = [ "wheel" "spark-sidecar" "lnbits" ];
 
       ExecStart = "${adminPkg}/bin/lnbitspi-admin";
 
