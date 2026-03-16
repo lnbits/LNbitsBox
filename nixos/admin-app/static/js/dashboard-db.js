@@ -34,38 +34,53 @@
     };
 
     D.confirmDbBackup = function () {
-        D.el('confirm-title').textContent = 'Download Backup?';
-        D.el('confirm-message').textContent = 'LNbits will be stopped while creating the backup. It will be restarted automatically.';
-        D.el('confirm-modal').classList.remove('hidden');
-        D.el('confirm-btn').onclick = function () {
-            D.closeModal();
-            D.startDbBackup();
-        };
+        D.openConfirm({
+            title: 'Download Backup?',
+            message: 'LNbits will be stopped while creating the backup. It will be restarted automatically.',
+            buttonText: 'Download Backup',
+            requireSudo: true,
+            onConfirm: function (sudoPassword) {
+                D.closeModal();
+                D.startDbBackup(sudoPassword);
+            },
+        });
     };
 
-    D.startDbBackup = function () {
+    D.startDbBackup = async function (sudoPassword) {
         D.setDbBusy(true, 'Creating backup... LNbits is stopping.');
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/box/api/db/backup';
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token';
-        csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        form.appendChild(csrfInput);
-        form.target = 'db-backup-frame-' + Date.now();
-        iframe.name = form.target;
-        document.body.appendChild(form);
-        form.submit();
-        setTimeout(function () {
+        try {
+            const resp = await fetch('/box/api/db/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sudo_password: sudoPassword }),
+            });
+
+            if (!resp.ok) {
+                const data = await resp.json().catch(function () { return {}; });
+                D.setDbBusy(false);
+                if (data.code === 'sudo_required') {
+                    D.requestSudoPassword('Admin password required', data.message || 'Enter your admin password to continue.', 'Download Backup', D.startDbBackup);
+                    return;
+                }
+                D.showNotice(data.error || data.message || 'Backup failed.', 'Error');
+                return;
+            }
+
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'lnbits-backup.zip';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            D.showNotice('Backup failed: ' + error.message, 'Error');
+        } finally {
             D.setDbBusy(false);
-            document.body.removeChild(form);
-            setTimeout(function () { document.body.removeChild(iframe); }, 5000);
             D.fetchDbInfo();
-        }, 5000);
+        }
     };
 
     D.openRestoreModal = function () {
@@ -84,7 +99,7 @@
         });
     };
 
-    D.startRestore = async function () {
+    D.startRestore = async function (sudoPassword) {
         const fileInput = D.el('restore-file');
         if (!fileInput.files || fileInput.files.length === 0) {
             D.showNotice('Please select a backup file.', 'Validation');
@@ -96,31 +111,44 @@
             return;
         }
         D.showRestoreView('restore-progress');
-        const formData = new FormData();
-        formData.append('file', file);
-        try {
-            const resp = await fetch('/box/api/db/restore', { method: 'POST', body: formData });
-            const data = await resp.json();
-            D.showRestoreView('restore-result');
-            const icon = D.el('restore-result-icon');
-            const text = D.el('restore-result-text');
-            if (resp.ok && data.status === 'ok') {
-                icon.className = 'w-8 h-8 rounded-full mb-3 bg-emerald-400';
-                text.textContent = data.message;
-                text.className = 'font-mono text-sm mb-1 text-emerald-400';
-                D.fetchDbInfo();
-            } else {
-                icon.className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
-                text.textContent = data.error || 'Restore failed';
+        const submitRestore = async function (passwordValue) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('sudo_password', passwordValue);
+            try {
+                const resp = await fetch('/box/api/db/restore', { method: 'POST', body: formData });
+                const data = await resp.json();
+                D.showRestoreView('restore-result');
+                const icon = D.el('restore-result-icon');
+                const text = D.el('restore-result-text');
+                if (resp.ok && data.status === 'ok') {
+                    icon.className = 'w-8 h-8 rounded-full mb-3 bg-emerald-400';
+                    text.textContent = data.message;
+                    text.className = 'font-mono text-sm mb-1 text-emerald-400';
+                    D.fetchDbInfo();
+                } else if (data.code === 'sudo_required') {
+                    D.showRestoreView('restore-form');
+                    D.requestSudoPassword('Restore Database', data.message || 'Enter your admin password to restore the LNbits database.', 'Restore', D.startRestore);
+                } else {
+                    icon.className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
+                    text.textContent = data.error || data.message || 'Restore failed';
+                    text.className = 'font-mono text-sm mb-1 text-red-400';
+                }
+            } catch (error) {
+                D.showRestoreView('restore-result');
+                D.el('restore-result-icon').className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
+                const text = D.el('restore-result-text');
+                text.textContent = 'Request failed: ' + error.message;
                 text.className = 'font-mono text-sm mb-1 text-red-400';
             }
-        } catch (error) {
-            D.showRestoreView('restore-result');
-            D.el('restore-result-icon').className = 'w-8 h-8 rounded-full mb-3 bg-red-400';
-            const text = D.el('restore-result-text');
-            text.textContent = 'Request failed: ' + error.message;
-            text.className = 'font-mono text-sm mb-1 text-red-400';
+        };
+
+        if (sudoPassword) {
+            await submitRestore(sudoPassword);
+            return;
         }
+
+        D.requestSudoPassword('Restore Database', 'Enter your admin password to restore the LNbits database.', 'Restore', submitRestore);
     };
 
     D.fetchDbInfo();

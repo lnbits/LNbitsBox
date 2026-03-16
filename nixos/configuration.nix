@@ -78,7 +78,7 @@
   # Change the username by modifying "lnbitsadmin" below
   users.users.lnbitsadmin = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ]; # wheel = sudo access
+    extraGroups = [ "wheel" "spark-sidecar" "lnbits" ]; # wheel = sudo access
 
     # Option 1: Set initial password (plaintext - stored in /nix/store)
     # User can change it after first login with 'passwd'

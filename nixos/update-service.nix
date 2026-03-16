@@ -100,15 +100,22 @@ let
 in {
   # Ensure state directory exists
   systemd.tmpfiles.rules = [
-    "d ${stateDir} 0755 root root -"
+    "d ${stateDir} 0775 root lnbitsadmin -"
   ];
 
   # Initialize status file on activation
   system.activationScripts.lnbitsbox-update-init = ''
     mkdir -p ${stateDir}
+    chown root:lnbitsadmin ${stateDir}
+    chmod 0775 ${stateDir}
     if [ ! -f ${stateDir}/status ]; then
       echo "idle" > ${stateDir}/status
     fi
+    chgrp lnbitsadmin ${stateDir}/status || true
+    chmod 0664 ${stateDir}/status || true
+    touch ${stateDir}/log
+    chgrp lnbitsadmin ${stateDir}/log || true
+    chmod 0664 ${stateDir}/log || true
   '';
 
   # Make the update script available system-wide

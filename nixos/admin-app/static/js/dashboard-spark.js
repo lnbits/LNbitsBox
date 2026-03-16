@@ -64,7 +64,7 @@
     D.closeModal();
   }
 
-  async function submitMnemonic() {
+  async function submitMnemonic(sudoPassword) {
     const actionBtn = el('spark-seed-change-continue-btn');
     const originalHtml = actionBtn ? actionBtn.innerHTML : '';
     if (actionBtn) {
@@ -76,10 +76,14 @@
       const resp = await fetch('/box/api/spark/seed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mnemonic: state.pendingMnemonic }),
+        body: JSON.stringify({ mnemonic: state.pendingMnemonic, sudo_password: sudoPassword }),
       });
       const data = await resp.json();
       if (!resp.ok || data.status !== 'ok') {
+        if (data.code === 'sudo_required') {
+          D.requestSudoPassword('Admin password required', data.message || 'Enter your admin password to replace the Spark wallet seed phrase.', 'Replace Seed Phrase', submitMnemonic);
+          return;
+        }
         closeModal('spark-seed-backup-modal');
         openModal('spark-seed-change-modal');
         setError(data.message || 'Failed to update the seed phrase.');
@@ -114,19 +118,16 @@
 
   function openFinalConfirm() {
     closeModal('spark-seed-backup-modal');
-    D.state.pendingAction = null;
-    D.state.pendingActionButtonId = null;
-    D.setText('confirm-title', 'Final confirmation');
-    D.setText('confirm-message', 'Are you absolutely sure you want to replace the Spark wallet seed phrase now? This cannot be undone from LNbitsBox.');
-    const confirmBtn = el('confirm-btn');
-    if (confirmBtn) {
-      confirmBtn.textContent = 'Replace Seed Phrase';
-      confirmBtn.onclick = function () {
+    D.openConfirm({
+      title: 'Final confirmation',
+      message: 'Are you absolutely sure you want to replace the Spark wallet seed phrase now? This cannot be undone from LNbitsBox.',
+      buttonText: 'Replace Seed Phrase',
+      requireSudo: true,
+      onConfirm: function (sudoPassword) {
         D.closeModal();
-        submitMnemonic();
-      };
-    }
-    openModal('confirm-modal');
+        submitMnemonic(sudoPassword);
+      },
+    });
   }
 
   const openBtn = el('spark-seed-change-btn');

@@ -8,10 +8,6 @@ import sys
 import tempfile
 import time
 import grp
-try:
-    import crypt
-except ModuleNotFoundError:
-    crypt = None  # Removed in Python 3.13; only needed on NixOS Pi
 import shutil
 import subprocess
 import threading
@@ -105,6 +101,77 @@ def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200
 
 def _json_error(message: str, status_code: int = 500, **payload):
     return _json_response(status="error", message=message, status_code=status_code, **payload)
+
+
+def _sudo_required(message: str = "Enter your admin password to continue.", status_code: int = 403):
+    return _json_error(message, status_code=status_code, code="sudo_required")
+
+
+def _extract_sudo_password() -> str:
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+        return str(payload.get("sudo_password", ""))
+    if request.form:
+        return str(request.form.get("sudo_password", ""))
+    return ""
+
+
+def _clear_sudo_timestamp():
+    try:
+        subprocess.run(
+            ["sudo", "-k"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        pass
+
+
+def _sudo_command(command: list[str]) -> list[str]:
+    return ["sudo", "-k", "-S", "-p", ""] + command
+
+
+def _run_with_sudo(
+    command: list[str],
+    *,
+    password: str,
+    timeout: int = 30,
+    check: bool = False,
+    capture_output: bool = True,
+    text: bool = True,
+    input_text: str | None = None,
+):
+    if DEV_MODE:
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    payload = password + "\n"
+    if input_text:
+        payload += input_text
+
+    result = subprocess.run(
+        _sudo_command(command),
+        input=payload,
+        capture_output=capture_output,
+        text=text,
+        timeout=timeout,
+    )
+    _clear_sudo_timestamp()
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return result
+
+
+def _require_sudo_password() -> str | None:
+    password = _extract_sudo_password()
+    return password or None
 
 
 # ── Tunnel Helpers ──────────────────────────────────────────────────
@@ -418,18 +485,14 @@ def get_network_info():
 
 # ── Authentication ──────────────────────────────────────────────────
 
-def authenticate(username, password):
-    """Verify password against /etc/shadow (requires root)"""
+def authenticate(password):
+    """Verify the admin user's password via sudo."""
     if DEV_MODE:
         return True
-    if crypt is None:
-        return False
     try:
-        with open("/etc/shadow") as f:
-            for line in f:
-                fields = line.strip().split(":")
-                if fields[0] == username and len(fields) > 1 and fields[1]:
-                    return crypt.crypt(password, fields[1]) == fields[1]
+        result = _run_with_sudo(["true"], password=password, timeout=10)
+        if result.returncode == 0:
+            return True
     except Exception:
         pass
     return False
@@ -635,7 +698,7 @@ def login():
 
         password = request.form.get("password", "")
 
-        if authenticate(SSH_USER, password):
+        if authenticate(password):
             _clear_failures(ip)
             session["authenticated"] = True
             return redirect(url_for("dashboard"))
@@ -769,7 +832,13 @@ def api_lnbits_status():
 def api_shutdown():
     if DEV_MODE:
         return jsonify({"status": "ok", "message": "DEV MODE: would shutdown"})
-    subprocess.Popen(["systemd-run", "--no-block", "systemctl", "poweroff"])
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+    try:
+        _run_with_sudo(["systemd-run", "--no-block", "systemctl", "poweroff"], password=password, timeout=20, check=True)
+    except subprocess.CalledProcessError as e:
+        return _json_error((e.stderr or "").strip() or "Failed to shut down the system.", 500)
     return jsonify({"status": "ok", "message": "Shutting down..."})
 
 
@@ -778,7 +847,13 @@ def api_shutdown():
 def api_reboot():
     if DEV_MODE:
         return jsonify({"status": "ok", "message": "DEV MODE: would reboot"})
-    subprocess.Popen(["systemd-run", "--no-block", "systemctl", "reboot"])
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+    try:
+        _run_with_sudo(["systemd-run", "--no-block", "systemctl", "reboot"], password=password, timeout=20, check=True)
+    except subprocess.CalledProcessError as e:
+        return _json_error((e.stderr or "").strip() or "Failed to reboot the system.", 500)
     return jsonify({"status": "ok", "message": "Rebooting..."})
 
 
@@ -828,12 +903,25 @@ def api_update_spark_seed():
             data={"service": "spark-sidecar", "action": "restart"},
         )
 
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+
     try:
-        _write_spark_mnemonic(new_mnemonic)
-        subprocess.run(
-            ["systemctl", "restart", "spark-sidecar.service"],
+        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tmp:
+            tmp.write(new_mnemonic + "\n")
+            tmp_path = Path(tmp.name)
+
+        _run_with_sudo(
+            ["install", "-m", "0640", "-o", "root", "-g", "spark-sidecar", str(tmp_path), str(SPARK_MNEMONIC_FILE)],
+            password=password,
             check=True,
-            capture_output=True,
+        )
+        tmp_path.unlink(missing_ok=True)
+        _run_with_sudo(
+            ["systemctl", "restart", "spark-sidecar.service"],
+            password=password,
+            check=True,
             timeout=30,
         )
         return _json_response(
@@ -842,8 +930,12 @@ def api_update_spark_seed():
             data={"service": "spark-sidecar", "action": "restart"},
         )
     except subprocess.CalledProcessError as e:
-        return _json_error(e.stderr.decode() or "Failed to restart Spark.", 500)
+        if "tmp_path" in locals():
+            tmp_path.unlink(missing_ok=True)
+        return _json_error((e.stderr or "").strip() or "Failed to restart Spark.", 500)
     except Exception as e:
+        if "tmp_path" in locals():
+            tmp_path.unlink(missing_ok=True)
         return _json_error(str(e), 500)
 
 
@@ -854,14 +946,20 @@ def _service_action(service, action, verb):
     if DEV_MODE:
         return _json_response(status="ok", message=f"DEV MODE: would {action} {service}", data={"service": service, "action": action})
 
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+
     try:
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", action, f"{service}.service"],
-            check=True, capture_output=True, timeout=30
+            password=password,
+            check=True,
+            timeout=30,
         )
         return _json_response(status="ok", message=f"{service} is {verb}", data={"service": service, "action": action})
     except subprocess.CalledProcessError as e:
-        return _json_error(e.stderr.decode(), 500)
+        return _json_error((e.stderr or "").strip(), 500)
 
 
 # ── Database Backup & Restore ────────────────────────────────
@@ -907,24 +1005,47 @@ def api_db_backup():
     if not LNBITS_DB_PATH.exists():
         return jsonify({"error": "Database file not found"}), 404
 
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+
     tmp_path = None
+    db_copy_path = None
     try:
         # Stop LNbits
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "stop", "lnbits.service"],
-            check=True, capture_output=True, timeout=30,
+            password=password,
+            check=True,
+            timeout=30,
         )
 
-        # Create zip
+        fd, db_copy = tempfile.mkstemp(suffix=".sqlite3")
+        os.close(fd)
+        db_copy_path = Path(db_copy)
+        _run_with_sudo(
+            ["cp", str(LNBITS_DB_PATH), str(db_copy_path)],
+            password=password,
+            check=True,
+            timeout=30,
+        )
+        _run_with_sudo(
+            ["chown", f"{os.getuid()}:{os.getgid()}", str(db_copy_path)],
+            password=password,
+            check=True,
+            timeout=10,
+        )
+
         fd, tmp_path = tempfile.mkstemp(suffix=".zip")
         os.close(fd)
         with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.write(LNBITS_DB_PATH, "database.sqlite3")
+            zf.write(db_copy_path, "database.sqlite3")
 
         # Start LNbits
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
+            password=password,
+            timeout=30,
         )
 
         response = send_file(
@@ -941,30 +1062,38 @@ def api_db_backup():
                 os.unlink(tmp_path)
             except OSError:
                 pass
+            if db_copy_path:
+                db_copy_path.unlink(missing_ok=True)
 
         return response
     except subprocess.CalledProcessError as e:
         # Try to restart LNbits even if something failed
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
+            password=password,
+            timeout=30,
         )
         if tmp_path:
             try:
                 os.unlink(tmp_path)
             except OSError:
                 pass
-        return jsonify({"error": f"Backup failed: {e.stderr.decode()}"}), 500
+        if db_copy_path:
+            db_copy_path.unlink(missing_ok=True)
+        return jsonify({"error": f"Backup failed: {(e.stderr or '').strip()}"}), 500
     except Exception as e:
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
+            password=password,
+            timeout=30,
         )
         if tmp_path:
             try:
                 os.unlink(tmp_path)
             except OSError:
                 pass
+        if db_copy_path:
+            db_copy_path.unlink(missing_ok=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -998,46 +1127,65 @@ def api_db_restore():
             os.unlink(tmp_path)
             return jsonify({"status": "ok", "message": "DEV MODE: restore validated successfully"})
 
-        # Stop LNbits
-        subprocess.run(
-            ["systemctl", "stop", "lnbits.service"],
-            check=True, capture_output=True, timeout=30,
-        )
+        password = _require_sudo_password()
+        if not password:
+            os.unlink(tmp_path)
+            return _sudo_required()
 
-        # Extract and overwrite
+        extracted_path = Path(tempfile.mkstemp(suffix=".sqlite3")[1])
+        extracted_path.unlink(missing_ok=True)
         with zipfile.ZipFile(tmp_path, "r") as zf:
-            with zf.open("database.sqlite3") as src, open(LNBITS_DB_PATH, "wb") as dst:
+            with zf.open("database.sqlite3") as src, open(extracted_path, "wb") as dst:
                 shutil.copyfileobj(src, dst)
 
-        # Fix ownership
-        subprocess.run(
-            ["chown", "lnbits:lnbits", str(LNBITS_DB_PATH)],
-            capture_output=True, timeout=5,
+        # Stop LNbits
+        _run_with_sudo(
+            ["systemctl", "stop", "lnbits.service"],
+            password=password,
+            check=True,
+            timeout=30,
+        )
+
+        _run_with_sudo(
+            ["install", "-m", "0640", "-o", "lnbits", "-g", "lnbits", str(extracted_path), str(LNBITS_DB_PATH)],
+            password=password,
+            check=True,
+            timeout=30,
         )
 
         # Start LNbits
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
+            password=password,
+            timeout=30,
         )
 
+        extracted_path.unlink(missing_ok=True)
         os.unlink(tmp_path)
         return jsonify({"status": "ok", "message": "Database restored successfully"})
     except subprocess.CalledProcessError as e:
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
+        if 'password' in locals():
+            _run_with_sudo(
+                ["systemctl", "start", "lnbits.service"],
+                password=password,
+                timeout=30,
+            )
+        if 'extracted_path' in locals():
+            extracted_path.unlink(missing_ok=True)
         try:
             os.unlink(tmp_path)
         except OSError:
             pass
-        return jsonify({"error": f"Restore failed: {e.stderr.decode()}"}), 500
+        return jsonify({"error": f"Restore failed: {(e.stderr or '').strip()}"}), 500
     except Exception as e:
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
+        if 'password' in locals():
+            _run_with_sudo(
+                ["systemctl", "start", "lnbits.service"],
+                password=password,
+                timeout=30,
+            )
+        if 'extracted_path' in locals():
+            extracted_path.unlink(missing_ok=True)
         try:
             os.unlink(tmp_path)
         except OSError:
@@ -1063,10 +1211,24 @@ def api_wifi_scan():
     if not wifi_iface:
         return _json_error("No wireless interface found", 404)
 
+    sudo_password = _require_sudo_password()
+    if not sudo_password:
+        return _sudo_required("Enter your admin password to scan for Wi-Fi networks.")
+
     try:
-        wpa_cli(wifi_iface, "scan")
+        _run_with_sudo(
+            ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "scan"],
+            password=sudo_password,
+            check=True,
+            timeout=10,
+        )
         time.sleep(3)
-        result = wpa_cli(wifi_iface, "scan_results")
+        result = _run_with_sudo(
+            ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "scan_results"],
+            password=sudo_password,
+            check=True,
+            timeout=10,
+        )
         if result.returncode != 0:
             return _json_error("Scan failed", 500)
 
@@ -1097,6 +1259,7 @@ def api_wifi_connect():
     data = request.get_json(silent=True) or {}
     ssid = data.get("ssid", "").strip()
     password = data.get("password", "")
+    sudo_password = str(data.get("sudo_password", ""))
 
     if not ssid:
         return _json_error("SSID is required", 400)
@@ -1124,36 +1287,74 @@ def api_wifi_connect():
     def do_connect():
         global wifi_connect_status
         try:
+            if not sudo_password:
+                with wifi_connect_lock:
+                    wifi_connect_status.update({
+                        "status": "failed",
+                        "message": "Enter your admin password to connect to Wi-Fi.",
+                        "ip": "",
+                    })
+                return
             # Read backup of current config
             backup_conf = None
             conf_path = "/etc/wpa_supplicant.conf"
             try:
-                backup_conf = Path(conf_path).read_text()
+                backup = _run_with_sudo(["cat", conf_path], password=sudo_password, timeout=10)
+                if backup.returncode == 0:
+                    backup_conf = backup.stdout
             except Exception:
                 pass
 
             # Add network
-            result = wpa_cli(wifi_iface, "add_network")
+            result = _run_with_sudo(
+                ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "add_network"],
+                password=sudo_password,
+                timeout=10,
+            )
             net_id = result.stdout.strip()
 
             # Set SSID
-            wpa_cli(wifi_iface, "set_network", net_id, "ssid", f'"{ssid}"', check=True)
+            _run_with_sudo(
+                ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "set_network", net_id, "ssid", f'"{ssid}"'],
+                password=sudo_password,
+                check=True,
+                timeout=10,
+            )
 
             # Set password or open network
             if password:
-                wpa_cli(wifi_iface, "set_network", net_id, "psk", f'"{password}"', check=True)
+                _run_with_sudo(
+                    ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "set_network", net_id, "psk", f'"{password}"'],
+                    password=sudo_password,
+                    check=True,
+                    timeout=10,
+                )
             else:
-                wpa_cli(wifi_iface, "set_network", net_id, "key_mgmt", "NONE", check=True)
+                _run_with_sudo(
+                    ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "set_network", net_id, "key_mgmt", "NONE"],
+                    password=sudo_password,
+                    check=True,
+                    timeout=10,
+                )
 
             # Select network (connects to new, disables others)
-            wpa_cli(wifi_iface, "select_network", net_id, check=True)
+            _run_with_sudo(
+                ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "select_network", net_id],
+                password=sudo_password,
+                check=True,
+                timeout=10,
+            )
 
             # Poll for connection
             connected = False
             new_ip = ""
             for _ in range(8):  # 8 * 2s = 16s max
                 time.sleep(2)
-                result = wpa_cli(wifi_iface, "status")
+                result = _run_with_sudo(
+                    ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "status"],
+                    password=sudo_password,
+                    timeout=10,
+                )
                 wpa = {}
                 for line in result.stdout.strip().splitlines():
                     if "=" in line:
@@ -1166,8 +1367,16 @@ def api_wifi_connect():
 
             if connected:
                 # Re-enable all networks and save
-                wpa_cli(wifi_iface, "enable_network", "all")
-                wpa_cli(wifi_iface, "save_config")
+                _run_with_sudo(
+                    ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "enable_network", "all"],
+                    password=sudo_password,
+                    timeout=10,
+                )
+                _run_with_sudo(
+                    ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "save_config"],
+                    password=sudo_password,
+                    timeout=10,
+                )
                 with wifi_connect_lock:
                     wifi_connect_status.update({
                         "status": "success",
@@ -1178,8 +1387,21 @@ def api_wifi_connect():
                 # Restore backup config
                 if backup_conf is not None:
                     try:
-                        Path(conf_path).write_text(backup_conf)
-                        wpa_cli(wifi_iface, "reconfigure")
+                        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tmp:
+                            tmp.write(backup_conf)
+                            backup_path = Path(tmp.name)
+                        _run_with_sudo(
+                            ["install", "-m", "0600", "-o", "root", "-g", "root", str(backup_path), conf_path],
+                            password=sudo_password,
+                            check=True,
+                            timeout=10,
+                        )
+                        backup_path.unlink(missing_ok=True)
+                        _run_with_sudo(
+                            ["wpa_cli", "-p", "/run/wpa_supplicant", "-i", wifi_iface, "reconfigure"],
+                            password=sudo_password,
+                            timeout=10,
+                        )
                     except Exception:
                         pass
                 with wifi_connect_lock:
@@ -1418,19 +1640,27 @@ def api_tunnel_start():
     if DEV_MODE:
         return jsonify({"status": "ok", "message": "DEV MODE: would start tunnel service"})
 
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+
     try:
         _write_runtime_env(current)
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "enable", f"{TUNNEL_SERVICE_NAME}.service"],
-            check=True, capture_output=True, timeout=20
+            password=password,
+            check=True,
+            timeout=20,
         )
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "restart", f"{TUNNEL_SERVICE_NAME}.service"],
-            check=True, capture_output=True, timeout=20
+            password=password,
+            check=True,
+            timeout=20,
         )
         return jsonify({"status": "ok", "message": "Tunnel service restarted"})
     except subprocess.CalledProcessError as e:
-        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+        return jsonify({"status": "error", "message": (e.stderr or "").strip()}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -1441,14 +1671,20 @@ def api_tunnel_stop():
     if DEV_MODE:
         return jsonify({"status": "ok", "message": "DEV MODE: would stop tunnel service"})
 
+    password = _require_sudo_password()
+    if not password:
+        return _sudo_required()
+
     try:
-        subprocess.run(
+        _run_with_sudo(
             ["systemctl", "stop", f"{TUNNEL_SERVICE_NAME}.service"],
-            check=True, capture_output=True, timeout=20
+            password=password,
+            check=True,
+            timeout=20,
         )
         return jsonify({"status": "ok", "message": "Tunnel service stopped"})
     except subprocess.CalledProcessError as e:
-        return jsonify({"status": "error", "message": e.stderr.decode()}), 500
+        return jsonify({"status": "error", "message": (e.stderr or "").strip()}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -1526,6 +1762,10 @@ def api_update_start():
     if not release_tag:
         return jsonify({"status": "error", "message": "No release_tag provided"}), 400
 
+    password = str(data.get("sudo_password", ""))
+    if not password:
+        return _sudo_required()
+
     # Reset status to idle before starting
     try:
         UPDATE_STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -1536,7 +1776,7 @@ def api_update_start():
 
     # Launch update as a transient systemd unit so it survives admin app restarts
     try:
-        result = subprocess.run(
+        result = _run_with_sudo(
             [
                 "systemd-run",
                 "--system",
@@ -1546,8 +1786,8 @@ def api_update_start():
                 "--no-block",
                 "/run/current-system/sw/bin/lnbitsbox-update", release_tag,
             ],
-            capture_output=True,
-            text=True,
+            password=password,
+            timeout=20,
         )
         if result.returncode != 0:
             app.logger.error("systemd-run failed: %s", result.stderr.strip())

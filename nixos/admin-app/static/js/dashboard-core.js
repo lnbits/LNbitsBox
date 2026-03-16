@@ -50,12 +50,22 @@
     D.closeModal = function () {
         D.state.pendingAction = null;
         D.state.pendingActionButtonId = null;
+        D.state.confirmHandler = null;
         const modal = D.el('confirm-modal');
         if (modal) modal.classList.add('hidden');
         const btn = D.el('confirm-btn');
         if (btn) {
             btn.textContent = 'Confirm';
             btn.onclick = null;
+        }
+        const sudoGroup = D.el('confirm-sudo-group');
+        const sudoInput = D.el('confirm-sudo-password');
+        const sudoError = D.el('confirm-sudo-error');
+        if (sudoGroup) sudoGroup.classList.add('hidden');
+        if (sudoInput) sudoInput.value = '';
+        if (sudoError) {
+            sudoError.textContent = '';
+            sudoError.classList.add('hidden');
         }
     };
 
@@ -105,26 +115,92 @@
         };
     };
 
-    D.confirmAction = function (action, message, buttonId) {
-        D.state.pendingAction = action;
-        D.state.pendingActionButtonId = buttonId || null;
-        D.setText('confirm-title', 'Are you sure?');
-        D.setText('confirm-message', message);
+    D.openConfirm = function (options) {
+        options = options || {};
+        D.state.confirmHandler = options.onConfirm || null;
+        D.setText('confirm-title', options.title || 'Are you sure?');
+        D.setText('confirm-message', options.message || '');
         const modal = D.el('confirm-modal');
         if (modal) modal.classList.remove('hidden');
         const btn = D.el('confirm-btn');
+        const sudoGroup = D.el('confirm-sudo-group');
+        const sudoInput = D.el('confirm-sudo-password');
+        const sudoError = D.el('confirm-sudo-error');
+        const requireSudo = !!options.requireSudo;
+        if (sudoGroup) sudoGroup.classList.toggle('hidden', !requireSudo);
+        if (sudoInput) sudoInput.value = '';
+        if (sudoError) {
+            sudoError.textContent = '';
+            sudoError.classList.add('hidden');
+        }
         if (!btn) return;
-        btn.textContent = 'Confirm';
+        btn.textContent = options.buttonText || 'Confirm';
         btn.onclick = function () {
-            D.executeAction(action, D.state.pendingActionButtonId);
+            let sudoPassword = '';
+            if (requireSudo) {
+                sudoPassword = (sudoInput && sudoInput.value) ? sudoInput.value : '';
+                if (!sudoPassword) {
+                    if (sudoError) {
+                        sudoError.textContent = 'Enter your admin password to continue.';
+                        sudoError.classList.remove('hidden');
+                    }
+                    if (sudoInput) sudoInput.focus();
+                    return;
+                }
+            }
+            if (typeof D.state.confirmHandler === 'function') {
+                D.state.confirmHandler(sudoPassword);
+            }
         };
+        if (requireSudo && sudoInput) {
+            setTimeout(function () { sudoInput.focus(); }, 0);
+        }
     };
 
-    D.executeAction = async function (action, sourceButtonId) {
+    D.confirmAction = function (action, message, buttonId) {
+        D.state.pendingAction = action;
+        D.state.pendingActionButtonId = buttonId || null;
+        D.openConfirm({
+            title: 'Are you sure?',
+            message: message,
+            buttonText: 'Confirm',
+            requireSudo: true,
+            onConfirm: function (sudoPassword) {
+                D.executeAction(action, D.state.pendingActionButtonId, sudoPassword);
+            },
+        });
+    };
+
+    D.requestSudoPassword = function (title, message, buttonText, handler) {
+        D.openConfirm({
+            title: title || 'Admin password required',
+            message: message || 'Enter your admin password to continue.',
+            buttonText: buttonText || 'Continue',
+            requireSudo: true,
+            onConfirm: function (sudoPassword) {
+                D.closeModal();
+                handler(sudoPassword);
+            },
+        });
+    };
+
+    D.showConfirmError = function (message) {
+        const sudoError = D.el('confirm-sudo-error');
+        if (!sudoError) return;
+        sudoError.textContent = message;
+        sudoError.classList.remove('hidden');
+    };
+
+    D.executeAction = async function (action, sourceButtonId, sudoPassword) {
         D.closeModal();
         const releaseBusy = D.setActionBusy(action, sourceButtonId);
         try {
-            const resp = await fetch('/box/api/' + action, { method: 'POST' });
+            const options = { method: 'POST' };
+            if (sudoPassword) {
+                options.headers = { 'Content-Type': 'application/json' };
+                options.body = JSON.stringify({ sudo_password: sudoPassword });
+            }
+            const resp = await fetch('/box/api/' + action, options);
             const data = await resp.json();
             if (data.status === 'ok') {
                 if (typeof D.fetchStats === 'function') {
@@ -137,6 +213,15 @@
                     : action === 'reboot' ? 'Rebooting...'
                         : data.message;
                 D.showNotice(message, 'Success');
+            } else if (data.code === 'sudo_required') {
+                D.requestSudoPassword(
+                    'Admin password required',
+                    data.message || 'Enter your admin password to continue.',
+                    'Confirm',
+                    function (retryPassword) {
+                        D.executeAction(action, sourceButtonId, retryPassword);
+                    }
+                );
             } else {
                 D.showNotice('Error: ' + data.message, 'Error');
             }

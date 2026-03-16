@@ -41,16 +41,19 @@
     };
 
     D.confirmUpdate = function () {
-        D.el('confirm-title').textContent = 'Start System Update?';
-        D.el('confirm-message').textContent = 'This will download and activate a new system version. Services will briefly restart.';
-        D.el('confirm-modal').classList.remove('hidden');
-        D.el('confirm-btn').onclick = function () {
-            D.closeModal();
-            D.startUpdate();
-        };
+        D.openConfirm({
+            title: 'Start System Update?',
+            message: 'This will download and activate a new system version. Services will briefly restart.',
+            buttonText: 'Start Update',
+            requireSudo: true,
+            onConfirm: function (sudoPassword) {
+                D.closeModal();
+                D.startUpdate(sudoPassword);
+            },
+        });
     };
 
-    D.startUpdate = async function () {
+    D.startUpdate = async function (sudoPassword) {
         D.showUpdateSection('update-progress');
         D.el('update-log').textContent = '';
         D.el('update-progress-status').textContent = 'Starting update...';
@@ -58,9 +61,13 @@
             const resp = await fetch('/box/api/update/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ release_tag: D.state.updateReleaseTag }),
+                body: JSON.stringify({ release_tag: D.state.updateReleaseTag, sudo_password: sudoPassword }),
             });
             const data = await resp.json();
+            if (data.code === 'sudo_required') {
+                D.requestSudoPassword('Admin password required', data.message || 'Enter your admin password to start the update.', 'Start Update', D.startUpdate);
+                return;
+            }
             if (data.status !== 'started') {
                 D.el('update-progress-status').textContent = 'Error: ' + (data.message || 'Unknown');
                 return;

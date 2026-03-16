@@ -2,6 +2,7 @@
     const D = window.LNbitsBoxDashboard;
     D.state.wifiSelectedSsid = '';
     D.state.wifiSelectedFlags = '';
+    D.state.wifiSudoPassword = '';
     D.timers.wifiConnectPoll = null;
 
     D.signalBars = function (dbm) {
@@ -21,14 +22,28 @@
         });
     };
 
-    D.openWifiScan = async function () {
+    D.openWifiScan = async function (sudoPassword) {
+        if (!sudoPassword && !D.state.wifiSudoPassword) {
+            D.requestSudoPassword('Scan Wi-Fi Networks', 'Enter your admin password to scan for Wi-Fi networks.', 'Scan', D.openWifiScan);
+            return;
+        }
+        D.state.wifiSudoPassword = sudoPassword || D.state.wifiSudoPassword;
         D.el('wifi-modal').classList.remove('hidden');
         D.showWifiView('wifi-scan-list');
         D.el('wifi-scan-list').innerHTML = '<div class="flex items-center justify-center py-8"><div class="w-5 h-5 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mr-3"></div><span class="text-ln-muted font-mono text-sm">Scanning...</span></div>';
         try {
-            const resp = await fetch('/box/api/wifi/scan', { method: 'POST' });
-            if (!resp.ok) throw new Error('Scan failed');
+            const resp = await fetch('/box/api/wifi/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sudo_password: D.state.wifiSudoPassword }),
+            });
             const data = await resp.json();
+            if (data.code === 'sudo_required') {
+                D.state.wifiSudoPassword = '';
+                D.requestSudoPassword('Scan Wi-Fi Networks', data.message || 'Enter your admin password to scan for Wi-Fi networks.', 'Scan', D.openWifiScan);
+                return;
+            }
+            if (!resp.ok) throw new Error('Scan failed');
             if (data.error) throw new Error(data.error);
             if (!data.networks || data.networks.length === 0) {
                 D.el('wifi-scan-list').innerHTML = '<p class="text-ln-muted font-mono text-sm text-center py-8">No networks found</p>';
@@ -61,17 +76,28 @@
         D.showWifiView('wifi-scan-list');
     };
 
-    D.connectToWifi = async function () {
+    D.connectToWifi = async function (sudoPassword) {
         const password = D.el('wifi-password').value;
+        if (!sudoPassword && !D.state.wifiSudoPassword) {
+            D.requestSudoPassword('Connect to Wi-Fi', 'Enter your admin password to update Wi-Fi settings.', 'Connect', D.connectToWifi);
+            return;
+        }
+        D.state.wifiSudoPassword = sudoPassword || D.state.wifiSudoPassword;
         D.showWifiView('wifi-connecting');
         D.el('wifi-connecting-text').textContent = 'Connecting to ' + D.state.wifiSelectedSsid + '...';
         try {
             const resp = await fetch('/box/api/wifi/connect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ssid: D.state.wifiSelectedSsid, password: password }),
+                body: JSON.stringify({ ssid: D.state.wifiSelectedSsid, password: password, sudo_password: D.state.wifiSudoPassword }),
             });
             const data = await resp.json();
+            if (data.code === 'sudo_required') {
+                D.state.wifiSudoPassword = '';
+                D.showWifiView('wifi-connect-form');
+                D.requestSudoPassword('Connect to Wi-Fi', data.message || 'Enter your admin password to update Wi-Fi settings.', 'Connect', D.connectToWifi);
+                return;
+            }
             if (data.status === 'error') {
                 D.showWifiResult(false, data.message, '');
                 return;
@@ -123,6 +149,7 @@
 
     D.closeWifiModal = function () {
         D.el('wifi-modal').classList.add('hidden');
+        D.state.wifiSudoPassword = '';
         if (D.timers.wifiConnectPoll) {
             clearInterval(D.timers.wifiConnectPoll);
             D.timers.wifiConnectPoll = null;

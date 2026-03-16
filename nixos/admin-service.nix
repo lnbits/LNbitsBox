@@ -15,14 +15,13 @@ in
       ConditionPathExists = "/var/lib/lnbits/.configured";
     };
 
-    # systemctl, wpa_cli, ip, ping must be in PATH
-    path = [ pkgs.systemd pkgs.wpa_supplicant pkgs.iproute2 pkgs.iputils ];
+    # systemctl, sudo, wpa_cli, ip, ping must be in PATH
+    path = [ pkgs.systemd pkgs.sudo pkgs.wpa_supplicant pkgs.iproute2 pkgs.iputils ];
 
     serviceConfig = {
       Type = "simple";
-      # Runs as root for /etc/shadow access (PAM auth) and systemctl
-      User = "root";
-      Group = "root";
+      User = "lnbitsadmin";
+      Group = "lnbitsadmin";
 
       ExecStart = "${adminPkg}/bin/lnbitspi-admin";
 
