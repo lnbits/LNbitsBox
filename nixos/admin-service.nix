@@ -21,7 +21,7 @@ in
     serviceConfig = {
       Type = "simple";
       User = "lnbitsadmin";
-      Group = "lnbitsadmin";
+      Group = "users";
 
       ExecStart = "${adminPkg}/bin/lnbitspi-admin";
 

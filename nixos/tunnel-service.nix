@@ -38,7 +38,7 @@ let
 in
 {
   systemd.tmpfiles.rules = [
-    "d ${stateDir} 0770 lnbitsadmin lnbitsadmin - -"
+    "d ${stateDir} 0770 lnbitsadmin users - -"
   ];
 
   systemd.services.lnbitsbox-reverse-tunnel = {
