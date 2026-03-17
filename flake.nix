@@ -21,7 +21,7 @@
 
   outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, spark-sidecar, ... }:
   let
-    version = "0.1.49";  # Bump before each release tag to match the next tag name
+    version = "0.9.0";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
   in
   {
