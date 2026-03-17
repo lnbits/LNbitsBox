@@ -25,10 +25,13 @@
   bindClick('wifi-back-btn', function () { D.showScanList(); });
   bindClick('wifi-try-another-btn', function () { D.showScanList(); });
   bindClick('wifi-done-btn', function () { D.closeWifiModal(); });
-  bindClick('db-backup-btn', function () { D.confirmDbBackup(); });
-  bindClick('db-restore-btn', function () { D.openRestoreModal(); });
+  bindClick('recovery-download-btn', function () { D.downloadRecoveryBackup(); });
+  bindClick('recovery-save-btn', function () { D.saveRecoveryBackup(); });
+  bindClick('recovery-restore-btn', function () { D.openRestoreModal(); });
+  bindClick('recovery-schedule-save-btn', function () { D.saveRecoverySchedule(); });
   bindClick('restore-close-btn', function () { D.closeRestoreModal(); });
   bindClick('restore-cancel-btn', function () { D.closeRestoreModal(); });
+  bindClick('restore-validate-btn', function () { D.validateRestoreBackup(); });
   bindClick('restore-confirm-btn', function () { D.startRestore(); });
   bindClick('restore-result-close-btn', function () { D.closeRestoreModal(); });
   bindClick('update-check-btn', function () { D.checkForUpdate(); });

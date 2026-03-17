@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import grp
+import stat
 try:
     import crypt
 except ModuleNotFoundError:
@@ -38,6 +39,20 @@ from tunnel_utils import (
     read_json,
     select_canonical_tunnel,
     write_secure_json,
+)
+from recovery_utils import (
+    available_restore_components,
+    build_backup_manifest,
+    compatibility_report,
+    file_sha256,
+    load_backup_container,
+    parse_iso_datetime,
+    package_encrypted_backup,
+    package_plain_backup,
+    read_json_file,
+    utc_now_iso,
+    validate_manifest_files,
+    write_json_file,
 )
 
 app = Flask(__name__, static_url_path="/box/static")
@@ -79,6 +94,22 @@ TUNNEL_STATE_DIR = (
 TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
 TUNNEL_KEY_FILE = TUNNEL_STATE_DIR / "reverse-proxy-key"
 TUNNEL_RUNTIME_ENV = TUNNEL_STATE_DIR / "runtime.env"
+WPA_SUPPLICANT_CONF = Path("/etc/wpa_supplicant.conf")
+TOR_HOSTNAME_FILE = Path("/var/lib/tor/onion/lnbits/hostname")
+RECOVERY_STATE_DIR = Path("/tmp/lnbitspi-test/recovery") if DEV_MODE else Path("/var/lib/lnbitsbox-recovery")
+RECOVERY_BACKUP_DIR = RECOVERY_STATE_DIR / "backups"
+RECOVERY_STATE_FILE = RECOVERY_STATE_DIR / "state.json"
+RECOVERY_SCHEDULE_FILE = RECOVERY_STATE_DIR / "schedule.json"
+
+RECOVERY_DESTINATIONS = {
+    "local": {
+        "label": "Local recovery storage",
+        "path": RECOVERY_BACKUP_DIR,
+        "writable": True,
+        "reason": "",
+        "detail": f"Saved to {RECOVERY_BACKUP_DIR}",
+    },
+}
 
 # Stats history — 2 hours at 30s intervals = 240 data points
 STATS_INTERVAL = 30
@@ -97,6 +128,16 @@ _tunnel_remote_sync = {
     "in_flight": False,
     "last_started_at": 0.0,
     "last_finished_at": 0.0,
+}
+
+RECOVERY_COMPONENT_LABELS = {
+    "database": "LNbits database",
+    "spark": "Spark wallet seed",
+    "config": "Device config",
+    "tunnel": "Tunnel config",
+    "wifi": "Wi-Fi config",
+    "tor": "Tor metadata",
+    "update": "Update state",
 }
 
 
@@ -329,6 +370,517 @@ def _tunnel_connect_script(tunnel: dict[str, Any] | None) -> str | None:
     if not private_key:
         return None
     return build_connect_script(private_key, tunnel, local_port=TUNNEL_LOCAL_PORT)
+
+
+# ── Recovery Helpers ────────────────────────────────────────────────
+
+def _ensure_recovery_state_dir():
+    RECOVERY_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    RECOVERY_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(RECOVERY_STATE_DIR, 0o700)
+        os.chmod(RECOVERY_BACKUP_DIR, 0o700)
+    except Exception:
+        pass
+
+
+def _recovery_state() -> dict[str, Any]:
+    _ensure_recovery_state_dir()
+    state = read_json_file(RECOVERY_STATE_FILE, default={})
+    state.setdefault("last_backup", None)
+    state.setdefault("last_validation", None)
+    state.setdefault("last_restore", None)
+    return state
+
+
+def _save_recovery_state(state: dict[str, Any]):
+    _ensure_recovery_state_dir()
+    write_json_file(RECOVERY_STATE_FILE, state)
+    try:
+        os.chmod(RECOVERY_STATE_FILE, 0o600)
+    except Exception:
+        pass
+
+
+def _default_schedule() -> dict[str, Any]:
+    return {
+        "enabled": False,
+        "interval_hours": 24,
+        "backup_type": "full",
+        "destination": "local",
+        "passphrase": "",
+        "last_run_at": None,
+        "next_run_at": None,
+        "last_result": None,
+    }
+
+
+def _recovery_schedule() -> dict[str, Any]:
+    _ensure_recovery_state_dir()
+    schedule = read_json_file(RECOVERY_SCHEDULE_FILE, default={})
+    result = _default_schedule()
+    result.update(schedule)
+    return result
+
+
+def _save_recovery_schedule(schedule: dict[str, Any]):
+    _ensure_recovery_state_dir()
+    write_json_file(RECOVERY_SCHEDULE_FILE, schedule)
+    try:
+        os.chmod(RECOVERY_SCHEDULE_FILE, 0o600)
+    except Exception:
+        pass
+
+def _list_recovery_destinations() -> dict[str, dict[str, Any]]:
+    return dict(RECOVERY_DESTINATIONS)
+
+
+def _resolve_recovery_destination(destination_id: str) -> tuple[str, Path]:
+    destinations = _list_recovery_destinations()
+    selected = destinations.get(destination_id)
+    if not selected:
+        raise ValueError("Unknown backup destination.")
+    if not selected.get("writable", True):
+        raise ValueError(selected.get("reason") or "Selected backup destination is not writable.")
+    path = Path(selected["path"])
+    path.mkdir(parents=True, exist_ok=True)
+    return selected["label"], path
+
+
+def _archive_entry(archive_path: str, destination_path: Path) -> dict[str, Any] | None:
+    try:
+        data = destination_path.read_bytes()
+    except FileNotFoundError:
+        return None
+    mode = None
+    try:
+        mode = oct(destination_path.stat().st_mode & 0o777)
+    except Exception:
+        pass
+    return {
+        "archive_path": archive_path,
+        "destination_path": str(destination_path),
+        "content": data,
+        "size": len(data),
+        "sha256": file_sha256(data),
+        "mode": mode,
+    }
+
+
+def _recovery_component_sources() -> dict[str, list[tuple[str, Path]]]:
+    return {
+        "database": [
+            ("database/database.sqlite3", LNBITS_DB_PATH),
+        ],
+        "spark": [
+            ("spark/mnemonic", SPARK_MNEMONIC_FILE),
+            ("spark/api-key.env", Path("/var/lib/spark-sidecar/api-key.env") if not DEV_MODE else Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")),
+        ],
+        "config": [
+            ("config/lnbits.env", Path("/etc/lnbits/lnbits.env") if not DEV_MODE else Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")),
+            ("config/version.txt", VERSION_FILE),
+        ],
+        "tunnel": [
+            ("tunnel/state.json", TUNNEL_STATE_FILE),
+            ("tunnel/reverse-proxy-key", TUNNEL_KEY_FILE),
+            ("tunnel/runtime.env", TUNNEL_RUNTIME_ENV),
+        ],
+        "wifi": [
+            ("wifi/wpa_supplicant.conf", WPA_SUPPLICANT_CONF),
+        ],
+        "tor": [
+            ("tor/hostname", TOR_HOSTNAME_FILE),
+        ],
+        "update": [
+            ("update/status", UPDATE_STATE_DIR / "status"),
+            ("update/target-version", UPDATE_STATE_DIR / "target-version"),
+        ],
+    }
+
+
+def _allowed_recovery_paths() -> dict[str, tuple[str, Path]]:
+    allowed = {}
+    for component, sources in _recovery_component_sources().items():
+        for archive_path, destination_path in sources:
+            allowed[archive_path] = (component, destination_path)
+    return allowed
+
+
+def _backup_component_payloads(backup_type: str) -> dict[str, list[dict[str, Any]]]:
+    component_sources = _recovery_component_sources()
+    included = {"database", "spark", "config", "tunnel"}
+    if backup_type == "full":
+        included.update({"wifi", "tor", "update"})
+    payloads: dict[str, list[dict[str, Any]]] = {}
+    for component, sources in component_sources.items():
+        if component not in included:
+            continue
+        entries = []
+        for archive_path, destination_path in sources:
+            entry = _archive_entry(archive_path, destination_path)
+            if entry:
+                entries.append(entry)
+        if entries:
+            payloads[component] = entries
+    return payloads
+
+
+def _recovery_manifest(backup_type: str, encrypted: bool, payloads: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    return build_backup_manifest(
+        backup_type=backup_type,
+        current_version=get_current_version(),
+        encrypted=encrypted,
+        components=payloads,
+        spark_seed_present=bool(_read_spark_mnemonic()),
+        tunnel_configured=bool((_load_tunnel_state().get("current_tunnel") or {}).get("tunnel_id")),
+        created_by="manual",
+    )
+
+
+def _create_recovery_backup_bytes(backup_type: str, passphrase: str | None = None, *, created_by: str = "manual") -> tuple[bytes, dict[str, Any]]:
+    services = _services_for_restore(list({"database", "spark", "tunnel"} if backup_type == "full" else {"database"}))
+    try:
+        _stop_services(services)
+        payloads = _backup_component_payloads(backup_type)
+        manifest = _recovery_manifest(backup_type, bool(passphrase), payloads)
+        manifest["created_by"] = created_by
+        plain_backup = package_plain_backup(manifest, payloads)
+        if passphrase:
+            container = package_encrypted_backup(manifest, plain_backup, passphrase)
+        else:
+            container = plain_backup
+        return container, manifest
+    finally:
+        _start_services(services)
+
+
+def _backup_filename(manifest: dict[str, Any]) -> str:
+    ts = manifest["created_at"].replace(":", "").replace("-", "").replace("+00:00", "Z")
+    return f"lnbitsbox-recovery-{manifest['backup_type']}-{ts}.zip"
+
+
+def _record_backup_success(*, manifest: dict[str, Any], storage: str, file_path: str | None, validated: bool):
+    state = _recovery_state()
+    state["last_backup"] = {
+        "created_at": manifest["created_at"],
+        "type": manifest["backup_type"],
+        "encrypted": manifest["encrypted"],
+        "components": manifest["components"],
+        "storage": storage,
+        "file_path": file_path,
+        "validated": validated,
+        "version": manifest["lnbitsbox_version"],
+    }
+    state["last_validation"] = {
+        "checked_at": utc_now_iso(),
+        "status": "ok" if validated else "unknown",
+        "message": "Backup archive passed integrity checks." if validated else "Backup archive created.",
+    }
+    _save_recovery_state(state)
+
+
+def _write_recovery_destination_file(destination_id: str, content: bytes, manifest: dict[str, Any]) -> dict[str, Any]:
+    label, destination = _resolve_recovery_destination(destination_id)
+    file_name = _backup_filename(manifest)
+    target = destination / file_name
+    target.write_bytes(content)
+    try:
+        os.chmod(target, 0o600)
+    except Exception:
+        pass
+    _record_backup_success(
+        manifest=manifest,
+        storage=label,
+        file_path=str(target),
+        validated=True,
+    )
+    return {
+        "destination": label,
+        "path": str(target),
+        "filename": file_name,
+    }
+
+
+def _read_local_backup(local_backup: str) -> tuple[str, bytes]:
+    requested = Path(local_backup).name
+    target = RECOVERY_BACKUP_DIR / requested
+    if not target.exists() or not target.is_file():
+        raise ValueError("Selected local backup was not found.")
+    return requested, target.read_bytes()
+
+
+def _load_recovery_backup(passphrase: str | None = None):
+    local_backup = (request.form.get("local_backup") or "").strip()
+    if local_backup:
+        filename, archive_bytes = _read_local_backup(local_backup)
+    else:
+        if "file" not in request.files:
+            raise ValueError("Choose a saved backup on this box or upload a backup file.")
+        upload = request.files["file"]
+        if not upload.filename:
+            raise ValueError("No backup file selected.")
+        filename = upload.filename
+        archive_bytes = upload.read()
+        if not archive_bytes:
+            raise ValueError("Uploaded backup is empty.")
+    manifest, inner_zip = load_backup_container(archive_bytes, passphrase=passphrase)
+    issues = validate_manifest_files(manifest, inner_zip)
+    compatibility = compatibility_report(get_current_version(), manifest.get("lnbitsbox_version", ""))
+    return filename, archive_bytes, manifest, inner_zip, issues, compatibility
+
+
+def _write_restored_file(destination_path: Path, payload: bytes, mode_value: str | None = None):
+    destination_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=str(destination_path.parent))
+    with os.fdopen(fd, "wb") as handle:
+        handle.write(payload)
+    tmp_path = Path(tmp_name)
+    try:
+        if mode_value:
+            os.chmod(tmp_path, int(mode_value, 8))
+        elif destination_path.exists():
+            os.chmod(tmp_path, stat.S_IMODE(destination_path.stat().st_mode))
+        tmp_path.replace(destination_path)
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+
+def _services_for_restore(components: list[str]) -> list[str]:
+    services = set()
+    if any(component in components for component in ("database", "config")):
+        services.add("lnbits.service")
+    if "spark" in components:
+        services.add("spark-sidecar.service")
+    if "tunnel" in components:
+        services.add(f"{TUNNEL_SERVICE_NAME}.service")
+    return sorted(services)
+
+
+def _stop_services(service_names: list[str]):
+    if DEV_MODE:
+        return
+    for service in service_names:
+        subprocess.run(["systemctl", "stop", service], capture_output=True, timeout=30, check=False)
+
+
+def _start_services(service_names: list[str]):
+    if DEV_MODE:
+        return
+    for service in service_names:
+        subprocess.run(["systemctl", "start", service], capture_output=True, timeout=30, check=False)
+
+
+def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any], selected_components: list[str]) -> dict[str, Any]:
+    restored_files = []
+    allowed_paths = _allowed_recovery_paths()
+    for file_info in manifest.get("files", []):
+        component = file_info.get("component")
+        if component not in selected_components:
+            continue
+        archive_path = file_info.get("archive_path")
+        allowed = allowed_paths.get(archive_path)
+        if not allowed:
+            raise ValueError(f"Archive contains unsupported restore path: {archive_path}")
+        allowed_component, destination_path = allowed
+        if allowed_component != component:
+            raise ValueError(f"Archive component mismatch for {archive_path}")
+        payload = inner_zip.read(archive_path)
+        _write_restored_file(destination_path, payload, file_info.get("mode"))
+        restored_files.append({
+            "component": component,
+            "path": str(destination_path),
+        })
+        try:
+            if destination_path == LNBITS_DB_PATH:
+                shutil.chown(destination_path, user="lnbits", group="lnbits")
+            elif destination_path in (SPARK_MNEMONIC_FILE, Path("/var/lib/spark-sidecar/api-key.env"), Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")):
+                shutil.chown(destination_path, user="root", group="spark-sidecar")
+            elif destination_path in (TUNNEL_STATE_FILE, TUNNEL_KEY_FILE, TUNNEL_RUNTIME_ENV):
+                shutil.chown(destination_path, user="root", group="root")
+        except Exception:
+            pass
+    return {"restored_files": restored_files}
+
+
+def _post_restore_report(selected_components: list[str], manifest: dict[str, Any]) -> dict[str, Any]:
+    checks = []
+    for component in selected_components:
+        checks.append({
+            "component": component,
+            "label": RECOVERY_COMPONENT_LABELS.get(component, component),
+            "ok": component != "database" or LNBITS_DB_PATH.exists(),
+        })
+    compatibility = compatibility_report(get_current_version(), manifest.get("lnbitsbox_version", ""))
+    return {
+        "checked_at": utc_now_iso(),
+        "checks": checks,
+        "compatibility": compatibility,
+        "services": {
+            "lnbits": get_service_status("lnbits"),
+            "spark-sidecar": get_service_status("spark-sidecar"),
+            TUNNEL_SERVICE_NAME: _tunnel_service_status(),
+        },
+    }
+
+
+def _recovery_status_payload() -> dict[str, Any]:
+    state = _recovery_state()
+    destinations = _list_recovery_destinations()
+    schedule = _recovery_schedule()
+    schedule["passphrase"] = "configured" if schedule.get("passphrase") else ""
+    return {
+        "spark_seed_present": bool(_read_spark_mnemonic()),
+        "tunnel_ready": TUNNEL_KEY_FILE.exists(),
+        "last_backup": state.get("last_backup"),
+        "last_validation": state.get("last_validation"),
+        "last_restore": state.get("last_restore"),
+        "schedule": schedule,
+        "destinations": [
+            {
+                "id": key,
+                "label": value["label"],
+                "path": str(value["path"]),
+                "writable": value.get("writable", True),
+                "reason": value.get("reason", ""),
+                "detail": value.get("detail", f"Saved to {value['path']}"),
+            }
+            for key, value in destinations.items()
+        ],
+        "recommended_actions": [
+            "Create an encrypted full backup before updating or replacing the SD card.",
+            "Keep the Spark seed phrase stored separately from device backups.",
+            "Restore only the components you intend to replace on this box.",
+        ],
+        "saved_backups": _recovery_backup_files(),
+    }
+
+
+def _manifest_path_issues(manifest: dict[str, Any]) -> list[str]:
+    allowed_paths = _allowed_recovery_paths()
+    issues = []
+    for file_info in manifest.get("files", []):
+        archive_path = file_info.get("archive_path")
+        component = file_info.get("component")
+        allowed = allowed_paths.get(archive_path)
+        if not allowed:
+            issues.append(f"Unsupported archive path: {archive_path}")
+            continue
+        allowed_component, allowed_destination = allowed
+        if component != allowed_component:
+            issues.append(f"Component mismatch for {archive_path}")
+        if file_info.get("destination_path") != str(allowed_destination):
+            issues.append(f"Destination mismatch for {archive_path}")
+    return issues
+
+
+def _recovery_backup_files() -> list[dict[str, Any]]:
+    _ensure_recovery_state_dir()
+    backups = []
+    for path in sorted(RECOVERY_BACKUP_DIR.glob("lnbitsbox-recovery-*.zip"), key=lambda item: item.stat().st_mtime, reverse=True):
+        try:
+            stat_result = path.stat()
+        except FileNotFoundError:
+            continue
+        backups.append({
+            "filename": path.name,
+            "path": str(path),
+            "size": stat_result.st_size,
+            "modified_at": datetime.fromtimestamp(stat_result.st_mtime).isoformat(),
+        })
+    return backups
+
+
+def _local_backup_manifest(path: Path) -> dict[str, Any] | None:
+    try:
+        with zipfile.ZipFile(path, "r") as archive:
+            return json.loads(archive.read("manifest.json"))
+    except Exception:
+        return None
+
+
+def _prune_scheduled_backups():
+    now = datetime.now().astimezone()
+    checkpoints = [
+        ("daily", now.timestamp() - 86400),
+        ("weekly", now.timestamp() - (7 * 86400)),
+        ("monthly", now.timestamp() - (30 * 86400)),
+    ]
+    keep: set[Path] = set()
+    candidates: list[tuple[Path, float]] = []
+
+    for path in RECOVERY_BACKUP_DIR.glob("lnbitsbox-recovery-*.zip"):
+        manifest = _local_backup_manifest(path)
+        if not manifest or manifest.get("created_by") != "scheduled":
+            continue
+        created_at = parse_iso_datetime(manifest.get("created_at"))
+        if created_at is None:
+            continue
+        candidates.append((path, created_at.timestamp()))
+
+    if not candidates:
+        return
+
+    candidates.sort(key=lambda item: item[1], reverse=True)
+    keep.add(candidates[0][0])
+
+    for _, threshold in checkpoints:
+        eligible = [item for item in candidates if item[1] <= threshold]
+        if eligible:
+            keep.add(max(eligible, key=lambda item: item[1])[0])
+
+    for path, _ in candidates:
+        if path in keep:
+            continue
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
+def _scheduled_backup_worker():
+    while True:
+        try:
+            schedule = _recovery_schedule()
+            if schedule.get("enabled"):
+                interval_hours = max(1, int(schedule.get("interval_hours") or 24))
+                now = time.time()
+                next_run_at = schedule.get("next_run_at")
+                if not next_run_at or now >= float(next_run_at):
+                    passphrase = schedule.get("passphrase", "")
+                    if not passphrase:
+                        raise ValueError("Scheduled backup passphrase is missing.")
+                    content, manifest = _create_recovery_backup_bytes(
+                        schedule.get("backup_type", "full"),
+                        passphrase=passphrase,
+                        created_by="scheduled",
+                    )
+                    backup_result = _write_recovery_destination_file(
+                        schedule.get("destination", "local"),
+                        content,
+                        manifest,
+                    )
+                    _prune_scheduled_backups()
+                    schedule["last_run_at"] = now
+                    schedule["next_run_at"] = now + (interval_hours * 3600)
+                    schedule["last_result"] = {
+                        "status": "ok",
+                        "message": f"Saved scheduled backup to {backup_result['path']} and kept the rolling 1/7/30 day set.",
+                        "created_at": manifest["created_at"],
+                    }
+                    _save_recovery_schedule(schedule)
+        except Exception as exc:
+            schedule = _recovery_schedule()
+            schedule["last_result"] = {
+                "status": "error",
+                "message": str(exc),
+                "created_at": utc_now_iso(),
+            }
+            _save_recovery_schedule(schedule)
+        time.sleep(60)
 
 
 # ── Network Helpers ─────────────────────────────────────────────────
@@ -620,6 +1172,7 @@ def stats_collector():
 
 # Start background collector
 threading.Thread(target=stats_collector, daemon=True).start()
+threading.Thread(target=_scheduled_backup_worker, daemon=True).start()
 
 
 # ── Routes ──────────────────────────────────────────────────────────
@@ -695,6 +1248,7 @@ def maintenance_page():
         "maintenance.html",
         page_key="maintenance",
         page_title="Maintenance",
+        page_intro="Create encrypted recovery archives, validate restores before applying them, and schedule protected backups to local or attached storage.",
     )
 
 
@@ -868,7 +1422,222 @@ def _service_action(service, action, verb):
         return _json_error(e.stderr.decode(), 500)
 
 
-# ── Database Backup & Restore ────────────────────────────────
+# ── Recovery Center ──────────────────────────────────────────
+
+@app.route("/box/api/recovery/status")
+@login_required
+def api_recovery_status():
+    payload = _recovery_status_payload()
+    return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/recovery/backups")
+@login_required
+def api_recovery_backups():
+    payload = {"backups": _recovery_backup_files()}
+    return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/recovery/backups/<path:filename>")
+@login_required
+def api_recovery_backup_file_download(filename: str):
+    safe_name = Path(filename).name
+    target = RECOVERY_BACKUP_DIR / safe_name
+    if not target.exists() or not target.is_file():
+        return _json_error("Backup file not found.", 404)
+    return send_file(
+        target,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=safe_name,
+    )
+
+
+@app.route("/box/api/recovery/backup/download", methods=["POST"])
+@login_required
+def api_recovery_backup_download():
+    backup_type = (request.form.get("backup_type") or "full").strip().lower()
+    passphrase = request.form.get("passphrase", "")
+    if backup_type not in ("quick", "full"):
+        return _json_error("Invalid backup type", 400)
+    if not passphrase:
+        return _json_error("Backup password is required.", 400)
+
+    content, manifest = _create_recovery_backup_bytes(backup_type, passphrase=passphrase)
+    _record_backup_success(
+        manifest=manifest,
+        storage="Downloaded from browser",
+        file_path=None,
+        validated=True,
+    )
+    response = send_file(
+        io.BytesIO(content),
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=_backup_filename(manifest),
+    )
+    return response
+
+
+@app.route("/box/api/recovery/backup/save", methods=["POST"])
+@login_required
+def api_recovery_backup_save():
+    payload = request.get_json(silent=True) or {}
+    backup_type = str(payload.get("backup_type") or "full").strip().lower()
+    passphrase = str(payload.get("passphrase") or "")
+    if backup_type not in ("quick", "full"):
+        return _json_error("Invalid backup type", 400)
+    if not passphrase:
+        return _json_error("Backup password is required.", 400)
+
+    content, manifest = _create_recovery_backup_bytes(backup_type, passphrase=passphrase)
+    result = _write_recovery_destination_file("local", content, manifest)
+    return _json_response(
+        status="ok",
+        message=f"Encrypted backup saved on this box at {result['path']}",
+        data=result,
+        **result,
+    )
+
+
+@app.route("/box/api/recovery/restore/validate", methods=["POST"])
+@login_required
+def api_recovery_restore_validate():
+    passphrase = request.form.get("passphrase", "")
+    try:
+        filename, _, manifest, inner_zip, issues, compatibility = _load_recovery_backup(passphrase=passphrase)
+    except ValueError as exc:
+        return _json_error(str(exc), 400)
+    except Exception as exc:
+        return _json_error(str(exc), 500)
+
+    issues.extend(_manifest_path_issues(manifest))
+    components = available_restore_components(manifest)
+    payload = {
+        "filename": filename,
+        "manifest": manifest,
+        "components": components,
+        "issues": issues,
+        "compatibility": compatibility,
+    }
+    state = _recovery_state()
+    state["last_validation"] = {
+        "checked_at": utc_now_iso(),
+        "status": "ok" if not issues else "error",
+        "message": "Backup validation completed successfully." if not issues else "; ".join(issues),
+    }
+    _save_recovery_state(state)
+    return _json_response(status="ok" if not issues else "error", data=payload, **payload)
+
+
+@app.route("/box/api/recovery/restore", methods=["POST"])
+@login_required
+def api_recovery_restore():
+    passphrase = request.form.get("passphrase", "")
+    selected_components = request.form.getlist("components")
+    try:
+        filename, _, manifest, inner_zip, issues, compatibility = _load_recovery_backup(passphrase=passphrase)
+    except ValueError as exc:
+        return _json_error(str(exc), 400)
+    except Exception as exc:
+        return _json_error(str(exc), 500)
+
+    issues.extend(_manifest_path_issues(manifest))
+    if issues:
+        return _json_error("Backup validation failed: " + "; ".join(issues), 400)
+
+    if compatibility.get("level") == "error":
+        return _json_error(compatibility["message"], 400)
+
+    available_components = set(available_restore_components(manifest))
+    if not selected_components:
+        selected_components = list(available_components)
+    invalid_components = [component for component in selected_components if component not in available_components]
+    if invalid_components:
+        return _json_error("Invalid restore components: " + ", ".join(invalid_components), 400)
+
+    services = _services_for_restore(selected_components)
+    try:
+        _stop_services(services)
+        restore_result = _restore_component_files(inner_zip, manifest, selected_components)
+    except ValueError as exc:
+        return _json_error(str(exc), 400)
+    finally:
+        _start_services(services)
+
+    report = _post_restore_report(selected_components, manifest)
+    state = _recovery_state()
+    state["last_restore"] = {
+        "restored_at": utc_now_iso(),
+        "filename": filename,
+        "components": selected_components,
+        "report": report,
+    }
+    _save_recovery_state(state)
+    payload = {
+        "filename": filename,
+        "restored_components": selected_components,
+        "restore_result": restore_result,
+        "report": report,
+    }
+    return _json_response(
+        status="ok",
+        message="Encrypted backup restored successfully.",
+        data=payload,
+        **payload,
+    )
+
+
+@app.route("/box/api/recovery/schedule", methods=["GET"])
+@login_required
+def api_recovery_schedule_get():
+    payload = _recovery_schedule()
+    payload["passphrase"] = "configured" if payload.get("passphrase") else ""
+    return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/recovery/schedule", methods=["POST"])
+@login_required
+def api_recovery_schedule_set():
+    payload = request.get_json(silent=True) or {}
+    enabled = bool(payload.get("enabled"))
+    interval_hours = max(1, min(168, int(payload.get("interval_hours") or 24)))
+    backup_type = str(payload.get("backup_type") or "full").strip().lower()
+    destination = "local"
+    passphrase = str(payload.get("passphrase") or "")
+    existing = _recovery_schedule()
+
+    if backup_type not in ("quick", "full"):
+        return _json_error("Invalid backup type", 400)
+    if enabled and not passphrase and not existing.get("passphrase"):
+        return _json_error("A backup password is required for scheduled backups.", 400)
+
+    if enabled:
+        _resolve_recovery_destination(destination)
+
+    next_run_at = time.time() + (interval_hours * 3600) if enabled else None
+    schedule = {
+        "enabled": enabled,
+        "interval_hours": interval_hours,
+        "backup_type": backup_type,
+        "destination": destination,
+        "passphrase": passphrase or existing.get("passphrase", ""),
+        "last_run_at": existing.get("last_run_at"),
+        "next_run_at": next_run_at,
+        "last_result": existing.get("last_result"),
+    }
+    _save_recovery_schedule(schedule)
+    response_payload = dict(schedule)
+    response_payload["passphrase"] = "configured" if schedule.get("passphrase") else ""
+    return _json_response(
+        status="ok",
+        message="Scheduled encrypted backups updated.",
+        data=response_payload,
+        **response_payload,
+    )
+
+
+# ── Legacy Database Endpoints ─────────────────────────────────
 
 @app.route("/box/api/db/info")
 @login_required
@@ -887,166 +1656,19 @@ def api_db_info():
 @app.route("/box/api/db/backup", methods=["POST"])
 @login_required
 def api_db_backup():
-    if DEV_MODE:
-        fd, tmp_dev = tempfile.mkstemp(suffix=".zip")
-        os.close(fd)
-        with zipfile.ZipFile(tmp_dev, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("database.sqlite3", "DEV_MODE dummy database")
-        response = send_file(
-            tmp_dev,
-            mimetype="application/zip",
-            as_attachment=True,
-            download_name="lnbits-backup.zip",
-        )
-
-        @response.call_on_close
-        def _cleanup_dev():
-            try:
-                os.unlink(tmp_dev)
-            except OSError:
-                pass
-
-        return response
-
-    if not LNBITS_DB_PATH.exists():
-        return jsonify({"error": "Database file not found"}), 404
-
-    tmp_path = None
-    try:
-        # Stop LNbits
-        subprocess.run(
-            ["systemctl", "stop", "lnbits.service"],
-            check=True, capture_output=True, timeout=30,
-        )
-
-        # Create zip
-        fd, tmp_path = tempfile.mkstemp(suffix=".zip")
-        os.close(fd)
-        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.write(LNBITS_DB_PATH, "database.sqlite3")
-
-        # Start LNbits
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
-
-        response = send_file(
-            tmp_path,
-            mimetype="application/zip",
-            as_attachment=True,
-            download_name="lnbits-backup.zip",
-        )
-
-        # Clean up temp file after response
-        @response.call_on_close
-        def _cleanup():
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
-
-        return response
-    except subprocess.CalledProcessError as e:
-        # Try to restart LNbits even if something failed
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
-        if tmp_path:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
-        return jsonify({"error": f"Backup failed: {e.stderr.decode()}"}), 500
-    except Exception as e:
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
-        if tmp_path:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
-        return jsonify({"error": str(e)}), 500
+    return _json_error(
+        "Database-only backups were replaced by encrypted Recovery Center backups. Use /box/maintenance.",
+        410,
+    )
 
 
 @app.route("/box/api/db/restore", methods=["POST"])
 @login_required
 def api_db_restore():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    upload = request.files["file"]
-    if not upload.filename:
-        return jsonify({"error": "No file selected"}), 400
-
-    # Save upload to temp file for validation
-    fd, tmp_path = tempfile.mkstemp(suffix=".zip")
-    os.close(fd)
-    try:
-        upload.save(tmp_path)
-
-        # Validate zip contents
-        if not zipfile.is_zipfile(tmp_path):
-            os.unlink(tmp_path)
-            return jsonify({"error": "File is not a valid zip archive"}), 400
-
-        with zipfile.ZipFile(tmp_path, "r") as zf:
-            if "database.sqlite3" not in zf.namelist():
-                os.unlink(tmp_path)
-                return jsonify({"error": "Zip does not contain database.sqlite3"}), 400
-
-        if DEV_MODE:
-            os.unlink(tmp_path)
-            return jsonify({"status": "ok", "message": "DEV MODE: restore validated successfully"})
-
-        # Stop LNbits
-        subprocess.run(
-            ["systemctl", "stop", "lnbits.service"],
-            check=True, capture_output=True, timeout=30,
-        )
-
-        # Extract and overwrite
-        with zipfile.ZipFile(tmp_path, "r") as zf:
-            with zf.open("database.sqlite3") as src, open(LNBITS_DB_PATH, "wb") as dst:
-                shutil.copyfileobj(src, dst)
-
-        # Fix ownership
-        subprocess.run(
-            ["chown", "lnbits:lnbits", str(LNBITS_DB_PATH)],
-            capture_output=True, timeout=5,
-        )
-
-        # Start LNbits
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
-
-        os.unlink(tmp_path)
-        return jsonify({"status": "ok", "message": "Database restored successfully"})
-    except subprocess.CalledProcessError as e:
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        return jsonify({"error": f"Restore failed: {e.stderr.decode()}"}), 500
-    except Exception as e:
-        subprocess.run(
-            ["systemctl", "start", "lnbits.service"],
-            capture_output=True, timeout=30,
-        )
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        return jsonify({"error": str(e)}), 500
+    return _json_error(
+        "Database-only restore was replaced by encrypted Recovery Center restore. Use /box/maintenance.",
+        410,
+    )
 
 
 # ── WiFi Endpoints ──────────────────────────────────────────────

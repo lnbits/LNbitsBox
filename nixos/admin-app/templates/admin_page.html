@@ -72,19 +72,19 @@
                     </button>
                 </div>
 
-                <a href="{{ url_for('dashboard') }}" class="admin-sidebar-link {% if active_page == 'overview' %}active{% endif %}">
+                <a href="{{ url_for('dashboard') }}" class="admin-sidebar-link mb-1 {% if active_page == 'overview' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">Overview</span>
                 </a>
-                <a href="{{ url_for('remote_access') }}" class="admin-sidebar-link {% if active_page == 'remote_access' %}active{% endif %}">
+                <a href="{{ url_for('remote_access') }}" class="admin-sidebar-link mb-1 {% if active_page == 'remote_access' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">Remote Access</span>
                 </a>
-                <a href="{{ url_for('system_page') }}" class="admin-sidebar-link {% if active_page == 'system' %}active{% endif %}">
+                <a href="{{ url_for('system_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'system' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">System</span>
                 </a>
-                <a href="{{ url_for('maintenance_page') }}" class="admin-sidebar-link {% if active_page == 'maintenance' %}active{% endif %}">
+                <a href="{{ url_for('maintenance_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'maintenance' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">Maintenance</span>
                 </a>
-                <a href="{{ url_for('advanced_page') }}" class="admin-sidebar-link {% if active_page == 'advanced' %}active{% endif %}">
+                <a href="{{ url_for('advanced_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'advanced' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">Advanced</span>
                 </a>
             </div>

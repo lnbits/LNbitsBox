@@ -99,9 +99,9 @@
 
 {# ── Database Restore Modal ── #}
 <div id="restore-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-md w-full">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 w-md">
         <div class="flex items-center justify-between mb-4">
-            <p class="text-lg font-display font-semibold">Restore Database</p>
+            <p class="text-lg font-display font-semibold">Restore Encrypted Backup</p>
             <button id="restore-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -110,22 +110,67 @@
         <div id="restore-form">
             <div class="bg-red-400/5 border border-red-400/20 rounded-lg p-3 mb-4">
                 <p class="text-red-400 text-xs font-mono leading-relaxed">
-                    This will overwrite your current LNbits database. All existing data (wallets, extensions, settings) will be replaced. This action cannot be undone.
+                    Restore can overwrite LNbits data, Spark-sidecar files, network config, and remote-access state. Validate the archive first, then select only the components you want to replace.
                 </p>
             </div>
 
-            <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
-            <input type="file" id="restore-file" accept=".zip"
-                   class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+            <div class="mb-4">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-2">Choose Backup Source</div>
+                <label class="inline-flex items-center gap-2 mr-4">
+                    <input type="radio" name="restore-source" id="restore-source-upload" value="upload" checked class="text-ln-pink focus:ring-ln-pink/40">
+                    <span class="text-sm font-mono text-ln-text">Upload backup file</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                    <input type="radio" name="restore-source" id="restore-source-local" value="local" class="text-ln-pink focus:ring-ln-pink/40">
+                    <span class="text-sm font-mono text-ln-text">Use saved backup on this box</span>
+                </label>
+            </div>
 
-            <div class="flex gap-3">
+            <div class="mb-4">
+                <div id="restore-upload-fields">
+                    <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
+                    <input type="file" id="restore-file" accept=".zip"
+                           class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+                </div>
+                <div id="restore-local-fields" class="hidden">
+                    <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Saved Backup</label>
+                    <select id="restore-local-backup"
+                            class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+                        <option value="">Choose a saved backup</option>
+                    </select>
+                </div>
+                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</label>
+                <input type="password" id="restore-passphrase" autocomplete="new-password"
+                       class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                       placeholder="Required to validate and restore">
+            </div>
+
+            <div id="restore-validation-panel" class="hidden bg-ln-surface border border-ln-border rounded-lg p-3 mb-4">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Validation</div>
+                <div class="space-y-2 text-xs font-mono">
+                    <div><span class="text-ln-muted">Version:</span> <span id="restore-compatibility">Validate to inspect</span></div>
+                    <div><span class="text-ln-muted">Archive:</span> <span id="restore-manifest-summary">No archive checked yet</span></div>
+                </div>
+                <div id="restore-issues" class="hidden mt-3 text-xs font-mono text-red-400 whitespace-pre-wrap"></div>
+            </div>
+
+            <div id="restore-components-wrap" class="hidden mt-4">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Components to Restore</div>
+                <div id="restore-components" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+            </div>
+
+            <div class="flex gap-3 mt-5">
                 <button id="restore-cancel-btn"
                         class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
                     Cancel
                 </button>
+                <button id="restore-validate-btn"
+                        class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                    Validate
+                </button>
                 <button id="restore-confirm-btn"
                         class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
-                    Restore
+                    Restore Selected
                 </button>
             </div>
         </div>
@@ -133,7 +178,7 @@
         <div id="restore-progress" class="hidden">
             <div class="flex flex-col items-center py-6">
                 <div class="w-6 h-6 border-2 border-ln-pink border-t-transparent rounded-full animate-spin mb-3"></div>
-                <span class="text-ln-muted font-mono text-sm">Restoring database...</span>
+                <span class="text-ln-muted font-mono text-sm" id="restore-progress-text">Restoring encrypted backup...</span>
             </div>
         </div>
 
@@ -141,6 +186,7 @@
             <div class="flex flex-col items-center py-6">
                 <div class="w-8 h-8 rounded-full mb-3" id="restore-result-icon"></div>
                 <span class="font-mono text-sm mb-1" id="restore-result-text"></span>
+                <div class="text-ln-muted font-mono text-xs mt-3 whitespace-pre-wrap text-center" id="restore-result-details"></div>
             </div>
             <button id="restore-result-close-btn"
                     class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2.5 rounded-lg transition-colors">

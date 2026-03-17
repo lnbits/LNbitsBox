@@ -2,6 +2,7 @@
 
 let
   python = pkgs.python3.withPackages (ps: with ps; [
+    cryptography
     flask
     ps."flask-wtf"  # CSRF protection
     mnemonic

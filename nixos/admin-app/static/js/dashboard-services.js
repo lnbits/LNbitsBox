@@ -1,5 +1,13 @@
 (function () {
     const D = window.LNbitsBoxDashboard;
+    const escapeHtml = function (value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
 
     D.formatBytes = function (bytes) {
         if (bytes === 0) return '0 B';
@@ -28,6 +36,7 @@
         if (s === 'failed') return 'Error';
         return s;
     };
+
 
     D.setServiceActionVisibility = function (service, status, options) {
         options = options || {};
