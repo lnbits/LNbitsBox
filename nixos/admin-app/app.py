@@ -93,7 +93,6 @@ TUNNEL_STATE_DIR = (
 TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
 TUNNEL_KEY_FILE = TUNNEL_STATE_DIR / "reverse-proxy-key"
 TUNNEL_RUNTIME_ENV = TUNNEL_STATE_DIR / "runtime.env"
-USB_AUTO_MOUNT_ROOT = Path("/run/media/lnbitsbox")
 WPA_SUPPLICANT_CONF = Path("/etc/wpa_supplicant.conf")
 TOR_HOSTNAME_FILE = Path("/var/lib/tor/onion/lnbits/hostname")
 RECOVERY_STATE_DIR = Path("/tmp/lnbitspi-test/recovery") if DEV_MODE else Path("/var/lib/lnbitsbox-recovery")
@@ -431,46 +430,8 @@ def _save_recovery_schedule(schedule: dict[str, Any]):
     except Exception:
         pass
 
-
-def _recovery_usb_destinations() -> dict[str, dict[str, Any]]:
-    destinations = {}
-    for device in get_usb_storage_info().get("devices", []):
-        mountpoint = device.get("mountpoint") or ""
-        if not mountpoint:
-            continue
-
-        mount_path = Path(mountpoint)
-        backup_dir = mount_path / "lnbitsbox-backups"
-        destination_id = "usb:" + (device.get("name") or mount_path.name or "drive")
-        label_name = device.get("label") or mount_path.name or device.get("name") or "USB drive"
-        label = f"USB drive: {label_name}"
-        writable = False
-        reason = ""
-
-        try:
-            backup_dir.mkdir(parents=True, exist_ok=True)
-            writable = os.access(backup_dir, os.W_OK)
-            if not writable:
-                reason = "Mounted, but not writable by LNbitsBox."
-        except OSError as exc:
-            reason = str(exc)
-        except Exception:
-            reason = "Drive detected, but backup directory could not be prepared."
-
-        destinations[destination_id] = {
-            "label": label,
-            "path": backup_dir,
-            "writable": writable,
-            "reason": reason,
-            "detail": f"Saved to {backup_dir}",
-        }
-    return destinations
-
-
 def _list_recovery_destinations() -> dict[str, dict[str, Any]]:
-    destinations = dict(RECOVERY_DESTINATIONS)
-    destinations.update(_recovery_usb_destinations())
-    return destinations
+    return dict(RECOVERY_DESTINATIONS)
 
 
 def _resolve_recovery_destination(destination_id: str) -> tuple[str, Path]:
@@ -637,19 +598,32 @@ def _write_recovery_destination_file(destination_id: str, content: bytes, manife
     }
 
 
-def _load_uploaded_backup(passphrase: str | None = None):
-    if "file" not in request.files:
-        raise ValueError("No backup file uploaded.")
-    upload = request.files["file"]
-    if not upload.filename:
-        raise ValueError("No backup file selected.")
-    archive_bytes = upload.read()
-    if not archive_bytes:
-        raise ValueError("Uploaded backup is empty.")
+def _read_local_backup(local_backup: str) -> tuple[str, bytes]:
+    requested = Path(local_backup).name
+    target = RECOVERY_BACKUP_DIR / requested
+    if not target.exists() or not target.is_file():
+        raise ValueError("Selected local backup was not found.")
+    return requested, target.read_bytes()
+
+
+def _load_recovery_backup(passphrase: str | None = None):
+    local_backup = (request.form.get("local_backup") or "").strip()
+    if local_backup:
+        filename, archive_bytes = _read_local_backup(local_backup)
+    else:
+        if "file" not in request.files:
+            raise ValueError("Choose a saved backup on this box or upload a backup file.")
+        upload = request.files["file"]
+        if not upload.filename:
+            raise ValueError("No backup file selected.")
+        filename = upload.filename
+        archive_bytes = upload.read()
+        if not archive_bytes:
+            raise ValueError("Uploaded backup is empty.")
     manifest, inner_zip = load_backup_container(archive_bytes, passphrase=passphrase)
     issues = validate_manifest_files(manifest, inner_zip)
     compatibility = compatibility_report(get_current_version(), manifest.get("lnbitsbox_version", ""))
-    return upload.filename, archive_bytes, manifest, inner_zip, issues, compatibility
+    return filename, archive_bytes, manifest, inner_zip, issues, compatibility
 
 
 def _write_restored_file(destination_path: Path, payload: bytes, mode_value: str | None = None):
@@ -778,6 +752,7 @@ def _recovery_status_payload() -> dict[str, Any]:
             "Keep the Spark seed phrase stored separately from device backups.",
             "Restore only the components you intend to replace on this box.",
         ],
+        "saved_backups": _recovery_backup_files(),
     }
 
 
@@ -799,136 +774,21 @@ def _manifest_path_issues(manifest: dict[str, Any]) -> list[str]:
     return issues
 
 
-def get_usb_storage_info() -> dict[str, Any]:
-    if DEV_MODE:
-        return {
-            "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
-            "devices": [
-                {
-                    "device": "/dev/sda1",
-                    "name": "sda1",
-                    "label": "BACKUPS",
-                    "model": "Demo USB",
-                    "size": "1.0 GB",
-                    "fstype": "vfat",
-                    "mountpoint": str(USB_AUTO_MOUNT_ROOT / "BACKUPS"),
-                    "auto_mounted": True,
-                    "writable": True,
-                    "backup_path": str(USB_AUTO_MOUNT_ROOT / "BACKUPS" / "lnbitsbox-backups"),
-                    "status": "Mounted for backups",
-                }
-            ],
-        }
-
-    mount_map: dict[str, dict[str, str]] = {}
-    try:
-        result = subprocess.run(
-            ["findmnt", "-rn", "-o", "SOURCE,TARGET,FSTYPE"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True,
-        )
-        for line in result.stdout.splitlines():
-            parts = line.split(None, 2)
-            if len(parts) < 3:
-                continue
-            source, target, fstype = parts
-            if not target.startswith(str(USB_AUTO_MOUNT_ROOT)):
-                continue
-            mount_map[source] = {
-                "target": target,
-                "fstype": fstype,
-            }
-    except Exception:
-        pass
-
-    try:
-        result = subprocess.run(
-            [
-                "lsblk",
-                "-J",
-                "-o",
-                "NAME,PATH,TYPE,TRAN,SIZE,FSTYPE,LABEL,MOUNTPOINTS,MODEL,RM,HOTPLUG",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True,
-        )
-        payload = json.loads(result.stdout)
-    except Exception:
-        return {
-            "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
-            "devices": [],
-        }
-
-    devices = []
-    for block in payload.get("blockdevices", []):
-        is_usb_disk = block.get("tran") == "usb"
-        children = block.get("children") or []
-        for child in children:
-            if child.get("type") != "part":
-                continue
-            if not is_usb_disk and block.get("rm") not in (True, 1, "1") and block.get("hotplug") not in (True, 1, "1"):
-                continue
-            device_path = child.get("path") or f"/dev/{child.get('name')}"
-            mountpoints = [mount for mount in (child.get("mountpoints") or []) if mount]
-            mountpoint = mountpoints[0] if mountpoints else ""
-            mounted = mount_map.get(device_path)
-            if mounted and not mountpoint:
-                mountpoint = mounted.get("target", "")
-            auto_mounted = mountpoint.startswith(str(USB_AUTO_MOUNT_ROOT))
-            backup_path = ""
-            writable = False
-            status = "Detected, not mounted"
-            if mountpoint:
-                candidate = Path(mountpoint) / "lnbitsbox-backups"
-                backup_path = str(candidate)
-                writable = os.access(Path(mountpoint), os.W_OK)
-                if auto_mounted:
-                    status = "Mounted for backups" if writable else "Mounted, but not writable"
-                else:
-                    status = f"Mounted at {mountpoint}"
-
-            devices.append({
-                "device": device_path,
-                "name": child.get("name"),
-                "label": child.get("label") or "",
-                "model": block.get("model") or "",
-                "size": child.get("size") or "",
-                "fstype": child.get("fstype") or (mounted.get("fstype") if mounted else "") or "",
-                "mountpoint": mountpoint,
-                "auto_mounted": auto_mounted,
-                "writable": writable,
-                "backup_path": backup_path,
-                "status": status,
-            })
-
-    known_devices = {device["device"] for device in devices}
-    for source, mounted in mount_map.items():
-        if source in known_devices:
+def _recovery_backup_files() -> list[dict[str, Any]]:
+    _ensure_recovery_state_dir()
+    backups = []
+    for path in sorted(RECOVERY_BACKUP_DIR.glob("lnbitsbox-recovery-*.zip"), key=lambda item: item.stat().st_mtime, reverse=True):
+        try:
+            stat_result = path.stat()
+        except FileNotFoundError:
             continue
-        mountpoint = mounted.get("target", "")
-        candidate = Path(mountpoint) / "lnbitsbox-backups"
-        devices.append({
-            "device": source,
-            "name": Path(source).name,
-            "label": Path(mountpoint).name,
-            "model": "",
-            "size": "",
-            "fstype": mounted.get("fstype", ""),
-            "mountpoint": mountpoint,
-            "auto_mounted": True,
-            "writable": os.access(Path(mountpoint), os.W_OK),
-            "backup_path": str(candidate),
-            "status": "Mounted for backups",
+        backups.append({
+            "filename": path.name,
+            "path": str(path),
+            "size": stat_result.st_size,
+            "modified_at": datetime.fromtimestamp(stat_result.st_mtime).isoformat(),
         })
-
-    return {
-        "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
-        "devices": devices,
-    }
+    return backups
 
 
 def _scheduled_backup_worker():
@@ -1396,13 +1256,6 @@ def api_stats():
     return _json_response(data=payload, **payload)
 
 
-@app.route("/box/api/usb-storage")
-@login_required
-def api_usb_storage():
-    payload = get_usb_storage_info()
-    return _json_response(status="ok", data=payload, **payload)
-
-
 @app.route("/box/api/lnbits-status")
 @login_required
 def api_lnbits_status():
@@ -1526,6 +1379,28 @@ def api_recovery_status():
     return _json_response(status="ok", data=payload, **payload)
 
 
+@app.route("/box/api/recovery/backups")
+@login_required
+def api_recovery_backups():
+    payload = {"backups": _recovery_backup_files()}
+    return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/recovery/backups/<path:filename>")
+@login_required
+def api_recovery_backup_file_download(filename: str):
+    safe_name = Path(filename).name
+    target = RECOVERY_BACKUP_DIR / safe_name
+    if not target.exists() or not target.is_file():
+        return _json_error("Backup file not found.", 404)
+    return send_file(
+        target,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=safe_name,
+    )
+
+
 @app.route("/box/api/recovery/backup/download", methods=["POST"])
 @login_required
 def api_recovery_backup_download():
@@ -1557,7 +1432,6 @@ def api_recovery_backup_download():
 def api_recovery_backup_save():
     payload = request.get_json(silent=True) or {}
     backup_type = str(payload.get("backup_type") or "full").strip().lower()
-    destination_id = str(payload.get("destination") or "local").strip()
     passphrase = str(payload.get("passphrase") or "")
     if backup_type not in ("quick", "full"):
         return _json_error("Invalid backup type", 400)
@@ -1565,10 +1439,10 @@ def api_recovery_backup_save():
         return _json_error("Backup password is required.", 400)
 
     content, manifest = _create_recovery_backup_bytes(backup_type, passphrase=passphrase)
-    result = _write_recovery_destination_file(destination_id, content, manifest)
+    result = _write_recovery_destination_file("local", content, manifest)
     return _json_response(
         status="ok",
-        message=f"Encrypted backup saved to {result['path']}",
+        message=f"Encrypted backup saved on this box at {result['path']}",
         data=result,
         **result,
     )
@@ -1579,7 +1453,7 @@ def api_recovery_backup_save():
 def api_recovery_restore_validate():
     passphrase = request.form.get("passphrase", "")
     try:
-        filename, _, manifest, inner_zip, issues, compatibility = _load_uploaded_backup(passphrase=passphrase)
+        filename, _, manifest, inner_zip, issues, compatibility = _load_recovery_backup(passphrase=passphrase)
     except ValueError as exc:
         return _json_error(str(exc), 400)
     except Exception as exc:
@@ -1610,7 +1484,7 @@ def api_recovery_restore():
     passphrase = request.form.get("passphrase", "")
     selected_components = request.form.getlist("components")
     try:
-        filename, _, manifest, inner_zip, issues, compatibility = _load_uploaded_backup(passphrase=passphrase)
+        filename, _, manifest, inner_zip, issues, compatibility = _load_recovery_backup(passphrase=passphrase)
     except ValueError as exc:
         return _json_error(str(exc), 400)
     except Exception as exc:
@@ -1677,7 +1551,7 @@ def api_recovery_schedule_set():
     enabled = bool(payload.get("enabled"))
     interval_hours = max(1, min(168, int(payload.get("interval_hours") or 24)))
     backup_type = str(payload.get("backup_type") or "full").strip().lower()
-    destination = str(payload.get("destination") or "local").strip()
+    destination = "local"
     passphrase = str(payload.get("passphrase") or "")
     existing = _recovery_schedule()
 

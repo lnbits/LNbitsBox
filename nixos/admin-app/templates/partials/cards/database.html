@@ -61,25 +61,16 @@
                 <span class="recovery-accordion-badge">Create backup</span>
             </summary>
             <div class="recovery-accordion-body">
-                <div class="recovery-field-grid">
-                    <label class="block">
-                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
-                        <select id="recovery-backup-type"
-                                class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
-                            <option value="full">Full backup</option>
-                            <option value="quick">Quick backup</option>
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Save Location</span>
-                        <select id="recovery-destination"
-                                class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
-                            <option value="local">Local recovery storage</option>
-                        </select>
-                    </label>
-                </div>
-                <p class="recovery-helper-text" id="recovery-destination-note">
-                    Plugged-in USB drives will appear here when mounted and writable.
+                <label class="block mb-3">
+                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
+                    <select id="recovery-backup-type"
+                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
+                        <option value="full">Full backup</option>
+                        <option value="quick">Quick backup</option>
+                    </select>
+                </label>
+                <p class="recovery-helper-text mb-3" id="recovery-destination-note">
+                    Saved on this box in the local recovery folder. You can download saved backups below at any time.
                 </p>
 
                 <label class="block mb-3">
@@ -103,8 +94,15 @@
                     </button>
                     <button id="recovery-save-btn"
                             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Save to Destination
+                        Save on This Box
                     </button>
+                </div>
+
+                <div class="recovery-callout mt-4 mb-0">
+                    <div class="recovery-callout-title">Saved backups on this box</div>
+                    <div id="recovery-saved-backups" class="recovery-saved-list">
+                        <div class="recovery-helper-text">No saved backups yet.</div>
+                    </div>
                 </div>
             </div>
         </details>
@@ -122,7 +120,7 @@
                 <div class="recovery-callout mb-4">
                     <div class="recovery-callout-title">Safe restore flow</div>
                     <p class="recovery-helper-text mb-0">
-                        LNbitsBox will check the backup, compare versions, and let you choose what to restore before it makes changes.
+                        LNbitsBox can restore from a backup file you upload or from one already saved on this box. It checks the backup before making changes.
                     </p>
                 </div>
                 <button id="recovery-restore-btn"

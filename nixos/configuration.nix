@@ -173,7 +173,6 @@
     ./admin-service.nix
     ./tor-service.nix
     ./tunnel-service.nix
-    ./usb-storage.nix
     ./wifi-config.nix
     ./welcome-screen.nix
     ./update-service.nix

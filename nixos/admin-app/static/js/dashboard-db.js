@@ -28,6 +28,47 @@
         });
     }
 
+    function selectedRestoreSource() {
+        return document.querySelector('input[name="restore-source"]:checked')?.value || 'upload';
+    }
+
+    function backupDownloadUrl(filename) {
+        return '/box/api/recovery/backups/' + encodeURIComponent(filename);
+    }
+
+    D.renderSavedBackups = function (backups) {
+        const container = el('recovery-saved-backups');
+        const localSelect = el('restore-local-backup');
+        if (!container) return;
+        container.innerHTML = '';
+        if (localSelect) {
+            localSelect.innerHTML = '<option value="">Choose a saved backup</option>';
+        }
+        if (!backups || !backups.length) {
+            container.innerHTML = '<div class="recovery-helper-text">No saved backups on this box yet.</div>';
+            return;
+        }
+        backups.forEach(function (backup) {
+            const row = document.createElement('div');
+            row.className = 'recovery-saved-row';
+            row.innerHTML =
+                '<div class="min-w-0">' +
+                '<div class="text-sm font-mono text-ln-text truncate">' + backup.filename + '</div>' +
+                '<div class="text-xs font-mono text-ln-muted">' + formatDate(backup.modified_at) + ' · ' + D.formatBytes(backup.size) + '</div>' +
+                '</div>' +
+                '<div class="flex items-center gap-2 shrink-0">' +
+                '<a class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30" href="' + backupDownloadUrl(backup.filename) + '">Download</a>' +
+                '</div>';
+            container.appendChild(row);
+            if (localSelect) {
+                const option = document.createElement('option');
+                option.value = backup.filename;
+                option.textContent = backup.filename + ' · ' + formatDate(backup.modified_at);
+                localSelect.appendChild(option);
+            }
+        });
+    };
+
     D.setRecoveryBusy = function (busy, text) {
         const status = el('recovery-status');
         const statusText = el('recovery-status-text');
@@ -52,7 +93,7 @@
             const lastBackup = data.last_backup || null;
             const lastValidation = data.last_validation || null;
             const schedule = data.schedule || {};
-            const destinations = data.destinations || [];
+            const savedBackups = data.saved_backups || [];
 
             D.setText('recovery-last-backup', lastBackup ? formatDate(lastBackup.created_at) : 'No backup yet');
             D.setText('recovery-seed-status', data.spark_seed_present ? 'Saved' : 'Missing');
@@ -70,63 +111,12 @@
                     actionList.appendChild(li);
                 });
             }
-
-            const destinationSelect = el('recovery-destination');
-            if (destinationSelect) {
-                const current = destinationSelect.value;
-                destinationSelect.innerHTML = '';
-                let writableCount = 0;
-                destinations.forEach(function (destination) {
-                    const option = document.createElement('option');
-                    option.value = destination.id;
-                    option.textContent = destination.writable
-                        ? destination.label
-                        : destination.label + ' (Unavailable)';
-                    option.disabled = !destination.writable;
-                    option.dataset.detail = destination.detail || '';
-                    if (!destination.writable && destination.reason) {
-                        option.dataset.reason = destination.reason;
-                    }
-                    destinationSelect.appendChild(option);
-                    if (destination.writable) {
-                        writableCount += 1;
-                    }
-                });
-                if (current && destinationSelect.querySelector('option[value="' + current + '"]:not(:disabled)')) {
-                    destinationSelect.value = current;
-                } else if (destinationSelect.selectedOptions.length === 0) {
-                    const firstEnabled = destinationSelect.querySelector('option:not(:disabled)');
-                    if (firstEnabled) {
-                        firstEnabled.selected = true;
-                    }
-                }
-
-                const note = el('recovery-destination-note');
-                if (note) {
-                    const selectedOption = destinationSelect.selectedOptions[0];
-                    const unavailable = destinations.filter(function (destination) { return !destination.writable; });
-                    if (selectedOption && selectedOption.dataset.detail) {
-                        note.textContent = selectedOption.dataset.detail;
-                        if (unavailable.length) {
-                            note.textContent += ' Unavailable drives: ' + unavailable.map(function (destination) {
-                                return destination.label + ': ' + (destination.reason || 'Unavailable');
-                            }).join(' ');
-                        }
-                    } else if (writableCount > 1) {
-                        note.textContent = 'USB backup destinations are available.';
-                    } else {
-                        note.textContent = 'Plugged-in USB drives will appear here when mounted and writable.';
-                    }
-                }
-            }
+            D.renderSavedBackups(savedBackups);
 
             if (el('recovery-schedule-hours')) {
                 el('recovery-schedule-hours').value = schedule.interval_hours || 24;
                 el('recovery-schedule-type').value = schedule.backup_type || 'full';
                 el('recovery-schedule-enabled').checked = !!schedule.enabled;
-                if (schedule.destination && destinationSelect) {
-                    destinationSelect.value = schedule.destination;
-                }
                 if (schedule.passphrase === 'configured' && el('recovery-schedule-passphrase')) {
                     el('recovery-schedule-passphrase').placeholder = 'Configured. Enter a new password to rotate it.';
                 }
@@ -176,19 +166,17 @@
     D.saveRecoveryBackup = async function () {
         const passphrase = el('recovery-passphrase')?.value || '';
         const backupType = el('recovery-backup-type')?.value || 'full';
-        const destination = el('recovery-destination')?.value || 'local';
         if (!passphrase) {
             D.showNotice('Enter a backup password first.', 'Validation');
             return;
         }
-        D.setRecoveryBusy(true, 'Saving encrypted backup to destination...');
+        D.setRecoveryBusy(true, 'Saving encrypted backup on this box...');
         try {
             const resp = await fetch('/box/api/recovery/backup/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     backup_type: backupType,
-                    destination: destination,
                     passphrase: passphrase,
                 }),
             });
@@ -213,11 +201,14 @@
         D.showRestoreView('restore-form');
         D.setText('restore-compatibility', 'Validate to inspect');
         D.setText('restore-manifest-summary', 'No archive checked yet');
+        if (el('restore-file')) el('restore-file').value = '';
+        if (el('restore-local-backup')) el('restore-local-backup').value = '';
         el('restore-issues')?.classList.add('hidden');
         if (el('restore-issues')) el('restore-issues').textContent = '';
         if (el('restore-components')) el('restore-components').innerHTML = '';
         el('restore-components-wrap')?.classList.add('hidden');
         if (el('restore-result-details')) el('restore-result-details').textContent = '';
+        D.updateRestoreSourceUi();
     };
 
     D.closeRestoreModal = function () {
@@ -232,11 +223,24 @@
         });
     };
 
+    D.updateRestoreSourceUi = function () {
+        const source = selectedRestoreSource();
+        const uploadFields = el('restore-upload-fields');
+        const localFields = el('restore-local-fields');
+        if (uploadFields) uploadFields.classList.toggle('hidden', source !== 'upload');
+        if (localFields) localFields.classList.toggle('hidden', source !== 'local');
+    };
+
     D.validateRestoreBackup = async function () {
         const fileInput = el('restore-file');
+        const localBackup = el('restore-local-backup')?.value || '';
         const passphrase = el('restore-passphrase')?.value || '';
-        if (!fileInput?.files?.length) {
+        if (selectedRestoreSource() === 'upload' && !fileInput?.files?.length) {
             D.showNotice('Please select an encrypted backup file.', 'Validation');
+            return;
+        }
+        if (selectedRestoreSource() === 'local' && !localBackup) {
+            D.showNotice('Please choose a saved backup from this box.', 'Validation');
             return;
         }
         if (!passphrase) {
@@ -244,7 +248,11 @@
             return;
         }
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        if (selectedRestoreSource() === 'upload') {
+            formData.append('file', fileInput.files[0]);
+        } else {
+            formData.append('local_backup', localBackup);
+        }
         formData.append('passphrase', passphrase);
         D.showRestoreView('restore-progress');
         D.setText('restore-progress-text', 'Validating encrypted backup...');
@@ -299,10 +307,15 @@
 
     D.startRestore = async function () {
         const fileInput = el('restore-file');
+        const localBackup = el('restore-local-backup')?.value || '';
         const passphrase = el('restore-passphrase')?.value || '';
         const components = selectedRestoreComponents();
-        if (!fileInput?.files?.length) {
+        if (selectedRestoreSource() === 'upload' && !fileInput?.files?.length) {
             D.showNotice('Please select an encrypted backup file.', 'Validation');
+            return;
+        }
+        if (selectedRestoreSource() === 'local' && !localBackup) {
+            D.showNotice('Please choose a saved backup from this box.', 'Validation');
             return;
         }
         if (!passphrase) {
@@ -310,7 +323,11 @@
             return;
         }
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        if (selectedRestoreSource() === 'upload') {
+            formData.append('file', fileInput.files[0]);
+        } else {
+            formData.append('local_backup', localBackup);
+        }
         formData.append('passphrase', passphrase);
         components.forEach(function (component) {
             formData.append('components', component);
@@ -356,7 +373,6 @@
             enabled: !!el('recovery-schedule-enabled')?.checked,
             interval_hours: Number(el('recovery-schedule-hours')?.value || 24),
             backup_type: el('recovery-schedule-type')?.value || 'full',
-            destination: el('recovery-destination')?.value || 'local',
             passphrase: el('recovery-schedule-passphrase')?.value || '',
         };
         D.setRecoveryBusy(true, 'Saving encrypted backup schedule...');
@@ -381,16 +397,9 @@
     };
 
     if (hasRecoveryUi()) {
-        const destinationSelect = el('recovery-destination');
-        if (destinationSelect) {
-            destinationSelect.addEventListener('change', function () {
-                const selected = destinationSelect.selectedOptions[0];
-                const note = el('recovery-destination-note');
-                if (note && selected) {
-                    note.textContent = selected.dataset.detail || 'Plugged-in USB drives will appear here when mounted and writable.';
-                }
-            });
-        }
+        document.querySelectorAll('input[name="restore-source"]').forEach(function (input) {
+            input.addEventListener('change', D.updateRestoreSourceUi);
+        });
         D.fetchRecoveryStatus();
     }
 })();

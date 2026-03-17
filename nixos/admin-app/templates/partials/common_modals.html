@@ -114,11 +114,32 @@
                 </p>
             </div>
 
+            <div class="mb-4">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-2">Choose Backup Source</div>
+                <label class="inline-flex items-center gap-2 mr-4">
+                    <input type="radio" name="restore-source" id="restore-source-upload" value="upload" checked class="text-ln-pink focus:ring-ln-pink/40">
+                    <span class="text-sm font-mono text-ln-text">Upload backup file</span>
+                </label>
+                <label class="inline-flex items-center gap-2">
+                    <input type="radio" name="restore-source" id="restore-source-local" value="local" class="text-ln-pink focus:ring-ln-pink/40">
+                    <span class="text-sm font-mono text-ln-text">Use saved backup on this box</span>
+                </label>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
-                    <input type="file" id="restore-file" accept=".zip"
-                           class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+                    <div id="restore-upload-fields">
+                        <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
+                        <input type="file" id="restore-file" accept=".zip"
+                               class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+                    </div>
+                    <div id="restore-local-fields" class="hidden">
+                        <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Saved Backup</label>
+                        <select id="restore-local-backup"
+                                class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+                            <option value="">Choose a saved backup</option>
+                        </select>
+                    </div>
                     <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</label>
                     <input type="password" id="restore-passphrase" autocomplete="new-password"
                            class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"

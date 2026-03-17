@@ -1856,6 +1856,23 @@ input:focus {
     padding: 0.9rem 1rem;
 }
 
+.recovery-saved-list {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 0.85rem;
+}
+
+.recovery-saved-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 0.85rem;
+    border: 1px solid rgb(var(--ln-border));
+    background: rgb(var(--ln-surface));
+}
+
 .recovery-callout {
     border: 1px solid rgb(var(--ln-border));
     border-radius: 0.9rem;
