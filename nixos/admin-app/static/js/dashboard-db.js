@@ -29,7 +29,7 @@
 
     function scheduleSummary(schedule) {
         if (!schedule || !schedule.enabled) return 'Disabled';
-        return 'Every ' + schedule.interval_hours + 'h';
+        return 'Backing up every ' + schedule.interval_hours + 'h';
     }
 
     function selectedRestoreComponents() {
@@ -147,7 +147,7 @@
                 el('recovery-schedule-type').value = schedule.backup_type || 'full';
                 el('recovery-schedule-enabled').checked = !!schedule.enabled;
                 if (schedule.passphrase === 'configured' && el('recovery-schedule-passphrase')) {
-                    el('recovery-schedule-passphrase').placeholder = 'Configured. Enter a new password to rotate it.';
+                    el('recovery-schedule-passphrase').placeholder = 'A password has been set. Enter a new password to use a new password for future backups.';
                 }
             }
         } catch (error) {

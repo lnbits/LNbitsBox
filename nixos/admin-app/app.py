@@ -868,7 +868,7 @@ def _scheduled_backup_worker():
                     schedule["next_run_at"] = now + (interval_hours * 3600)
                     schedule["last_result"] = {
                         "status": "ok",
-                        "message": f"Saved scheduled backup to {backup_result['path']} and kept the rolling 1/7/30 day set.",
+                        "message": f"Last scheduled backup saved to {backup_result['path']}",
                         "created_at": manifest["created_at"],
                     }
                     _save_recovery_schedule(schedule)

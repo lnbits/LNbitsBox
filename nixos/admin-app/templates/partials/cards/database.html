@@ -132,7 +132,7 @@
             <summary class="recovery-accordion-summary">
                 <div>
                     <div class="recovery-step-title">Set up automatic backups</div>
-                    <p class="recovery-step-copy">Useful if this box stays on all the time and you want encrypted backups written regularly without doing it by hand.</p>
+                    <p class="recovery-step-copy">Automatically back up your LNbitsBox data at regular intervals.</p>
                 </div>
                 <div class="recovery-accordion-meta">
                     <span class="recovery-accordion-badge">Automatic</span>
@@ -141,8 +141,15 @@
             </summary>
             <div class="recovery-accordion-body">
                 <div class="recovery-field-grid">
+                                <label class="inline-flex items-center gap-2 mb-4">
+                    <input type="checkbox" id="recovery-schedule-enabled" class="rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink/40">
+                    <span class="text-sm font-mono text-ln-text">Enable scheduled backups</span>
+                </label>
+                </div>
+
+                <div class="recovery-field-grid">
                     <label class="block">
-                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Every</span>
+                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Every (hours)</span>
                         <input type="number" min="1" max="168" id="recovery-schedule-hours"
                                class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
                                value="24">
@@ -158,17 +165,15 @@
                 </div>
 
                 <label class="block mb-3">
-                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Stored Backup Password</span>
+                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</span>
                     <input type="password" id="recovery-schedule-passphrase" autocomplete="new-password"
                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
                            placeholder="Stored locally in a root-only config file">
+                           <span class="text-xs font-mono text-ln-muted mt-1 block">
+                            The password for scheduled backups is stored securely on this box. Make a note of it, as it is required to restore backups.
+                           </span>
                 </label>
-
-                <label class="inline-flex items-center gap-2 mb-4">
-                    <input type="checkbox" id="recovery-schedule-enabled" class="rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink/40">
-                    <span class="text-sm font-mono text-ln-text">Enable scheduled backups</span>
-                </label>
-
+                
                 <p class="recovery-helper-text mb-4" id="recovery-schedule-result">
                     No scheduled backup has run yet.
                 </p>
