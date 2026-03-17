@@ -104,6 +104,8 @@ RECOVERY_DESTINATIONS = {
     "local": {
         "label": "Local recovery storage",
         "path": RECOVERY_BACKUP_DIR,
+        "writable": True,
+        "reason": "",
     },
 }
 
@@ -430,25 +432,71 @@ def _save_recovery_schedule(schedule: dict[str, Any]):
 
 def _recovery_usb_destinations() -> dict[str, dict[str, Any]]:
     destinations = {}
+    candidate_mounts: dict[str, Path] = {}
+
+    def consider_mount(path: Path):
+        try:
+            resolved = path.resolve()
+        except Exception:
+            resolved = path
+        if not resolved.is_dir():
+            return
+        mount_key = str(resolved)
+        candidate_mounts[mount_key] = resolved
+
     for root in [Path("/media"), Path("/mnt"), Path("/run/media")]:
         if not root.exists():
             continue
+        consider_mount(root)
         try:
             for child in root.iterdir():
                 if not child.is_dir():
                     continue
-                backup_dir = child / "lnbitsbox-backups"
+                consider_mount(child)
                 try:
-                    backup_dir.mkdir(parents=True, exist_ok=True)
-                    if os.access(backup_dir, os.W_OK):
-                        destinations[f"usb:{child.name}"] = {
-                            "label": f"USB / {child.name}",
-                            "path": backup_dir,
-                        }
+                    for grandchild in child.iterdir():
+                        if grandchild.is_dir():
+                            consider_mount(grandchild)
                 except Exception:
-                    continue
+                    pass
         except Exception:
             continue
+
+    try:
+        with open("/proc/mounts", encoding="utf-8") as handle:
+            for line in handle:
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                mount_point = Path(parts[1].replace("\\040", " "))
+                mount_str = str(mount_point)
+                if mount_str.startswith("/media/") or mount_str.startswith("/mnt/") or mount_str.startswith("/run/media/"):
+                    consider_mount(mount_point)
+    except Exception:
+        pass
+
+    for mount_path in sorted(candidate_mounts.values(), key=lambda value: str(value)):
+        destination_id = "usb:" + str(mount_path).replace("/", "_").strip("_")
+        label = f"USB / {mount_path.name or mount_path}"
+        backup_dir = mount_path / "lnbitsbox-backups"
+        writable = False
+        reason = ""
+        try:
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            writable = os.access(backup_dir, os.W_OK)
+            if not writable:
+                reason = "Mounted, but not writable by LNbitsBox."
+        except OSError as exc:
+            reason = str(exc)
+        except Exception:
+            reason = "Drive detected, but backup directory could not be prepared."
+
+        destinations[destination_id] = {
+            "label": label,
+            "path": backup_dir,
+            "writable": writable,
+            "reason": reason,
+        }
     return destinations
 
 
@@ -463,6 +511,8 @@ def _resolve_recovery_destination(destination_id: str) -> tuple[str, Path]:
     selected = destinations.get(destination_id)
     if not selected:
         raise ValueError("Unknown backup destination.")
+    if not selected.get("writable", True):
+        raise ValueError(selected.get("reason") or "Selected backup destination is not writable.")
     path = Path(selected["path"])
     path.mkdir(parents=True, exist_ok=True)
     return selected["label"], path
@@ -746,7 +796,13 @@ def _recovery_status_payload() -> dict[str, Any]:
         "last_restore": state.get("last_restore"),
         "schedule": schedule,
         "destinations": [
-            {"id": key, "label": value["label"], "path": str(value["path"])}
+            {
+                "id": key,
+                "label": value["label"],
+                "path": str(value["path"]),
+                "writable": value.get("writable", True),
+                "reason": value.get("reason", ""),
+            }
             for key, value in destinations.items()
         ],
         "recommended_actions": [

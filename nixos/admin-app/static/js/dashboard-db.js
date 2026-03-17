@@ -75,14 +75,43 @@
             if (destinationSelect) {
                 const current = destinationSelect.value;
                 destinationSelect.innerHTML = '';
+                let writableCount = 0;
                 destinations.forEach(function (destination) {
                     const option = document.createElement('option');
                     option.value = destination.id;
-                    option.textContent = destination.label;
+                    option.textContent = destination.writable
+                        ? destination.label
+                        : destination.label + ' (Unavailable)';
+                    option.disabled = !destination.writable;
+                    if (!destination.writable && destination.reason) {
+                        option.dataset.reason = destination.reason;
+                    }
                     destinationSelect.appendChild(option);
+                    if (destination.writable) {
+                        writableCount += 1;
+                    }
                 });
-                if (current) {
+                if (current && destinationSelect.querySelector('option[value="' + current + '"]:not(:disabled)')) {
                     destinationSelect.value = current;
+                } else if (destinationSelect.selectedOptions.length === 0) {
+                    const firstEnabled = destinationSelect.querySelector('option:not(:disabled)');
+                    if (firstEnabled) {
+                        firstEnabled.selected = true;
+                    }
+                }
+
+                const note = el('recovery-destination-note');
+                if (note) {
+                    const unavailable = destinations.filter(function (destination) { return !destination.writable; });
+                    if (unavailable.length) {
+                        note.textContent = unavailable.map(function (destination) {
+                            return destination.label + ': ' + (destination.reason || 'Unavailable');
+                        }).join(' ');
+                    } else if (writableCount > 1) {
+                        note.textContent = 'USB backup destinations are available.';
+                    } else {
+                        note.textContent = 'Plugged-in USB drives will appear here when mounted and writable.';
+                    }
                 }
             }
 
