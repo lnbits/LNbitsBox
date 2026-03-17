@@ -820,6 +820,29 @@ def get_usb_storage_info() -> dict[str, Any]:
             ],
         }
 
+    mount_map: dict[str, dict[str, str]] = {}
+    try:
+        result = subprocess.run(
+            ["findmnt", "-rn", "-o", "SOURCE,TARGET,FSTYPE"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        )
+        for line in result.stdout.splitlines():
+            parts = line.split(None, 2)
+            if len(parts) < 3:
+                continue
+            source, target, fstype = parts
+            if not target.startswith(str(USB_AUTO_MOUNT_ROOT)):
+                continue
+            mount_map[source] = {
+                "target": target,
+                "fstype": fstype,
+            }
+    except Exception:
+        pass
+
     try:
         result = subprocess.run(
             [
@@ -849,8 +872,12 @@ def get_usb_storage_info() -> dict[str, Any]:
                 continue
             if not is_usb_disk and block.get("rm") not in (True, 1, "1") and block.get("hotplug") not in (True, 1, "1"):
                 continue
+            device_path = child.get("path") or f"/dev/{child.get('name')}"
             mountpoints = [mount for mount in (child.get("mountpoints") or []) if mount]
             mountpoint = mountpoints[0] if mountpoints else ""
+            mounted = mount_map.get(device_path)
+            if mounted and not mountpoint:
+                mountpoint = mounted.get("target", "")
             auto_mounted = mountpoint.startswith(str(USB_AUTO_MOUNT_ROOT))
             backup_path = ""
             writable = False
@@ -865,18 +892,38 @@ def get_usb_storage_info() -> dict[str, Any]:
                     status = f"Mounted at {mountpoint}"
 
             devices.append({
-                "device": child.get("path") or f"/dev/{child.get('name')}",
+                "device": device_path,
                 "name": child.get("name"),
                 "label": child.get("label") or "",
                 "model": block.get("model") or "",
                 "size": child.get("size") or "",
-                "fstype": child.get("fstype") or "",
+                "fstype": child.get("fstype") or (mounted.get("fstype") if mounted else "") or "",
                 "mountpoint": mountpoint,
                 "auto_mounted": auto_mounted,
                 "writable": writable,
                 "backup_path": backup_path,
                 "status": status,
             })
+
+    known_devices = {device["device"] for device in devices}
+    for source, mounted in mount_map.items():
+        if source in known_devices:
+            continue
+        mountpoint = mounted.get("target", "")
+        candidate = Path(mountpoint) / "lnbitsbox-backups"
+        devices.append({
+            "device": source,
+            "name": Path(source).name,
+            "label": Path(mountpoint).name,
+            "model": "",
+            "size": "",
+            "fstype": mounted.get("fstype", ""),
+            "mountpoint": mountpoint,
+            "auto_mounted": True,
+            "writable": os.access(Path(mountpoint), os.W_OK),
+            "backup_path": str(candidate),
+            "status": "Mounted for backups",
+        })
 
     return {
         "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
