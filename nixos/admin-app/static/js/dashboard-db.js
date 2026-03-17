@@ -39,27 +39,32 @@
     D.renderSavedBackups = function (backups) {
         const container = el('recovery-saved-backups');
         const localSelect = el('restore-local-backup');
-        if (!container) return;
-        container.innerHTML = '';
+        if (container) {
+            container.innerHTML = '';
+        }
         if (localSelect) {
             localSelect.innerHTML = '<option value="">Choose a saved backup</option>';
         }
         if (!backups || !backups.length) {
-            container.innerHTML = '<div class="recovery-helper-text">No saved backups on this box yet.</div>';
+            if (container) {
+                container.innerHTML = '<div class="recovery-helper-text">No saved backups on this box yet.</div>';
+            }
             return;
         }
         backups.forEach(function (backup) {
-            const row = document.createElement('div');
-            row.className = 'recovery-saved-row';
-            row.innerHTML =
-                '<div class="min-w-0">' +
-                '<div class="text-sm font-mono text-ln-text truncate">' + backup.filename + '</div>' +
-                '<div class="text-xs font-mono text-ln-muted">' + formatDate(backup.modified_at) + ' · ' + D.formatBytes(backup.size) + '</div>' +
-                '</div>' +
-                '<div class="flex items-center gap-2 shrink-0">' +
-                '<a class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30" href="' + backupDownloadUrl(backup.filename) + '">Download</a>' +
-                '</div>';
-            container.appendChild(row);
+            if (container) {
+                const row = document.createElement('div');
+                row.className = 'recovery-saved-row';
+                row.innerHTML =
+                    '<div class="min-w-0">' +
+                    '<div class="text-sm font-mono text-ln-text truncate">' + backup.filename + '</div>' +
+                    '<div class="text-xs font-mono text-ln-muted">' + formatDate(backup.modified_at) + ' · ' + D.formatBytes(backup.size) + '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center gap-2 shrink-0">' +
+                    '<a class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30" href="' + backupDownloadUrl(backup.filename) + '">Download</a>' +
+                    '</div>';
+                container.appendChild(row);
+            }
             if (localSelect) {
                 const option = document.createElement('option');
                 option.value = backup.filename;
@@ -67,6 +72,20 @@
                 localSelect.appendChild(option);
             }
         });
+    };
+
+    D.fetchSavedBackups = async function () {
+        try {
+            const resp = await fetch('/box/api/recovery/backups');
+            if (!resp.ok) return [];
+            const payload = await resp.json();
+            const backups = payload.backups || payload.data?.backups || [];
+            D.renderSavedBackups(backups);
+            return backups;
+        } catch (error) {
+            console.error('Saved backups fetch failed:', error);
+            return [];
+        }
     };
 
     D.setRecoveryBusy = function (busy, text) {
@@ -184,6 +203,7 @@
             if (resp.ok && data.status === 'ok') {
                 D.showNotice(data.message, 'Backup Saved');
                 D.fetchRecoveryStatus();
+                D.fetchSavedBackups();
             } else {
                 D.showNotice(data.message || 'Backup save failed.', 'Error');
             }
@@ -209,6 +229,7 @@
         el('restore-components-wrap')?.classList.add('hidden');
         if (el('restore-result-details')) el('restore-result-details').textContent = '';
         D.updateRestoreSourceUi();
+        D.fetchSavedBackups();
     };
 
     D.closeRestoreModal = function () {
@@ -401,5 +422,6 @@
             input.addEventListener('change', D.updateRestoreSourceUi);
         });
         D.fetchRecoveryStatus();
+        D.fetchSavedBackups();
     }
 })();
