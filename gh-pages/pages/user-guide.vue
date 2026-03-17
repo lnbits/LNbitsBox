@@ -4,6 +4,7 @@ const sections = [
   { id: 'unboxing-and-plugging-in', label: 'Unboxing and Plugging In' },
   { id: 'accessing-the-configurator', label: 'Initial Set-up' },
   { id: 'after-configuration', label: 'Managing Your LNbitsBox' },
+  { id: 'recovery-tool', label: 'Recovery Tool' },
 ]
 </script>
 
@@ -257,6 +258,104 @@ const sections = [
                 </p>
                 <p class="font-display text-ln-muted text-sm leading-relaxed">
                   We recommend applying updates when they become available to ensure you have the latest features and security improvements.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="recovery-tool"
+            class="scroll-mt-24 border border-ln-border rounded-3xl bg-ln-card/60 p-6 sm:p-8"
+          >
+            <p class="font-mono text-xs uppercase tracking-[0.25em] text-ln-pink mb-3">
+              Recovery Tool
+            </p>
+            <h2 class="font-display font-bold text-ln-text text-2xl sm:text-3xl tracking-tight mb-6">
+              Back up and restore your LNbitsBox safely
+            </h2>
+            <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-6">
+              The Recovery Tool is your main safety net for your LNbitsBox. It helps you create encrypted recovery backups,
+              checks that a backup is usable before restoring it, and keeps regular backups running so you are better
+              prepared if your SD card fails or you need to move to a new box.
+            </p>
+
+            <div class="space-y-4">
+              <div class="rounded-2xl border border-ln-border bg-black/10 p-5">
+                <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
+                  Open the Recovery Tool from the admin panel
+                </h3>
+                <p class="font-display text-ln-muted text-sm leading-relaxed">
+                  Visit <a href="http://lnbits.local/box" target="_blank" class="text-ln-pink hover:underline">lnbits.local/box</a>, sign in with your admin password, and open the
+                  Maintenance page. The Recovery Tool lets you create encrypted backups, validate a restore before applying it, and configure automatic backups.
+                </p>
+              </div>
+
+              <div class="rounded-2xl border border-ln-border bg-black/10 p-5">
+                <h3 class="font-display font-semibold text-ln-text text-lg mb-3">
+                  Create an encrypted backup
+                </h3>
+                <ol class="space-y-3">
+                  <li class="flex gap-3">
+                    <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">1</span>
+                    <p class="font-display text-ln-muted text-sm leading-relaxed">
+                      Choose <strong>Full backup</strong> for the most complete snapshot. This includes LNbits data, Spark wallet files, tunnel state, and device configuration.
+                    </p>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">2</span>
+                    <p class="font-display text-ln-muted text-sm leading-relaxed">
+                      Enter a backup password. Every recovery archive is password protected, so store that password somewhere safe and separate from the box.
+                    </p>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">3</span>
+                    <p class="font-display text-ln-muted text-sm leading-relaxed">
+                      Use <strong>Download Backup</strong> to save the archive to your computer, or <strong>Save on This Box</strong> to keep a copy in the local recovery folder for later download.
+                    </p>
+                  </li>
+                </ol>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div class="rounded-2xl border border-ln-border bg-black/10 p-5">
+                  <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
+                    Full vs Quick backups
+                  </h3>
+                  <p class="font-display text-ln-muted text-sm leading-relaxed">
+                    Full backups are the best default for most people. Quick backups are smaller, but they skip some broader device state and are better suited to lighter routine snapshots.
+                  </p>
+                </div>
+                <div class="rounded-2xl border border-ln-pink/20 bg-ln-pink/5 p-5">
+                  <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
+                    Keep your Spark seed phrase too
+                  </h3>
+                  <p class="font-display text-ln-muted text-sm leading-relaxed">
+                    Recovery archives help restore your box, but your Spark seed phrase is still the most important secret for recovering wallet access and funds.
+                  </p>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-ln-border bg-black/10 p-5">
+                <h3 class="font-display font-semibold text-ln-text text-lg mb-3">
+                  Restore carefully
+                </h3>
+                <p class="font-display text-ln-muted text-sm leading-relaxed mb-3">
+                  The restore flow checks the uploaded backup before making changes. You can restore from a backup file on your computer or from one already saved on the box.
+                </p>
+                <p class="font-display text-ln-muted text-sm leading-relaxed">
+                  After validation, choose only the components you want to restore. This gives you a chance to confirm the archive and avoid overwriting parts of the system unnecessarily.
+                </p>
+              </div>
+
+              <div class="rounded-2xl border border-ln-border bg-black/10 p-5">
+                <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
+                  Automatic backups
+                </h3>
+                <p class="font-display text-ln-muted text-sm leading-relaxed mb-2">
+                  If your LNbitsBox stays powered on, you can enable scheduled encrypted backups from the same Recovery Tool page.
+                </p>
+                <p class="font-display text-ln-muted text-sm leading-relaxed">
+                  Pick how often the backup should run, choose full or quick mode, and set the stored backup password. We still recommend occasionally downloading a copy off the box as part of your backup routine.
                 </p>
               </div>
             </div>

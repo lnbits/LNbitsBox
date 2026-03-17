@@ -233,6 +233,7 @@
         D.setText('restore-manifest-summary', 'No archive checked yet');
         if (el('restore-file')) el('restore-file').value = '';
         if (el('restore-local-backup')) el('restore-local-backup').value = '';
+        el('restore-validation-panel')?.classList.add('hidden');
         el('restore-issues')?.classList.add('hidden');
         if (el('restore-issues')) el('restore-issues').textContent = '';
         if (el('restore-components')) el('restore-components').innerHTML = '';
@@ -298,6 +299,7 @@
 
             D.setText('restore-compatibility', compatibility.message || 'Unknown');
             D.setText('restore-manifest-summary', (manifest.backup_type || 'backup') + ' from ' + (manifest.created_at || 'unknown date'));
+            el('restore-validation-panel')?.classList.remove('hidden');
 
             const issueBox = el('restore-issues');
             if (issueBox) {

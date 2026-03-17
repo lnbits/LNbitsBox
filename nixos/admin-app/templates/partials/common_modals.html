@@ -126,33 +126,32 @@
                 </label>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <div id="restore-upload-fields">
-                        <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
-                        <input type="file" id="restore-file" accept=".zip"
-                               class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
-                    </div>
-                    <div id="restore-local-fields" class="hidden">
-                        <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Saved Backup</label>
-                        <select id="restore-local-backup"
-                                class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
-                            <option value="">Choose a saved backup</option>
-                        </select>
-                    </div>
-                    <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</label>
-                    <input type="password" id="restore-passphrase" autocomplete="new-password"
-                           class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
-                           placeholder="Required to validate and restore">
+            <div class="mb-4">
+                <div id="restore-upload-fields">
+                    <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
+                    <input type="file" id="restore-file" accept=".zip"
+                           class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-ln-pink/10 file:text-ln-pink hover:file:bg-ln-pink/20 focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
                 </div>
-                <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
-                    <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Validation</div>
-                    <div class="space-y-2 text-xs font-mono">
-                        <div><span class="text-ln-muted">Version:</span> <span id="restore-compatibility">Validate to inspect</span></div>
-                        <div><span class="text-ln-muted">Archive:</span> <span id="restore-manifest-summary">No archive checked yet</span></div>
-                    </div>
-                    <div id="restore-issues" class="hidden mt-3 text-xs font-mono text-red-400 whitespace-pre-wrap"></div>
+                <div id="restore-local-fields" class="hidden">
+                    <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Saved Backup</label>
+                    <select id="restore-local-backup"
+                            class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors mb-4">
+                        <option value="">Choose a saved backup</option>
+                    </select>
                 </div>
+                <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</label>
+                <input type="password" id="restore-passphrase" autocomplete="new-password"
+                       class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                       placeholder="Required to validate and restore">
+            </div>
+
+            <div id="restore-validation-panel" class="hidden bg-ln-surface border border-ln-border rounded-lg p-3 mb-4">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Validation</div>
+                <div class="space-y-2 text-xs font-mono">
+                    <div><span class="text-ln-muted">Version:</span> <span id="restore-compatibility">Validate to inspect</span></div>
+                    <div><span class="text-ln-muted">Archive:</span> <span id="restore-manifest-summary">No archive checked yet</span></div>
+                </div>
+                <div id="restore-issues" class="hidden mt-3 text-xs font-mono text-red-400 whitespace-pre-wrap"></div>
             </div>
 
             <div id="restore-components-wrap" class="hidden mt-4">
