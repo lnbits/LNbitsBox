@@ -52,6 +52,7 @@ class RecoveryUtilsTest(unittest.TestCase):
         archive = package_plain_backup(manifest, payloads)
         loaded_manifest, inner_zip = load_backup_container(archive)
         self.assertEqual(loaded_manifest["backup_type"], "full")
+        self.assertEqual(loaded_manifest["created_by"], "manual")
         self.assertEqual(validate_manifest_files(loaded_manifest, inner_zip), [])
         self.assertIn("database", available_restore_components(loaded_manifest))
 

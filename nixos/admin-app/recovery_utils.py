@@ -73,6 +73,7 @@ def build_backup_manifest(
     components: dict[str, list[dict[str, Any]]],
     spark_seed_present: bool,
     tunnel_configured: bool,
+    created_by: str = "manual",
 ) -> dict[str, Any]:
     files = []
     component_names = []
@@ -97,6 +98,7 @@ def build_backup_manifest(
         "backup_type": backup_type,
         "lnbitsbox_version": current_version,
         "encrypted": encrypted,
+        "created_by": created_by,
         "components": component_names,
         "files": files,
         "spark_seed_present": spark_seed_present,
@@ -203,3 +205,15 @@ def read_json_file(path: Path, default: Any) -> Any:
 def write_json_file(path: Path, payload: Any):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def parse_iso_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed

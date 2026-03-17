@@ -46,6 +46,7 @@ from recovery_utils import (
     compatibility_report,
     file_sha256,
     load_backup_container,
+    parse_iso_datetime,
     package_encrypted_backup,
     package_plain_backup,
     read_json_file,
@@ -532,15 +533,17 @@ def _recovery_manifest(backup_type: str, encrypted: bool, payloads: dict[str, li
         components=payloads,
         spark_seed_present=bool(_read_spark_mnemonic()),
         tunnel_configured=bool((_load_tunnel_state().get("current_tunnel") or {}).get("tunnel_id")),
+        created_by="manual",
     )
 
 
-def _create_recovery_backup_bytes(backup_type: str, passphrase: str | None = None) -> tuple[bytes, dict[str, Any]]:
+def _create_recovery_backup_bytes(backup_type: str, passphrase: str | None = None, *, created_by: str = "manual") -> tuple[bytes, dict[str, Any]]:
     services = _services_for_restore(list({"database", "spark", "tunnel"} if backup_type == "full" else {"database"}))
     try:
         _stop_services(services)
         payloads = _backup_component_payloads(backup_type)
         manifest = _recovery_manifest(backup_type, bool(passphrase), payloads)
+        manifest["created_by"] = created_by
         plain_backup = package_plain_backup(manifest, payloads)
         if passphrase:
             container = package_encrypted_backup(manifest, plain_backup, passphrase)
@@ -791,6 +794,53 @@ def _recovery_backup_files() -> list[dict[str, Any]]:
     return backups
 
 
+def _local_backup_manifest(path: Path) -> dict[str, Any] | None:
+    try:
+        with zipfile.ZipFile(path, "r") as archive:
+            return json.loads(archive.read("manifest.json"))
+    except Exception:
+        return None
+
+
+def _prune_scheduled_backups():
+    now = datetime.now().astimezone()
+    checkpoints = [
+        ("daily", now.timestamp() - 86400),
+        ("weekly", now.timestamp() - (7 * 86400)),
+        ("monthly", now.timestamp() - (30 * 86400)),
+    ]
+    keep: set[Path] = set()
+    candidates: list[tuple[Path, float]] = []
+
+    for path in RECOVERY_BACKUP_DIR.glob("lnbitsbox-recovery-*.zip"):
+        manifest = _local_backup_manifest(path)
+        if not manifest or manifest.get("created_by") != "scheduled":
+            continue
+        created_at = parse_iso_datetime(manifest.get("created_at"))
+        if created_at is None:
+            continue
+        candidates.append((path, created_at.timestamp()))
+
+    if not candidates:
+        return
+
+    candidates.sort(key=lambda item: item[1], reverse=True)
+    keep.add(candidates[0][0])
+
+    for _, threshold in checkpoints:
+        eligible = [item for item in candidates if item[1] <= threshold]
+        if eligible:
+            keep.add(max(eligible, key=lambda item: item[1])[0])
+
+    for path, _ in candidates:
+        if path in keep:
+            continue
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
 def _scheduled_backup_worker():
     while True:
         try:
@@ -806,17 +856,19 @@ def _scheduled_backup_worker():
                     content, manifest = _create_recovery_backup_bytes(
                         schedule.get("backup_type", "full"),
                         passphrase=passphrase,
+                        created_by="scheduled",
                     )
                     backup_result = _write_recovery_destination_file(
                         schedule.get("destination", "local"),
                         content,
                         manifest,
                     )
+                    _prune_scheduled_backups()
                     schedule["last_run_at"] = now
                     schedule["next_run_at"] = now + (interval_hours * 3600)
                     schedule["last_result"] = {
                         "status": "ok",
-                        "message": f"Saved scheduled backup to {backup_result['path']}",
+                        "message": f"Saved scheduled backup to {backup_result['path']} and kept the rolling 1/7/30 day set.",
                         "created_at": manifest["created_at"],
                     }
                     _save_recovery_schedule(schedule)
