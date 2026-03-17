@@ -35,7 +35,7 @@
             Plug LNbitsBox into power and your router (or Wi-Fi). That's all the hardware setup there is.
           </p>
         </div>
-        <img src="~/assets/img/how-it-works-plugin.jpg" alt="" title=""
+        <img src="~/assets/img/how-it-works-plugin.png" alt="" title=""
           class="rounded-2xl border-2 border-ln-border bg-ln-card/60 flex flex-col items-center justify-center gap-3 overflow-hidden"
            />
       </div>

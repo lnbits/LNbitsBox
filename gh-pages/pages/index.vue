@@ -56,7 +56,7 @@
         <!-- Hero image -->
         <div class="rounded-2xl overflow-hidden border border-ln-border max-w-3xl">
           <img
-            src="~/assets/img/lnbits-box-on-desk.png"
+            src="~/assets/img/lnbits-box-on-desk.jpg"
             alt="LNbitsBox device on a desk"
             title="LNbitsBox — clean product photo in a friendly home setting"
             class="w-full h-auto"
@@ -77,7 +77,7 @@
           Everything you need for self-custodial Lightning payments, in one small box.
         </p>
 
-        <div class="grid sm:grid-cols-3 gap-6">
+        <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
 
           <!-- Simple -->
           <div class="bg-ln-card border border-ln-border rounded-2xl p-8 hover:border-ln-pink/20 transition-colors duration-200">
@@ -115,6 +115,20 @@
             <h3 class="font-display font-semibold text-ln-text text-lg mb-3">Private</h3>
             <p class="font-display text-ln-muted text-sm leading-relaxed">
               Everything runs on your own network, in your own space. Access it remotely when you need to.
+            </p>
+          </div>
+
+          <!-- Backup & Recovery -->
+          <div class="bg-ln-card border border-ln-border rounded-2xl p-8 hover:border-ln-pink/20 transition-colors duration-200">
+            <div class="w-12 h-12 rounded-xl bg-ln-pink/10 flex items-center justify-center mb-5">
+              <svg class="w-6 h-6 text-ln-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5c0 5-3.4 8.3-7 10-3.6-1.7-7-5-7-10V6l7-3Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 12l1.7 1.7 3.3-3.7" />
+              </svg>
+            </div>
+            <h3 class="font-display font-semibold text-ln-text text-lg mb-3">Backup &amp; Recovery</h3>
+            <p class="font-display text-ln-muted text-sm leading-relaxed">
+              Create encrypted backups, check them before restoring, and schedule regular recovery snapshots from the admin panel.
             </p>
           </div>
 
