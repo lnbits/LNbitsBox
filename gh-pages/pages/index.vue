@@ -33,7 +33,7 @@
           LNbitsBox lets you run LNbits with a
           self-custodial Lightning wallet. Simply.
           <br>Plug it in, complete a quick setup,
-          and start sending or accepting payments.
+          and start sending or accepting payments right away.
         </p>
 
         <!-- CTAs -->
