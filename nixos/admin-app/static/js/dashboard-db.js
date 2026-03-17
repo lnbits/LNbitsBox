@@ -17,6 +17,16 @@
         return date.toLocaleString();
     }
 
+    function formatBytes(bytes) {
+        if (typeof D.formatBytes === 'function') {
+            return D.formatBytes(bytes);
+        }
+        if (!bytes) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return (bytes / Math.pow(1024, index)).toFixed(1) + ' ' + units[index];
+    }
+
     function scheduleSummary(schedule) {
         if (!schedule || !schedule.enabled) return 'Disabled';
         return 'Every ' + schedule.interval_hours + 'h';
@@ -58,7 +68,7 @@
                 row.innerHTML =
                     '<div class="min-w-0">' +
                     '<div class="text-sm font-mono text-ln-text truncate">' + backup.filename + '</div>' +
-                    '<div class="text-xs font-mono text-ln-muted">' + formatDate(backup.modified_at) + ' · ' + D.formatBytes(backup.size) + '</div>' +
+                    '<div class="text-xs font-mono text-ln-muted">' + formatDate(backup.modified_at) + ' · ' + formatBytes(backup.size) + '</div>' +
                     '</div>' +
                     '<div class="flex items-center gap-2 shrink-0">' +
                     '<a class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30" href="' + backupDownloadUrl(backup.filename) + '">Download</a>' +
