@@ -1,37 +1,46 @@
-<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="recovery-card">
-    <div class="flex items-center justify-between mb-3">
-        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Recovery Center</div>
-        <span class="text-xs font-mono text-ln-muted" id="recovery-last-backup">No backup yet</span>
-    </div>
-
-    <p class="text-ln-muted text-xs font-mono mb-4">
-        Every backup is password-encrypted. Keep the Spark seed phrase stored separately from exported recovery archives.
-    </p>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
-        <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Recovery Status</div>
-            <div class="space-y-2 text-sm font-mono">
-                <div class="flex items-center justify-between">
-                    <span class="text-ln-muted">Spark seed</span>
-                    <span id="recovery-seed-status">--</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-ln-muted">Last validation</span>
-                    <span id="recovery-validation-status">--</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-ln-muted">Tunnel key</span>
-                    <span id="recovery-tunnel-status">--</span>
-                </div>
+<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-6 transition-all duration-500 recovery-center" id="recovery-card">
+    <div class="recovery-hero">
+        <div class="recovery-hero-main">
+            <div class="recovery-hero-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l7 3v5c0 5-3.4 8.3-7 10-3.6-1.7-7-5-7-10V6l7-3z"></path>
+                    <path d="M9.5 12l1.7 1.7 3.3-3.7"></path>
+                </svg>
+            </div>
+            <div class="min-w-0">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-widest mb-2">Safety And Recovery</div>
+                <h2 class="recovery-hero-title">Recovery Center</h2>
+                <p class="recovery-hero-copy">
+                    Create a password-protected backup, restore from one later, or let LNbitsBox save encrypted backups for you automatically.
+                </p>
             </div>
         </div>
-        <div class="bg-ln-surface border border-ln-border rounded-lg p-3 lg:col-span-2">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Recommended Next Step</div>
-            <ul class="space-y-1 text-xs font-mono text-ln-muted" id="recovery-actions">
-                <li>Loading recovery guidance...</li>
-            </ul>
+        <div class="recovery-hero-meta">
+            <span class="recovery-hero-meta-label">Last backup</span>
+            <span class="recovery-hero-meta-value" id="recovery-last-backup">No backup yet</span>
         </div>
+    </div>
+
+    <div class="recovery-status-strip">
+        <div class="recovery-status-pill">
+            <span class="recovery-status-label">Spark seed</span>
+            <span class="recovery-status-value" id="recovery-seed-status">--</span>
+        </div>
+        <div class="recovery-status-pill">
+            <span class="recovery-status-label">Last validation</span>
+            <span class="recovery-status-value" id="recovery-validation-status">--</span>
+        </div>
+        <div class="recovery-status-pill">
+            <span class="recovery-status-label">Tunnel key</span>
+            <span class="recovery-status-value" id="recovery-tunnel-status">--</span>
+        </div>
+    </div>
+
+    <div class="recovery-guidance">
+        <div class="recovery-guidance-title">Before you start</div>
+        <ul class="recovery-guidance-list" id="recovery-actions">
+            <li>Loading recovery guidance...</li>
+        </ul>
     </div>
 
     <div id="recovery-status" class="hidden mb-4">
@@ -41,100 +50,145 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
-        <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
-            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-3">Create Encrypted Backup</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                <label class="block">
-                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
-                    <select id="recovery-backup-type"
-                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
-                        <option value="full">Full backup</option>
-                        <option value="quick">Quick backup</option>
-                    </select>
+    <div class="recovery-accordion-stack">
+        <details class="recovery-accordion" open>
+            <summary class="recovery-accordion-summary">
+                <div>
+                    <div class="recovery-step-label">Step 1</div>
+                    <div class="recovery-step-title">Make an encrypted backup</div>
+                    <p class="recovery-step-copy">Best for most people: choose <strong>Full backup</strong>, set a password, then save it to your computer or a USB drive.</p>
+                </div>
+                <span class="recovery-accordion-badge">Create backup</span>
+            </summary>
+            <div class="recovery-accordion-body">
+                <div class="recovery-field-grid">
+                    <label class="block">
+                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
+                        <select id="recovery-backup-type"
+                                class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
+                            <option value="full">Full backup</option>
+                            <option value="quick">Quick backup</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Save Location</span>
+                        <select id="recovery-destination"
+                                class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
+                            <option value="local">Local recovery storage</option>
+                        </select>
+                    </label>
+                </div>
+                <p class="recovery-helper-text" id="recovery-destination-note">
+                    Plugged-in USB drives will appear here when mounted and writable.
+                </p>
+
+                <label class="block mb-3">
+                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</span>
+                    <input type="password" id="recovery-passphrase" autocomplete="new-password"
+                           class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                           placeholder="Required for every backup">
                 </label>
-                <label class="block">
-                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Destination</span>
-                    <select id="recovery-destination"
-                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
-                        <option value="local">Local recovery storage</option>
-                    </select>
-                </label>
+
+                <div class="recovery-callout">
+                    <div class="recovery-callout-title">What is included?</div>
+                    <p class="recovery-helper-text mb-0">
+                        Full backups include LNbits data, Spark wallet files, tunnel state, and device config. Quick backups skip some of the broader device state.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap gap-3" id="recovery-buttons">
+                    <button id="recovery-download-btn"
+                            class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
+                        Download Backup
+                    </button>
+                    <button id="recovery-save-btn"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                        Save to Destination
+                    </button>
+                </div>
             </div>
-            <p class="text-ln-muted text-xs font-mono mb-3" id="recovery-destination-note">
-                Plugged-in USB drives will appear here when mounted and writable.
-            </p>
-            <label class="block mb-3">
-                <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</span>
-                <input type="password" id="recovery-passphrase" autocomplete="new-password"
-                       class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
-                       placeholder="Required for every backup">
-            </label>
-            <p class="text-ln-muted text-xs font-mono mb-4">
-                Full backups include LNbits data, Spark wallet files, tunnel state, and device config. Quick backups omit the broader device state.
-            </p>
-            <div class="flex flex-wrap gap-3" id="recovery-buttons">
-                <button id="recovery-download-btn"
-                        class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
-                    Download Backup
-                </button>
-                <button id="recovery-save-btn"
-                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                    Save to Destination
-                </button>
+        </details>
+
+        <details class="recovery-accordion">
+            <summary class="recovery-accordion-summary">
+                <div>
+                    <div class="recovery-step-label">Step 2</div>
+                    <div class="recovery-step-title">Restore from a backup</div>
+                    <p class="recovery-step-copy">Validate the backup first, then choose only the parts you want to restore onto this box.</p>
+                </div>
+                <span class="recovery-accordion-badge">Restore</span>
+            </summary>
+            <div class="recovery-accordion-body">
+                <div class="recovery-callout mb-4">
+                    <div class="recovery-callout-title">Safe restore flow</div>
+                    <p class="recovery-helper-text mb-0">
+                        LNbitsBox will check the backup, compare versions, and let you choose what to restore before it makes changes.
+                    </p>
+                </div>
                 <button id="recovery-restore-btn"
                         class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                    Restore Backup
+                    Open Restore Tool
                 </button>
             </div>
-        </div>
+        </details>
 
-        <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
-            <div class="flex items-center justify-between mb-3">
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Scheduled Encrypted Backups</div>
-                <span class="text-xs font-mono text-ln-muted" id="recovery-schedule-summary">Disabled</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                <label class="block">
-                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Every</span>
-                    <input type="number" min="1" max="168" id="recovery-schedule-hours"
+        <details class="recovery-accordion">
+            <summary class="recovery-accordion-summary">
+                <div>
+                    <div class="recovery-step-label">Step 3</div>
+                    <div class="recovery-step-title">Set up automatic backups</div>
+                    <p class="recovery-step-copy">Useful if this box stays on all the time and you want encrypted backups written regularly without doing it by hand.</p>
+                </div>
+                <div class="recovery-accordion-meta">
+                    <span class="recovery-accordion-badge">Automatic</span>
+                    <span class="text-xs font-mono text-ln-muted" id="recovery-schedule-summary">Disabled</span>
+                </div>
+            </summary>
+            <div class="recovery-accordion-body">
+                <div class="recovery-field-grid">
+                    <label class="block">
+                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Every</span>
+                        <input type="number" min="1" max="168" id="recovery-schedule-hours"
+                               class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
+                               value="24">
+                    </label>
+                    <label class="block">
+                        <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
+                        <select id="recovery-schedule-type"
+                                class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
+                            <option value="full">Full backup</option>
+                            <option value="quick">Quick backup</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="block mb-3">
+                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Stored Backup Password</span>
+                    <input type="password" id="recovery-schedule-passphrase" autocomplete="new-password"
                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
-                           value="24">
+                           placeholder="Stored locally in a root-only config file">
                 </label>
-                <label class="block">
-                    <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
-                    <select id="recovery-schedule-type"
-                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
-                        <option value="full">Full backup</option>
-                        <option value="quick">Quick backup</option>
-                    </select>
+
+                <label class="inline-flex items-center gap-2 mb-4">
+                    <input type="checkbox" id="recovery-schedule-enabled" class="rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink/40">
+                    <span class="text-sm font-mono text-ln-text">Enable scheduled backups</span>
                 </label>
+
+                <p class="recovery-helper-text mb-4" id="recovery-schedule-result">
+                    No scheduled backup has run yet.
+                </p>
+                <button id="recovery-schedule-save-btn"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Save Schedule
+                </button>
             </div>
-            <label class="block mb-3">
-                <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Stored Backup Password</span>
-                <input type="password" id="recovery-schedule-passphrase" autocomplete="new-password"
-                       class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
-                       placeholder="Stored locally in a root-only config file">
-            </label>
-            <label class="inline-flex items-center gap-2 mb-4">
-                <input type="checkbox" id="recovery-schedule-enabled" class="rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink/40">
-                <span class="text-sm font-mono text-ln-text">Enable scheduled backups</span>
-            </label>
-            <p class="text-ln-muted text-xs font-mono mb-4" id="recovery-schedule-result">
-                No scheduled backup has run yet.
-            </p>
-            <button id="recovery-schedule-save-btn"
-                    class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                Save Schedule
-            </button>
-        </div>
+        </details>
     </div>
 
-    <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
-        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">What Recovery Covers</div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono text-ln-muted">
-            <div>Recovery archives restore LNbits data, selected device config, remote-access state, and Spark-sidecar files.</div>
-            <div>The Spark seed phrase is still your primary wallet recovery secret. Do not rely on the device backup alone for funds recovery.</div>
-        </div>
+    <div class="recovery-footer-note">
+        <div class="recovery-callout-title">Important</div>
+        <p class="recovery-helper-text mb-0">
+            Recovery archives can restore LNbits data, device settings, remote-access state, and Spark-sidecar files. Your Spark seed phrase is still the main secret for recovering wallet access and funds.
+        </p>
     </div>
 </div>
