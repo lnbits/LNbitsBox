@@ -107,6 +107,7 @@ RECOVERY_DESTINATIONS = {
         "path": RECOVERY_BACKUP_DIR,
         "writable": True,
         "reason": "",
+        "detail": f"Saved to {RECOVERY_BACKUP_DIR}",
     },
 }
 
@@ -433,55 +434,19 @@ def _save_recovery_schedule(schedule: dict[str, Any]):
 
 def _recovery_usb_destinations() -> dict[str, dict[str, Any]]:
     destinations = {}
-    candidate_mounts: dict[str, Path] = {}
-
-    def consider_mount(path: Path):
-        try:
-            resolved = path.resolve()
-        except Exception:
-            resolved = path
-        if not resolved.is_dir():
-            return
-        mount_key = str(resolved)
-        candidate_mounts[mount_key] = resolved
-
-    for root in [Path("/media"), Path("/mnt"), Path("/run/media")]:
-        if not root.exists():
-            continue
-        consider_mount(root)
-        try:
-            for child in root.iterdir():
-                if not child.is_dir():
-                    continue
-                consider_mount(child)
-                try:
-                    for grandchild in child.iterdir():
-                        if grandchild.is_dir():
-                            consider_mount(grandchild)
-                except Exception:
-                    pass
-        except Exception:
+    for device in get_usb_storage_info().get("devices", []):
+        mountpoint = device.get("mountpoint") or ""
+        if not mountpoint:
             continue
 
-    try:
-        with open("/proc/mounts", encoding="utf-8") as handle:
-            for line in handle:
-                parts = line.split()
-                if len(parts) < 2:
-                    continue
-                mount_point = Path(parts[1].replace("\\040", " "))
-                mount_str = str(mount_point)
-                if mount_str.startswith("/media/") or mount_str.startswith("/mnt/") or mount_str.startswith("/run/media/"):
-                    consider_mount(mount_point)
-    except Exception:
-        pass
-
-    for mount_path in sorted(candidate_mounts.values(), key=lambda value: str(value)):
-        destination_id = "usb:" + str(mount_path).replace("/", "_").strip("_")
-        label = f"USB / {mount_path.name or mount_path}"
+        mount_path = Path(mountpoint)
         backup_dir = mount_path / "lnbitsbox-backups"
+        destination_id = "usb:" + (device.get("name") or mount_path.name or "drive")
+        label_name = device.get("label") or mount_path.name or device.get("name") or "USB drive"
+        label = f"USB drive: {label_name}"
         writable = False
         reason = ""
+
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
             writable = os.access(backup_dir, os.W_OK)
@@ -497,6 +462,7 @@ def _recovery_usb_destinations() -> dict[str, dict[str, Any]]:
             "path": backup_dir,
             "writable": writable,
             "reason": reason,
+            "detail": f"Saved to {backup_dir}",
         }
     return destinations
 
@@ -803,6 +769,7 @@ def _recovery_status_payload() -> dict[str, Any]:
                 "path": str(value["path"]),
                 "writable": value.get("writable", True),
                 "reason": value.get("reason", ""),
+                "detail": value.get("detail", f"Saved to {value['path']}"),
             }
             for key, value in destinations.items()
         ],
