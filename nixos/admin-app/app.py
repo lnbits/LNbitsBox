@@ -50,6 +50,7 @@ from recovery_utils import (
     package_encrypted_backup,
     package_plain_backup,
     read_json_file,
+    select_scheduled_backups_to_keep,
     utc_now_iso,
     validate_manifest_files,
     write_json_file,
@@ -804,13 +805,7 @@ def _local_backup_manifest(path: Path) -> dict[str, Any] | None:
 
 def _prune_scheduled_backups():
     now = datetime.now().astimezone()
-    checkpoints = [
-        ("daily", now.timestamp() - 86400),
-        ("weekly", now.timestamp() - (7 * 86400)),
-        ("monthly", now.timestamp() - (30 * 86400)),
-    ]
-    keep: set[Path] = set()
-    candidates: list[tuple[Path, float]] = []
+    candidates: list[tuple[Path, datetime]] = []
 
     for path in RECOVERY_BACKUP_DIR.glob("lnbitsbox-recovery-*.zip"):
         manifest = _local_backup_manifest(path)
@@ -819,18 +814,12 @@ def _prune_scheduled_backups():
         created_at = parse_iso_datetime(manifest.get("created_at"))
         if created_at is None:
             continue
-        candidates.append((path, created_at.timestamp()))
+        candidates.append((path, created_at))
 
     if not candidates:
         return
 
-    candidates.sort(key=lambda item: item[1], reverse=True)
-    keep.add(candidates[0][0])
-
-    for _, threshold in checkpoints:
-        eligible = [item for item in candidates if item[1] <= threshold]
-        if eligible:
-            keep.add(max(eligible, key=lambda item: item[1])[0])
+    keep = select_scheduled_backups_to_keep(candidates, now=now)
 
     for path, _ in candidates:
         if path in keep:

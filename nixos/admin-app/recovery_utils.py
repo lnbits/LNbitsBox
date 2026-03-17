@@ -4,7 +4,7 @@ import io
 import json
 import secrets
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -217,3 +217,54 @@ def parse_iso_datetime(value: str | None) -> datetime | None:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def select_scheduled_backups_to_keep(
+    backups: list[tuple[Path, datetime]],
+    *,
+    now: datetime | None = None,
+) -> set[Path]:
+    if not backups:
+        return set()
+
+    if now is None:
+        now = datetime.now(timezone.utc)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+
+    normalized = []
+    for path, created_at in backups:
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        normalized.append((path, created_at.astimezone(now.tzinfo)))
+
+    normalized.sort(key=lambda item: item[1], reverse=True)
+    keep: set[Path] = {normalized[0][0]}
+
+    hourly_cutoff = now - timedelta(hours=24)
+    daily_cutoff = now - timedelta(days=7)
+    weekly_cutoff = now - timedelta(weeks=4)
+
+    daily_buckets: dict[datetime.date, tuple[Path, datetime]] = {}
+    weekly_buckets: dict[tuple[int, int], tuple[Path, datetime]] = {}
+
+    for path, created_at in normalized:
+        if created_at >= hourly_cutoff:
+            keep.add(path)
+            continue
+        if created_at >= daily_cutoff:
+            bucket = created_at.date()
+            existing = daily_buckets.get(bucket)
+            if existing is None or created_at > existing[1]:
+                daily_buckets[bucket] = (path, created_at)
+            continue
+        if created_at >= weekly_cutoff:
+            iso_year, iso_week, _ = created_at.isocalendar()
+            bucket = (iso_year, iso_week)
+            existing = weekly_buckets.get(bucket)
+            if existing is None or created_at > existing[1]:
+                weekly_buckets[bucket] = (path, created_at)
+
+    keep.update(path for path, _ in daily_buckets.values())
+    keep.update(path for path, _ in weekly_buckets.values())
+    return keep

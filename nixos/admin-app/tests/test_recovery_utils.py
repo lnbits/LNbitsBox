@@ -1,6 +1,8 @@
 import io
 import unittest
 import zipfile
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 try:
     from recovery_utils import (
@@ -11,6 +13,7 @@ try:
         load_backup_container,
         package_encrypted_backup,
         package_plain_backup,
+        select_scheduled_backups_to_keep,
         validate_manifest_files,
     )
     RECOVERY_IMPORT_ERROR = None
@@ -103,6 +106,43 @@ class RecoveryUtilsTest(unittest.TestCase):
         self.assertEqual(compatibility_report("0.1.49", "0.1.50")["level"], "ok")
         self.assertEqual(compatibility_report("0.2.0", "0.1.49")["level"], "warn")
         self.assertEqual(compatibility_report("1.0.0", "0.1.49")["level"], "error")
+
+    def test_scheduled_backup_retention_keeps_recent_daily_and_weekly_windows(self):
+        now = datetime(2026, 3, 17, 12, 0, tzinfo=timezone.utc)
+        backups = [
+            (Path("/tmp/hourly-1.zip"), now - timedelta(hours=1)),
+            (Path("/tmp/hourly-20.zip"), now - timedelta(hours=20)),
+            (Path("/tmp/day-2-new.zip"), now - timedelta(days=2, hours=1)),
+            (Path("/tmp/day-2-old.zip"), now - timedelta(days=2, hours=6)),
+            (Path("/tmp/day-6.zip"), now - timedelta(days=6, hours=2)),
+            (Path("/tmp/week-2-new.zip"), now - timedelta(days=10, hours=1)),
+            (Path("/tmp/week-2-old.zip"), now - timedelta(days=12)),
+            (Path("/tmp/week-4.zip"), now - timedelta(days=24)),
+            (Path("/tmp/older-than-window.zip"), now - timedelta(days=40)),
+        ]
+
+        keep = select_scheduled_backups_to_keep(backups, now=now)
+
+        self.assertIn(Path("/tmp/hourly-1.zip"), keep)
+        self.assertIn(Path("/tmp/hourly-20.zip"), keep)
+        self.assertIn(Path("/tmp/day-2-new.zip"), keep)
+        self.assertNotIn(Path("/tmp/day-2-old.zip"), keep)
+        self.assertIn(Path("/tmp/day-6.zip"), keep)
+        self.assertIn(Path("/tmp/week-2-new.zip"), keep)
+        self.assertNotIn(Path("/tmp/week-2-old.zip"), keep)
+        self.assertIn(Path("/tmp/week-4.zip"), keep)
+        self.assertNotIn(Path("/tmp/older-than-window.zip"), keep)
+
+    def test_scheduled_backup_retention_keeps_latest_even_when_outside_windows(self):
+        now = datetime(2026, 3, 17, 12, 0, tzinfo=timezone.utc)
+        backups = [
+            (Path("/tmp/latest-old.zip"), now - timedelta(days=60)),
+            (Path("/tmp/older.zip"), now - timedelta(days=90)),
+        ]
+
+        keep = select_scheduled_backups_to_keep(backups, now=now)
+
+        self.assertEqual(keep, {Path("/tmp/latest-old.zip")})
 
 
 if __name__ == "__main__":
