@@ -93,6 +93,7 @@ TUNNEL_STATE_DIR = (
 TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
 TUNNEL_KEY_FILE = TUNNEL_STATE_DIR / "reverse-proxy-key"
 TUNNEL_RUNTIME_ENV = TUNNEL_STATE_DIR / "runtime.env"
+USB_AUTO_MOUNT_ROOT = Path("/run/media/lnbitsbox")
 WPA_SUPPLICANT_CONF = Path("/etc/wpa_supplicant.conf")
 TOR_HOSTNAME_FILE = Path("/var/lib/tor/onion/lnbits/hostname")
 RECOVERY_STATE_DIR = Path("/tmp/lnbitspi-test/recovery") if DEV_MODE else Path("/var/lib/lnbitsbox-recovery")
@@ -831,6 +832,91 @@ def _manifest_path_issues(manifest: dict[str, Any]) -> list[str]:
     return issues
 
 
+def get_usb_storage_info() -> dict[str, Any]:
+    if DEV_MODE:
+        return {
+            "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
+            "devices": [
+                {
+                    "device": "/dev/sda1",
+                    "name": "sda1",
+                    "label": "BACKUPS",
+                    "model": "Demo USB",
+                    "size": "1.0 GB",
+                    "fstype": "vfat",
+                    "mountpoint": str(USB_AUTO_MOUNT_ROOT / "BACKUPS"),
+                    "auto_mounted": True,
+                    "writable": True,
+                    "backup_path": str(USB_AUTO_MOUNT_ROOT / "BACKUPS" / "lnbitsbox-backups"),
+                    "status": "Mounted for backups",
+                }
+            ],
+        }
+
+    try:
+        result = subprocess.run(
+            [
+                "lsblk",
+                "-J",
+                "-o",
+                "NAME,PATH,TYPE,TRAN,SIZE,FSTYPE,LABEL,MOUNTPOINTS,MODEL,RM,HOTPLUG",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+    except Exception:
+        return {
+            "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
+            "devices": [],
+        }
+
+    devices = []
+    for block in payload.get("blockdevices", []):
+        is_usb_disk = block.get("tran") == "usb"
+        children = block.get("children") or []
+        for child in children:
+            if child.get("type") != "part":
+                continue
+            if not is_usb_disk and block.get("rm") not in (True, 1, "1") and block.get("hotplug") not in (True, 1, "1"):
+                continue
+            mountpoints = [mount for mount in (child.get("mountpoints") or []) if mount]
+            mountpoint = mountpoints[0] if mountpoints else ""
+            auto_mounted = mountpoint.startswith(str(USB_AUTO_MOUNT_ROOT))
+            backup_path = ""
+            writable = False
+            status = "Detected, not mounted"
+            if mountpoint:
+                candidate = Path(mountpoint) / "lnbitsbox-backups"
+                backup_path = str(candidate)
+                writable = os.access(Path(mountpoint), os.W_OK)
+                if auto_mounted:
+                    status = "Mounted for backups" if writable else "Mounted, but not writable"
+                else:
+                    status = f"Mounted at {mountpoint}"
+
+            devices.append({
+                "device": child.get("path") or f"/dev/{child.get('name')}",
+                "name": child.get("name"),
+                "label": child.get("label") or "",
+                "model": block.get("model") or "",
+                "size": child.get("size") or "",
+                "fstype": child.get("fstype") or "",
+                "mountpoint": mountpoint,
+                "auto_mounted": auto_mounted,
+                "writable": writable,
+                "backup_path": backup_path,
+                "status": status,
+            })
+
+    return {
+        "auto_mount_root": str(USB_AUTO_MOUNT_ROOT),
+        "devices": devices,
+    }
+
+
 def _scheduled_backup_worker():
     while True:
         try:
@@ -1294,6 +1380,13 @@ def api_stats():
         }
     }
     return _json_response(data=payload, **payload)
+
+
+@app.route("/box/api/usb-storage")
+@login_required
+def api_usb_storage():
+    payload = get_usb_storage_info()
+    return _json_response(status="ok", data=payload, **payload)
 
 
 @app.route("/box/api/lnbits-status")

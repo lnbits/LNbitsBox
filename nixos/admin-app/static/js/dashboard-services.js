@@ -1,5 +1,13 @@
 (function () {
     const D = window.LNbitsBoxDashboard;
+    const escapeHtml = function (value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
 
     D.formatBytes = function (bytes) {
         if (bytes === 0) return '0 B';
@@ -27,6 +35,57 @@
         if (s === 'deactivating') return 'Stopping';
         if (s === 'failed') return 'Error';
         return s;
+    };
+
+    D.fetchUsbStorage = async function () {
+        const list = D.el('usb-storage-list');
+        const summary = D.el('usb-storage-summary');
+        if (!list || !summary) return;
+        try {
+            const resp = await fetch('/box/api/usb-storage');
+            if (!resp.ok) return;
+            const payload = await resp.json();
+            const data = payload.data || payload;
+            const devices = data.devices || [];
+
+            if (!devices.length) {
+                summary.textContent = 'No drives detected';
+                list.innerHTML = '<div class="text-ln-muted text-sm font-mono">No removable USB storage detected.</div>';
+                return;
+            }
+
+            summary.textContent = devices.length === 1 ? '1 drive' : (devices.length + ' drives');
+            list.innerHTML = '';
+            devices.forEach(function (device) {
+                const card = document.createElement('div');
+                card.className = 'bg-ln-surface border border-ln-border rounded-lg p-3';
+                const dotColor = device.auto_mounted
+                    ? (device.writable ? 'bg-emerald-400' : 'bg-amber-400')
+                    : (device.mountpoint ? 'bg-amber-400' : 'bg-gray-600');
+                const mountText = escapeHtml(device.mountpoint || 'Not mounted');
+                const backupText = escapeHtml(device.backup_path || 'Backup path unavailable');
+                const name = escapeHtml(device.label || device.name || device.device || 'USB device');
+                const meta = escapeHtml([device.fstype, device.size, device.model].filter(Boolean).join(' · '));
+                const status = escapeHtml(device.status || '--');
+                const fallbackDevice = escapeHtml(device.device || '');
+                card.innerHTML =
+                    '<div class="flex items-center justify-between gap-3 mb-2">' +
+                    '<div class="flex items-center gap-3 min-w-0">' +
+                    '<div class="w-2.5 h-2.5 rounded-full ' + dotColor + ' shrink-0"></div>' +
+                    '<div class="min-w-0"><div class="font-mono text-sm text-ln-text truncate">' + name + '</div>' +
+                    '<div class="text-ln-muted text-xs font-mono truncate">' + (meta || fallbackDevice) + '</div></div>' +
+                    '</div>' +
+                    '<div class="text-xs font-mono text-ln-muted shrink-0">' + status + '</div>' +
+                    '</div>' +
+                    '<div class="text-xs font-mono text-ln-muted space-y-1">' +
+                    '<div>Mount: <span class="text-ln-text">' + mountText + '</span></div>' +
+                    '<div>Backup path: <span class="text-ln-text">' + backupText + '</span></div>' +
+                    '</div>';
+                list.appendChild(card);
+            });
+        } catch (error) {
+            console.error('USB storage fetch failed:', error);
+        }
     };
 
     D.setServiceActionVisibility = function (service, status, options) {
@@ -256,7 +315,9 @@
     };
 
     D.fetchStats();
+    D.fetchUsbStorage();
     setInterval(D.fetchStats, 10000);
+    setInterval(D.fetchUsbStorage, 15000);
     D.restartLnbitsPollLoop();
     document.addEventListener('visibilitychange', D.restartLnbitsPollLoop);
 })();
