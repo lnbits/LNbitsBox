@@ -99,7 +99,7 @@
 
 {# ── Database Restore Modal ── #}
 <div id="restore-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-2xl w-full">
+    <div class="bg-ln-card border border-ln-border rounded-2xl p-6 w-md">
         <div class="flex items-center justify-between mb-4">
             <p class="text-lg font-display font-semibold">Restore Encrypted Backup</p>
             <button id="restore-close-btn" class="text-ln-muted hover:text-ln-text transition-colors">
@@ -126,7 +126,7 @@
                 </label>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <div id="restore-upload-fields">
                         <label class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup File</label>
