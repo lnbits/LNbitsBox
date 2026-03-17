@@ -83,6 +83,7 @@
                         ? destination.label
                         : destination.label + ' (Unavailable)';
                     option.disabled = !destination.writable;
+                    option.dataset.detail = destination.detail || '';
                     if (!destination.writable && destination.reason) {
                         option.dataset.reason = destination.reason;
                     }
@@ -102,11 +103,15 @@
 
                 const note = el('recovery-destination-note');
                 if (note) {
+                    const selectedOption = destinationSelect.selectedOptions[0];
                     const unavailable = destinations.filter(function (destination) { return !destination.writable; });
-                    if (unavailable.length) {
-                        note.textContent = unavailable.map(function (destination) {
-                            return destination.label + ': ' + (destination.reason || 'Unavailable');
-                        }).join(' ');
+                    if (selectedOption && selectedOption.dataset.detail) {
+                        note.textContent = selectedOption.dataset.detail;
+                        if (unavailable.length) {
+                            note.textContent += ' Unavailable drives: ' + unavailable.map(function (destination) {
+                                return destination.label + ': ' + (destination.reason || 'Unavailable');
+                            }).join(' ');
+                        }
                     } else if (writableCount > 1) {
                         note.textContent = 'USB backup destinations are available.';
                     } else {
@@ -376,6 +381,16 @@
     };
 
     if (hasRecoveryUi()) {
+        const destinationSelect = el('recovery-destination');
+        if (destinationSelect) {
+            destinationSelect.addEventListener('change', function () {
+                const selected = destinationSelect.selectedOptions[0];
+                const note = el('recovery-destination-note');
+                if (note && selected) {
+                    note.textContent = selected.dataset.detail || 'Plugged-in USB drives will appear here when mounted and writable.';
+                }
+            });
+        }
         D.fetchRecoveryStatus();
     }
 })();

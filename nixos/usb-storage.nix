@@ -16,10 +16,28 @@ let
     [ -b "$device" ] || exit 0
 
     existing_target="$(findmnt -rn -S "$device" -o TARGET 2>/dev/null || true)"
-    [ -z "$existing_target" ] || exit 0
+    if [ -n "$existing_target" ]; then
+      echo "USB backup drive already mounted at $existing_target"
+      exit 0
+    fi
 
-    fstype="$(blkid -o value -s TYPE "$device" 2>/dev/null || true)"
-    [ -n "$fstype" ] || exit 0
+    fstype=""
+    label=""
+    uuid=""
+    for _ in $(seq 1 10); do
+      fstype="$(blkid -o value -s TYPE "$device" 2>/dev/null || true)"
+      label="$(blkid -o value -s LABEL "$device" 2>/dev/null || true)"
+      uuid="$(blkid -o value -s UUID "$device" 2>/dev/null || true)"
+      if [ -n "$fstype" ]; then
+        break
+      fi
+      sleep 1
+    done
+
+    if [ -z "$fstype" ]; then
+      echo "USB backup drive $device is present but filesystem type is not ready yet"
+      exit 1
+    fi
 
     case "$fstype" in
       vfat|msdos)
@@ -29,12 +47,11 @@ let
         mount_opts="rw,nosuid,nodev,noexec"
         ;;
       *)
+        echo "Skipping unsupported USB filesystem type: $fstype"
         exit 0
         ;;
     esac
 
-    label="$(blkid -o value -s LABEL "$device" 2>/dev/null || true)"
-    uuid="$(blkid -o value -s UUID "$device" 2>/dev/null || true)"
     base_name="$(basename "$device")"
     dir_name="$(sanitize "''${label:-''${uuid:-$base_name}}")"
     [ -n "$dir_name" ] || dir_name="$base_name"
@@ -42,10 +59,19 @@ let
     target="$mount_root/$dir_name"
     mkdir -p "$target"
 
-    if ! mount -t "$fstype" -o "$mount_opts" "$device" "$target"; then
+    for _ in $(seq 1 5); do
+      if mount -t "$fstype" -o "$mount_opts" "$device" "$target"; then
+        echo "Mounted USB backup drive $device at $target"
+        exit 0
+      fi
+      sleep 1
+    done
+
+    echo "Failed to mount USB backup drive $device at $target"
+    if ! findmnt -rn "$target" >/dev/null 2>&1; then
       rmdir "$target" 2>/dev/null || true
-      exit 1
     fi
+    exit 1
   '';
 
   usbCleanupScript = pkgs.writeShellScript "lnbitsbox-usb-cleanup" ''
@@ -103,7 +129,9 @@ in
     };
     path = with pkgs; [ coreutils gawk systemd util-linux ];
     script = ''
-      for device in $(lsblk -nrpo NAME,TYPE,TRAN | awk '$2 == "part" && $3 == "usb" { print $1 }'); do
+      for symlink in /dev/disk/by-id/usb-*-part*; do
+        [ -e "$symlink" ] || continue
+        device="$(readlink -f "$symlink")"
         ${usbMountScript} "$device" || true
       done
       ${usbCleanupScript}
