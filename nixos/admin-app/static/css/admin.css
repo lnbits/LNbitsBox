@@ -1886,6 +1886,25 @@ input:focus {
     margin-bottom: 0.75rem;
 }
 
+.recovery-input-with-suffix {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.recovery-input-with-suffix input {
+    flex: 1 1 auto;
+}
+
+.recovery-input-suffix {
+    color: rgb(var(--ln-muted));
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+
 .recovery-helper-text {
     color: rgb(var(--ln-muted));
     font-family: 'JetBrains Mono', monospace;
