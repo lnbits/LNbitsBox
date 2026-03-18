@@ -113,7 +113,8 @@
         if (!status || !statusText) return;
         status.classList.toggle('hidden', !busy);
         statusText.textContent = text || 'Processing...';
-        ['recovery-download-btn', 'recovery-save-btn', 'recovery-restore-btn', 'recovery-schedule-save-btn'].forEach(function (id) {
+        ['recovery-download-btn', 'recovery-save-btn', '
+        recovery-restore-btn', 'recovery-schedule-save-btn'].forEach(function (id) {
             const button = el(id);
             if (!button) return;
             button.disabled = busy;
@@ -140,15 +141,6 @@
             D.setText('recovery-schedule-summary', scheduleSummary(schedule));
             D.setText('recovery-schedule-result', schedule.last_result ? schedule.last_result.message : 'No scheduled backup has run yet.');
 
-            const actionList = el('recovery-actions');
-            if (actionList) {
-                actionList.innerHTML = '';
-                (data.recommended_actions || []).forEach(function (item) {
-                    const li = document.createElement('li');
-                    li.textContent = item;
-                    actionList.appendChild(li);
-                });
-            }
             D.renderSavedBackups(savedBackups);
 
             if (el('recovery-schedule-hours')) {

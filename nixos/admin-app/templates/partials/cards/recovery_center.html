@@ -5,28 +5,6 @@
     </p>
 </div>
 <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-6 transition-all duration-500 recovery-center" id="recovery-card">
-    <div class="recovery-status-strip">
-        <div class="recovery-status-pill">
-            <span class="recovery-status-label">Spark seed</span>
-            <span class="recovery-status-value" id="recovery-seed-status">--</span>
-        </div>
-        <div class="recovery-status-pill">
-            <span class="recovery-status-label">Last validation</span>
-            <span class="recovery-status-value" id="recovery-validation-status">--</span>
-        </div>
-        <div class="recovery-status-pill">
-            <span class="recovery-status-label">Tunnel key</span>
-            <span class="recovery-status-value" id="recovery-tunnel-status">--</span>
-        </div>
-    </div>
-
-    <div class="recovery-guidance">
-        <div class="recovery-guidance-title">Before you start</div>
-        <ul class="recovery-guidance-list" id="recovery-actions">
-            <li>Loading recovery guidance...</li>
-        </ul>
-    </div>
-
     <div id="recovery-status" class="hidden mb-4">
         <div class="flex items-center gap-2">
             <div class="w-4 h-4 border-2 border-ln-pink border-t-transparent rounded-full animate-spin"></div>
@@ -68,10 +46,6 @@
                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
                            placeholder="Required for every backup">
                 </label>
-
-                <p class="recovery-helper-text mb-3" id="recovery-destination-note">
-                    Save a protected backup on this box for later restores, or download one now to keep elsewhere.
-                </p>
 
                 <div class="recovery-callout">
                     <div class="recovery-callout-title">What is included?</div>

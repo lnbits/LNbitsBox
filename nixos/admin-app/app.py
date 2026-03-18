@@ -751,11 +751,6 @@ def _recovery_status_payload() -> dict[str, Any]:
             }
             for key, value in destinations.items()
         ],
-        "recommended_actions": [
-            "Create an encrypted full backup before updating or replacing the SD card.",
-            "Keep the Spark seed phrase stored separately from device backups.",
-            "Restore only the components you intend to replace on this box.",
-        ],
         "saved_backups": _recovery_backup_files(),
     }
 
