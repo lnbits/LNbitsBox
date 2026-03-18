@@ -1,0 +1,49 @@
+{% extends "admin_page.html" %}
+
+{% block page_actions %}
+<div class="recovery-page-header-grid">
+    <div class="recovery-page-meta">
+        <span class="recovery-page-meta-label">Last Backup</span>
+        <span class="recovery-page-meta-value" id="recovery-last-backup">No backup yet</span>
+    </div>
+    <div class="admin-page-actions recovery-header-actions">
+        <a href="#recovery-manual-backup" class="recovery-header-card">
+            <span class="recovery-header-card-label">Manual Backup</span>
+            <span class="recovery-header-card-copy">Create and download an encrypted backup right now.</span>
+        </a>
+        <a href="#recovery-scheduled-backups" class="recovery-header-card">
+            <span class="recovery-header-card-label">Scheduled Backups</span>
+            <span class="recovery-header-card-copy">Set recurring protected backups for this box.</span>
+        </a>
+        <a href="#recovery-restore" class="recovery-header-card">
+            <span class="recovery-header-card-label">Restore</span>
+            <span class="recovery-header-card-copy">Validate a backup and restore only what you need.</span>
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_content %}
+<div class="mb-6">
+    {% include "partials/cards/recovery_center.html" %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-db.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+<script>
+(function () {
+    function scrollRecoverySectionFromHash() {
+        if (!window.location.hash) return;
+        const section = document.querySelector(window.location.hash);
+        if (!section) return;
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    window.addEventListener('hashchange', scrollRecoverySectionFromHash);
+    scrollRecoverySectionFromHash();
+})();
+</script>
+{% endblock %}

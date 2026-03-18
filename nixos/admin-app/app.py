@@ -1230,15 +1230,22 @@ def system_page():
     )
 
 
+@app.route("/box/recovery")
+@login_required
+def recovery_page():
+    return _render_admin_page(
+        "recovery.html",
+        page_key="recovery",
+        page_title="Recovery Center",
+        page_eyebrow="Safety And Recovery",
+        page_intro="Create encrypted recovery archives, validate restores before applying them, and schedule protected backups to local or attached storage.",
+    )
+
+
 @app.route("/box/maintenance")
 @login_required
 def maintenance_page():
-    return _render_admin_page(
-        "maintenance.html",
-        page_key="maintenance",
-        page_title="Maintenance",
-        page_intro="Create encrypted recovery archives, validate restores before applying them, and schedule protected backups to local or attached storage.",
-    )
+    return redirect(url_for("system_page"))
 
 
 @app.route("/box/advanced")
@@ -1258,6 +1265,7 @@ def _render_admin_page(
     *,
     page_key: str,
     page_title: str,
+    page_eyebrow: str = "",
     page_intro: str = "",
     include_tunnel_status: bool = False,
     **context,
@@ -1272,6 +1280,7 @@ def _render_admin_page(
         dev_mode=DEV_MODE,
         active_page=page_key,
         page_title=page_title,
+        page_eyebrow=page_eyebrow,
         page_intro=page_intro,
         version=get_current_version(),
         initial_tunnel_status=initial_tunnel_status,
@@ -1646,7 +1655,7 @@ def api_db_info():
 @login_required
 def api_db_backup():
     return _json_error(
-        "Database-only backups were replaced by encrypted Recovery Center backups. Use /box/maintenance.",
+        "Database-only backups were replaced by encrypted Recovery Center backups. Use /box/recovery.",
         410,
     )
 
@@ -1655,7 +1664,7 @@ def api_db_backup():
 @login_required
 def api_db_restore():
     return _json_error(
-        "Database-only restore was replaced by encrypted Recovery Center restore. Use /box/maintenance.",
+        "Database-only restore was replaced by encrypted Recovery Center restore. Use /box/recovery.",
         410,
     )
 

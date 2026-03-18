@@ -1,26 +1,4 @@
 <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-6 transition-all duration-500 recovery-center" id="recovery-card">
-    <div class="recovery-hero">
-        <div class="recovery-hero-main">
-            <div class="recovery-hero-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 3l7 3v5c0 5-3.4 8.3-7 10-3.6-1.7-7-5-7-10V6l7-3z"></path>
-                    <path d="M9.5 12l1.7 1.7 3.3-3.7"></path>
-                </svg>
-            </div>
-            <div class="min-w-0">
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-widest mb-2">Safety And Recovery</div>
-                <h2 class="recovery-hero-title">Recovery Center</h2>
-                <p class="recovery-hero-copy">
-                    Create a password-protected backup, restore from one later, or let LNbitsBox save encrypted backups for you automatically.
-                </p>
-            </div>
-        </div>
-        <div class="recovery-hero-meta">
-            <span class="recovery-hero-meta-label">Last backup</span>
-            <span class="recovery-hero-meta-value" id="recovery-last-backup">No backup yet</span>
-        </div>
-    </div>
-
     <div class="recovery-status-strip">
         <div class="recovery-status-pill">
             <span class="recovery-status-label">Spark seed</span>
@@ -51,14 +29,24 @@
     </div>
 
     <div class="recovery-accordion-stack">
-        <details class="recovery-accordion" open>
-            <summary class="recovery-accordion-summary">
-                <div>
-                    <div class="recovery-step-title">Make an encrypted backup</div>
-                    <p class="recovery-step-copy">Best for most people: choose <strong>Full backup</strong>, set a password, then save it to your computer or a USB drive.</p>
+        <section class="recovery-accordion" id="recovery-manual-backup">
+            <div class="recovery-accordion-summary">
+                <div class="recovery-step-heading">
+                    <div class="recovery-step-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3l7 3v5c0 5-3.4 8.3-7 10-3.6-1.7-7-5-7-10V6l7-3z"></path>
+                            <path d="M12 8v8"></path>
+                            <path d="M8.5 12H15.5"></path>
+                        </svg>
+                    </div>
+                    <div class="recovery-step-text">
+                        <div class="recovery-step-label">Manual Backup</div>
+                        <div class="recovery-step-title">Create And Save A Fresh Recovery Archive</div>
+                        <p class="recovery-step-copy">Best for most people: choose <strong>Full backup</strong>, set a password, then save it to your computer or a USB drive.</p>
+                    </div>
                 </div>
                 <span class="recovery-accordion-badge">Create backup</span>
-            </summary>
+            </div>
             <div class="recovery-accordion-body">
                 <label class="block mb-3">
                     <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Type</span>
@@ -97,54 +85,49 @@
                     </button>
                 </div>
 
-                <div class="recovery-callout mt-4 mb-0">
-                    <div class="recovery-callout-title">Saved backups on this box</div>
-                    <div id="recovery-saved-backups" class="recovery-saved-list">
-                        <div class="recovery-helper-text">No saved backups yet.</div>
+                <details class="recovery-subsection mt-4" id="recovery-saved-backups-section">
+                    <summary class="recovery-subsection-summary">
+                        <span class="recovery-callout-title">Saved Backups On This Box</span>
+                        <span class="recovery-subsection-meta" id="recovery-saved-backups-count">0 backups</span>
+                    </summary>
+                    <div class="recovery-subsection-body">
+                        <div id="recovery-saved-backups" class="recovery-saved-list">
+                            <div class="recovery-helper-text">No saved backups yet.</div>
+                        </div>
                     </div>
-                </div>
+                </details>
             </div>
-        </details>
+        </section>
 
-        <details class="recovery-accordion">
-            <summary class="recovery-accordion-summary">
-                <div>
-                    <div class="recovery-step-title">Restore from a backup</div>
-                    <p class="recovery-step-copy">Validate the backup first, then choose only the parts you want to restore onto this box.</p>
-                </div>
-                <span class="recovery-accordion-badge">Restore</span>
-            </summary>
-            <div class="recovery-accordion-body">
-                <div class="recovery-callout mb-4">
-                    <div class="recovery-callout-title">Safe restore flow</div>
-                    <p class="recovery-helper-text mb-0">
-                        LNbitsBox can restore from a backup file you upload or from one already saved on this box. It checks the backup before making changes.
-                    </p>
-                </div>
-                <button id="recovery-restore-btn"
-                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                    Open Restore Tool
-                </button>
-            </div>
-        </details>
-
-        <details class="recovery-accordion">
-            <summary class="recovery-accordion-summary">
-                <div>
-                    <div class="recovery-step-title">Set up automatic backups</div>
-                    <p class="recovery-step-copy">Automatically back up your LNbitsBox data at regular intervals.</p>
+        <section class="recovery-accordion" id="recovery-scheduled-backups">
+            <div class="recovery-accordion-summary">
+                <div class="recovery-step-heading">
+                    <div class="recovery-step-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3.5" y="5" width="17" height="15" rx="2"></rect>
+                            <path d="M8 3v4"></path>
+                            <path d="M16 3v4"></path>
+                            <path d="M3.5 10.5h17"></path>
+                            <path d="M8.5 14h3"></path>
+                        </svg>
+                    </div>
+                    <div class="recovery-step-text">
+                        <div class="recovery-step-label">Scheduled Backups</div>
+                        <div class="recovery-step-title">Automate Protected Backups On A Regular Schedule</div>
+                        <p class="recovery-step-copy">Automatically back up your LNbitsBox data at regular intervals.</p>
+                    </div>
                 </div>
                 <div class="recovery-accordion-meta">
                     <span class="recovery-accordion-badge">Automatic</span>
                     <span class="text-xs font-mono text-ln-muted" id="recovery-schedule-summary">Disabled</span>
                 </div>
-            </summary>
+            </div>
             <div class="recovery-accordion-body">
                 <div class="recovery-field-grid">
-                                <label class="inline-flex items-center gap-2 mb-4">
-                    <input type="checkbox" id="recovery-schedule-enabled" class="rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink/40">
-                    <span class="text-sm font-mono text-ln-text">Enable scheduled backups</span>
-                </label>
+                    <label class="inline-flex items-center gap-2 mb-4">
+                        <input type="checkbox" id="recovery-schedule-enabled" class="rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink/40">
+                        <span class="text-sm font-mono text-ln-text">Enable scheduled backups</span>
+                    </label>
                 </div>
 
                 <div class="recovery-field-grid">
@@ -169,11 +152,11 @@
                     <input type="password" id="recovery-schedule-passphrase" autocomplete="new-password"
                            class="w-full bg-ln-card border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
                            placeholder="Stored locally in a root-only config file">
-                           <span class="text-xs font-mono text-ln-muted mt-1 block">
-                            The password for scheduled backups is stored securely on this box. Make a note of it, as it is required to restore backups.
-                           </span>
+                    <span class="text-xs font-mono text-ln-muted mt-1 block">
+                        The password for scheduled backups is stored securely on this box. Make a note of it, as it is required to restore backups.
+                    </span>
                 </label>
-                
+
                 <p class="recovery-helper-text mb-4" id="recovery-schedule-result">
                     No scheduled backup has run yet.
                 </p>
@@ -182,7 +165,39 @@
                     Save Schedule
                 </button>
             </div>
-        </details>
+        </section>
+
+        <section class="recovery-accordion" id="recovery-restore">
+            <div class="recovery-accordion-summary">
+                <div class="recovery-step-heading">
+                    <div class="recovery-step-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                            <path d="M3 3v6h6"></path>
+                            <path d="M12 8v4l2.5 2.5"></path>
+                        </svg>
+                    </div>
+                    <div class="recovery-step-text">
+                        <div class="recovery-step-label">Restore</div>
+                        <div class="recovery-step-title">Inspect And Recover From An Existing Archive</div>
+                        <p class="recovery-step-copy">Validate the backup first, then choose only the parts you want to restore onto this box.</p>
+                    </div>
+                </div>
+                <span class="recovery-accordion-badge">Restore</span>
+            </div>
+            <div class="recovery-accordion-body">
+                <div class="recovery-callout mb-4">
+                    <div class="recovery-callout-title">Safe restore flow</div>
+                    <p class="recovery-helper-text mb-0">
+                        LNbitsBox can restore from a backup file you upload or from one already saved on this box. It checks the backup before making changes.
+                    </p>
+                </div>
+                <button id="recovery-restore-btn"
+                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Open Restore Tool
+                </button>
+            </div>
+        </section>
     </div>
 
     <div class="recovery-footer-note">

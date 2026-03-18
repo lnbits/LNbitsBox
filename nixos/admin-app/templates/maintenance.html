@@ -4,14 +4,10 @@
 <div class="mb-6">
     {% include "partials/cards/update.html" %}
 </div>
-<div class="mb-6">
-    {% include "partials/cards/database.html" %}
-</div>
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
-<script src="{{ url_for('static', filename='js/dashboard-db.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-updates.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
 {% endblock %}

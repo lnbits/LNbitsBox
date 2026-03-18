@@ -10,7 +10,7 @@
                 {% include "partials/logo.html" %}
             </div>
             <div class="admin-header-actions">
-                <a href="{{ url_for('maintenance_page') }}" id="header-update-link" data-update-link class="header-update-link">
+                <a href="{{ url_for('system_page') }}" id="header-update-link" data-update-link class="header-update-link">
                     Update available
                 </a>
                 <details class="relative power-menu">
@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="admin-sidebar-mobile-actions">
-                    <a href="{{ url_for('maintenance_page') }}" data-update-link class="header-update-link admin-mobile-update-link">
+                    <a href="{{ url_for('system_page') }}" data-update-link class="header-update-link admin-mobile-update-link">
                         Update available
                     </a>
                     <a href="{{ url_for('logout') }}" class="admin-sidebar-mobile-logout">
@@ -81,8 +81,8 @@
                 <a href="{{ url_for('system_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'system' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">System</span>
                 </a>
-                <a href="{{ url_for('maintenance_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'maintenance' %}active{% endif %}">
-                    <span class="admin-sidebar-link-label">Maintenance</span>
+                <a href="{{ url_for('recovery_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'recovery' %}active{% endif %}">
+                    <span class="admin-sidebar-link-label">Recovery Center</span>
                 </a>
                 <a href="{{ url_for('advanced_page') }}" class="admin-sidebar-link mb-1 {% if active_page == 'advanced' %}active{% endif %}">
                     <span class="admin-sidebar-link-label">Advanced</span>
@@ -93,6 +93,9 @@
 
         <main class="admin-content">
             <section class="admin-page-header">
+                {% if page_eyebrow %}
+                <div class="admin-page-eyebrow">{{ page_eyebrow }}</div>
+                {% endif %}
                 <h1 class="text-xl sm:text-3xl font-display font-bold text-ln-text">{{ page_title }}</h1>
                 {% if page_intro %}
                 <p class="text-ln-muted mt-3">{{ page_intro }}</p>

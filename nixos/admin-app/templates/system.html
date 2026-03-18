@@ -2,6 +2,9 @@
 
 {% block page_content %}
 <div class="mb-6">
+    {% include "partials/cards/update.html" %}
+</div>
+<div class="mb-6">
     {% include "partials/cards/network.html" %}
 </div>
 <div class="mb-6">
@@ -17,6 +20,7 @@
 <script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-wifi.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-updates.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
 <script>
 document.getElementById('wifi-open-scan-btn-header')?.addEventListener('click', function () {
