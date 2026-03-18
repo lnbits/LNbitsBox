@@ -8,16 +8,45 @@
     </div>
     <div class="admin-page-actions recovery-header-actions">
         <a href="#recovery-manual-backup" class="recovery-header-card">
-            <span class="recovery-header-card-label">Manual Backup</span>
-            <span class="recovery-header-card-copy">Create and download an encrypted backup right now.</span>
+            <span class="recovery-header-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l7 3v5c0 5-3.4 8.3-7 10-3.6-1.7-7-5-7-10V6l7-3z"></path>
+                    <path d="M12 8v8"></path>
+                    <path d="M8.5 12H15.5"></path>
+                </svg>
+            </span>
+            <span class="recovery-header-card-text">
+                <span class="recovery-header-card-label">Manual Backup</span>
+                <span class="recovery-header-card-copy">Create and download an encrypted backup right now.</span>
+            </span>
         </a>
         <a href="#recovery-scheduled-backups" class="recovery-header-card">
-            <span class="recovery-header-card-label">Scheduled Backups</span>
-            <span class="recovery-header-card-copy">Set recurring protected backups for this box.</span>
+            <span class="recovery-header-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3.5" y="5" width="17" height="15" rx="2"></rect>
+                    <path d="M8 3v4"></path>
+                    <path d="M16 3v4"></path>
+                    <path d="M3.5 10.5h17"></path>
+                    <path d="M8.5 14h3"></path>
+                </svg>
+            </span>
+            <span class="recovery-header-card-text">
+                <span class="recovery-header-card-label">Scheduled Backups</span>
+                <span class="recovery-header-card-copy">Set recurring protected backups for this box.</span>
+            </span>
         </a>
-        <a href="#recovery-restore" class="recovery-header-card">
-            <span class="recovery-header-card-label">Restore</span>
-            <span class="recovery-header-card-copy">Validate a backup and restore only what you need.</span>
+        <a href="#recovery-restore" class="recovery-header-card" data-open-restore="true">
+            <span class="recovery-header-card-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                    <path d="M3 3v6h6"></path>
+                    <path d="M12 8v4l2.5 2.5"></path>
+                </svg>
+            </span>
+            <span class="recovery-header-card-text">
+                <span class="recovery-header-card-label">Restore</span>
+                <span class="recovery-header-card-copy">Validate a backup and restore only what you need.</span>
+            </span>
         </a>
     </div>
 </div>
@@ -41,6 +70,15 @@
         if (!section) return;
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    document.querySelectorAll('[data-open-restore="true"]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (window.LNbitsBoxDashboard && typeof window.LNbitsBoxDashboard.openRestoreModal === 'function') {
+                window.LNbitsBoxDashboard.openRestoreModal();
+            }
+        });
+    });
 
     window.addEventListener('hashchange', scrollRecoverySectionFromHash);
     scrollRecoverySectionFromHash();

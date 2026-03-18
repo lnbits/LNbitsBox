@@ -1,3 +1,9 @@
+<div class="recovery-footer-note mb-4">
+    <div class="recovery-callout-title">Important</div>
+    <p class="recovery-helper-text mb-0">
+        Recovery archives can restore LNbits data, device settings, remote-access state, and Spark-sidecar files. Your Spark seed phrase is still the main secret for recovering wallet access and funds.
+    </p>
+</div>
 <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-6 transition-all duration-500 recovery-center" id="recovery-card">
     <div class="recovery-status-strip">
         <div class="recovery-status-pill">
@@ -56,10 +62,6 @@
                         <option value="quick">Quick backup</option>
                     </select>
                 </label>
-                <p class="recovery-helper-text mb-3" id="recovery-destination-note">
-                    Saved on this box in the local recovery folder. You can download saved backups below at any time.
-                </p>
-
                 <label class="block mb-3">
                     <span class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Backup Password</span>
                     <input type="password" id="recovery-passphrase" autocomplete="new-password"
@@ -79,23 +81,7 @@
                             class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
                         Download Backup
                     </button>
-                    <button id="recovery-save-btn"
-                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                        Save on This Box
-                    </button>
                 </div>
-
-                <details class="recovery-subsection mt-4" id="recovery-saved-backups-section">
-                    <summary class="recovery-subsection-summary">
-                        <span class="recovery-callout-title">Saved Backups On This Box</span>
-                        <span class="recovery-subsection-meta" id="recovery-saved-backups-count">0 backups</span>
-                    </summary>
-                    <div class="recovery-subsection-body">
-                        <div id="recovery-saved-backups" class="recovery-saved-list">
-                            <div class="recovery-helper-text">No saved backups yet.</div>
-                        </div>
-                    </div>
-                </details>
             </div>
         </section>
 
@@ -166,44 +152,5 @@
                 </button>
             </div>
         </section>
-
-        <section class="recovery-accordion" id="recovery-restore">
-            <div class="recovery-accordion-summary">
-                <div class="recovery-step-heading">
-                    <div class="recovery-step-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12a9 9 0 1 0 3-6.7"></path>
-                            <path d="M3 3v6h6"></path>
-                            <path d="M12 8v4l2.5 2.5"></path>
-                        </svg>
-                    </div>
-                    <div class="recovery-step-text">
-                        <div class="recovery-step-label">Restore</div>
-                        <div class="recovery-step-title">Inspect And Recover From An Existing Archive</div>
-                        <p class="recovery-step-copy">Validate the backup first, then choose only the parts you want to restore onto this box.</p>
-                    </div>
-                </div>
-                <span class="recovery-accordion-badge">Restore</span>
-            </div>
-            <div class="recovery-accordion-body">
-                <div class="recovery-callout mb-4">
-                    <div class="recovery-callout-title">Safe restore flow</div>
-                    <p class="recovery-helper-text mb-0">
-                        LNbitsBox can restore from a backup file you upload or from one already saved on this box. It checks the backup before making changes.
-                    </p>
-                </div>
-                <button id="recovery-restore-btn"
-                        class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
-                    Open Restore Tool
-                </button>
-            </div>
-        </section>
-    </div>
-
-    <div class="recovery-footer-note">
-        <div class="recovery-callout-title">Important</div>
-        <p class="recovery-helper-text mb-0">
-            Recovery archives can restore LNbits data, device settings, remote-access state, and Spark-sidecar files. Your Spark seed phrase is still the main secret for recovering wallet access and funds.
-        </p>
     </div>
 </div>

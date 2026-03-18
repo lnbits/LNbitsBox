@@ -1666,9 +1666,10 @@ input:focus {
 }
 
 .recovery-header-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.85rem;
+    align-items: start;
     padding: 1rem 1.05rem;
     border-radius: 1rem;
     border: 1px solid rgb(var(--ln-border));
@@ -1682,6 +1683,31 @@ input:focus {
     border-color: rgb(var(--ln-pink) / 0.35);
     color: rgb(var(--ln-pink));
     transform: translateY(-1px);
+}
+
+.recovery-header-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.85rem;
+    border: 1px solid rgb(var(--ln-pink) / 0.22);
+    background: rgb(var(--ln-pink) / 0.1);
+    color: rgb(var(--ln-pink));
+    flex-shrink: 0;
+}
+
+.recovery-header-card-icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.recovery-header-card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
 }
 
 .recovery-header-card-label {
@@ -1872,58 +1898,6 @@ input:focus {
     padding: 0.9rem 1rem;
 }
 
-.recovery-subsection {
-    margin-bottom: 0;
-    border: 1px solid rgb(var(--ln-border));
-    border-radius: 0.9rem;
-    background: rgb(var(--ln-card) / 0.65);
-    overflow: hidden;
-}
-
-.recovery-subsection-summary {
-    list-style: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    cursor: pointer;
-    padding: 0.9rem 1rem;
-}
-
-.recovery-subsection-summary::-webkit-details-marker {
-    display: none;
-}
-
-.recovery-subsection-summary::after {
-    content: "+";
-    color: rgb(var(--ln-muted));
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1rem;
-    line-height: 1;
-}
-
-.recovery-subsection[open] .recovery-subsection-summary {
-    border-bottom: 1px solid rgb(var(--ln-border));
-}
-
-.recovery-subsection[open] .recovery-subsection-summary::after {
-    content: "-";
-    color: rgb(var(--ln-pink));
-}
-
-.recovery-subsection-meta {
-    margin-left: auto;
-    color: rgb(var(--ln-muted));
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.74rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.recovery-subsection-body {
-    padding: 0.9rem 1rem;
-}
-
 .recovery-saved-list {
     display: grid;
     gap: 0.7rem;
@@ -1959,6 +1933,10 @@ input:focus {
 
     .recovery-header-actions {
         grid-template-columns: 1fr;
+    }
+
+    .recovery-header-card {
+        grid-template-columns: auto 1fr;
     }
 
     .recovery-accordion-summary {
