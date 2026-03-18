@@ -49,8 +49,17 @@
     D.renderSavedBackups = function (backups) {
         const container = el('recovery-saved-backups');
         const localSelect = el('restore-local-backup');
+        const countLabel = el('recovery-saved-backups-count');
+        const section = el('recovery-saved-backups-section');
         if (container) {
             container.innerHTML = '';
+        }
+        if (countLabel) {
+            const total = backups && backups.length ? backups.length : 0;
+            countLabel.textContent = total === 1 ? '1 backup' : total + ' backups';
+        }
+        if (section && backups && backups.length) {
+            section.open = false;
         }
         if (localSelect) {
             localSelect.innerHTML = '<option value="">Choose a saved backup</option>';

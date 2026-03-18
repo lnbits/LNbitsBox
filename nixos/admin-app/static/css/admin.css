@@ -1898,6 +1898,58 @@ input:focus {
     padding: 0.9rem 1rem;
 }
 
+.recovery-subsection {
+    margin-bottom: 0;
+    border: 1px solid rgb(var(--ln-border));
+    border-radius: 0.9rem;
+    background: rgb(var(--ln-card) / 0.65);
+    overflow: hidden;
+}
+
+.recovery-subsection-summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    padding: 0.9rem 1rem;
+}
+
+.recovery-subsection-summary::-webkit-details-marker {
+    display: none;
+}
+
+.recovery-subsection-summary::after {
+    content: "+";
+    color: rgb(var(--ln-muted));
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.recovery-subsection[open] .recovery-subsection-summary {
+    border-bottom: 1px solid rgb(var(--ln-border));
+}
+
+.recovery-subsection[open] .recovery-subsection-summary::after {
+    content: "-";
+    color: rgb(var(--ln-pink));
+}
+
+.recovery-subsection-meta {
+    margin-left: auto;
+    color: rgb(var(--ln-muted));
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.recovery-subsection-body {
+    padding: 0.9rem 1rem;
+}
+
 .recovery-saved-list {
     display: grid;
     gap: 0.7rem;

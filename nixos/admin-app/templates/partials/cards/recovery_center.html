@@ -69,6 +69,10 @@
                            placeholder="Required for every backup">
                 </label>
 
+                <p class="recovery-helper-text mb-3" id="recovery-destination-note">
+                    Save a protected backup on this box for later restores, or download one now to keep elsewhere.
+                </p>
+
                 <div class="recovery-callout">
                     <div class="recovery-callout-title">What is included?</div>
                     <p class="recovery-helper-text mb-0">
@@ -81,7 +85,23 @@
                             class="bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm py-2 px-4 rounded-lg transition-colors">
                         Download Backup
                     </button>
+                    <button id="recovery-save-btn"
+                            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-2 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                        Save on This Box
+                    </button>
                 </div>
+
+                <details class="recovery-subsection mt-4" id="recovery-saved-backups-section">
+                    <summary class="recovery-subsection-summary">
+                        <span class="recovery-callout-title">Saved Backups On This Box</span>
+                        <span class="recovery-subsection-meta" id="recovery-saved-backups-count">0 backups</span>
+                    </summary>
+                    <div class="recovery-subsection-body">
+                        <div id="recovery-saved-backups" class="recovery-saved-list">
+                            <div class="recovery-helper-text">No saved backups yet.</div>
+                        </div>
+                    </div>
+                </details>
             </div>
         </section>
 
