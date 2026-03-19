@@ -84,7 +84,7 @@
         return '' +
             '<div class="recovery-saved-row">' +
             '<div class="min-w-0">' +
-            '<div class="text-sm font-mono text-ln-text truncate">' + backup.filename + '</div>' +
+            '<div class="recovery-saved-filename text-sm font-mono text-ln-text">' + backup.filename + '</div>' +
             '<div class="text-xs font-mono text-ln-muted">' + formatDate(backup.modified_at) + ' · ' + formatBytes(backup.size) + '</div>' +
             '</div>' +
             '<div class="flex items-center gap-2 shrink-0">' +
@@ -144,10 +144,10 @@
         }
         if (countLabel) {
             const total = backups && backups.length ? backups.length : 0;
-            countLabel.textContent = total === 1 ? '1 backup' : total + ' backups';
+            countLabel.textContent = total === 1 ? '1 local backup' : total + ' local backups';
         }
         if (section && backups && backups.length) {
-            section.open = D.root?.dataset.devMode === 'true';
+            section.open = false;
         }
         if (localSelect) {
             localSelect.innerHTML = '<option value="">Choose a saved backup</option>';
@@ -167,7 +167,7 @@
                     '<button type="button" class="recovery-history-toggle" data-history-toggle>' +
                     '<span class="recovery-history-heading">' +
                     '<span class="recovery-callout-title">' + bucket.label + '</span>' +
-                    '<span class="recovery-history-count">' + count + '</span>' +
+                    '<span class="recovery-history-count"> - ' + count + '</span>' +
                     '</span>' +
                     '<span class="recovery-history-chevron" aria-hidden="true">' +
                     '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
@@ -177,7 +177,6 @@
                     '</button>' +
                     '<div class="recovery-history-preview">' +
                     '<div class="recovery-saved-list">' + bucket.items.map(savedBackupRowHtml).join('') + '</div>' +
-                    '<div class="recovery-history-fade" aria-hidden="true"></div>' +
                     '</div>' +
                     '</section>';
             }).join('');

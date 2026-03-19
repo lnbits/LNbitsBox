@@ -1755,8 +1755,8 @@ input:focus {
 
 .recovery-status-label,
 .recovery-guidance-title,
-.recovery-step-label,
-.recovery-callout-title {
+.recovery-step-label
+{
     color: rgb(var(--ln-muted));
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.68rem;
@@ -1998,6 +1998,7 @@ input:focus {
     align-items: center;
     gap: 0.75rem;
     min-width: 0;
+    flex-direction: row;
 }
 
 .recovery-history-count {
@@ -2021,28 +2022,15 @@ input:focus {
 }
 
 .recovery-history-preview {
-    position: relative;
     padding: 0.9rem;
 }
 
-.recovery-history-fade {
+.recovery-history-group.is-collapsed .recovery-history-preview {
     display: none;
 }
 
-.recovery-history-group.is-collapsed .recovery-history-preview {
-    max-height: calc(9rem + 0.7rem);
-    overflow: hidden;
-}
-
-.recovery-history-group.is-collapsed .recovery-history-fade {
-    display: block;
-    position: absolute;
-    left: 0.9rem;
-    right: 0.9rem;
-    bottom: 0.9rem;
-    height: 2.25rem;
-    background: linear-gradient(180deg, rgb(var(--ln-surface) / 0), rgb(var(--ln-surface)) 82%);
-    pointer-events: none;
+.recovery-history-group.is-collapsed .recovery-history-toggle {
+    border-bottom: 0;
 }
 
 .recovery-history-group:not(.is-collapsed) .recovery-history-chevron {
@@ -2060,6 +2048,10 @@ input:focus {
     border-radius: 0.85rem;
     border: 1px solid rgb(var(--ln-border));
     background: rgb(var(--ln-surface));
+}
+
+.recovery-saved-filename {
+    word-break: break-word;
 }
 
 .recovery-callout {
@@ -2098,6 +2090,25 @@ input:focus {
     .recovery-status-strip,
     .recovery-field-grid {
         grid-template-columns: 1fr;
+    }
+
+    .recovery-saved-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .recovery-subsection-meta,
+    .recovery-history-count {
+        margin-left: 0;
+        white-space: normal;
+    }
+
+    .recovery-saved-row .shrink-0 {
+        width: 100%;
+    }
+
+    .recovery-saved-row .shrink-0 a {
+        display: inline-flex;
     }
 
     .recovery-accordion-meta {
