@@ -74,6 +74,13 @@ const troubleshootingItems = [
     ],
   },
 ]
+
+const openTroubleshootingIndex = ref(0)
+
+function toggleTroubleshootingItem(index) {
+  openTroubleshootingIndex.value =
+    openTroubleshootingIndex.value === index ? null : index
+}
 </script>
 
 <template>
@@ -443,24 +450,42 @@ const troubleshootingItems = [
               If something is not working as expected, these are the most common issues and the fastest steps to try first.
             </p>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
               <div
-                v-for="item in troubleshootingItems"
+                v-for="(item, index) in troubleshootingItems"
                 :key="item.title"
-                class="rounded-2xl border border-ln-border bg-black/10 p-5"
+                class="border border-ln-border rounded-2xl overflow-hidden transition-colors duration-200"
+                :class="openTroubleshootingIndex === index
+                  ? 'border-ln-pink/30 bg-ln-card'
+                  : 'bg-ln-card/50 hover:border-ln-pink/20'"
               >
-                <h3 class="font-display font-semibold text-ln-text text-lg mb-3">
-                  {{ item.title }}
-                </h3>
-                <ul class="list-disc list-inside space-y-2">
-                  <li
-                    v-for="step in item.solution"
-                    :key="step"
-                    class="font-display text-ln-muted text-sm leading-relaxed"
-                  >
-                    {{ step }}
-                  </li>
-                </ul>
+                <button
+                  class="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+                  @click="toggleTroubleshootingItem(index)"
+                >
+                  <span class="font-display font-semibold text-ln-text text-base sm:text-lg">
+                    {{ item.title }}
+                  </span>
+                  <span
+                    class="text-ln-muted text-xl flex-shrink-0 transition-transform duration-200"
+                    :class="openTroubleshootingIndex === index ? 'rotate-45' : ''"
+                  >+</span>
+                </button>
+
+                <div
+                  v-show="openTroubleshootingIndex === index"
+                  class="px-5 pb-5"
+                >
+                  <ul class="list-disc list-inside space-y-2">
+                    <li
+                      v-for="step in item.solution"
+                      :key="step"
+                      class="font-display text-ln-muted text-sm leading-relaxed"
+                    >
+                      {{ step }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </section>
