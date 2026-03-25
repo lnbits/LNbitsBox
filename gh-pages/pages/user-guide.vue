@@ -5,6 +5,74 @@ const sections = [
   { id: 'accessing-the-configurator', label: 'Initial Set-up' },
   { id: 'after-configuration', label: 'Managing Your LNbitsBox' },
   { id: 'recovery-tool', label: 'Recovery Tool' },
+  { id: 'troubleshooting', label: 'Troubleshooting' },
+]
+
+const troubleshootingItems = [
+  {
+    title: 'I can’t reach `lnbits.local`',
+    solution: [
+      'Make sure your phone or computer is on the same local network as your LNbitsBox.',
+      'Try `http://lnbits.local` first, then try the LNbitsBox\'s local IP address if that does not load.',
+      'If needed, use a network scanner such as Angry IP Scanner, or connect a monitor to your LNbitsBox to check its IP during boot.',
+    ],
+  },
+  {
+    title: 'The LNbitsBox powers on, but never appears on my network',
+    solution: [
+      'Check that the Ethernet cable is connected properly, or confirm that your `wifi.txt` file was created correctly on the SD card before first boot.',
+      'If using Wi-Fi, double-check the network name and password.',
+      'Ethernet is the best first test because it removes Wi-Fi setup as a possible issue.',
+    ],
+  },
+  {
+    title: 'The configurator page does not open',
+    solution: [
+      'Give the device a few minutes to fully boot on first startup.',
+      'If `lnbits.local` still does not work, try the local IP address instead.',
+      'A reboot can also help if the LNbitsBox did not finish startup cleanly.',
+    ],
+  },
+  {
+    title: 'The browser shows certificate or security warnings',
+    solution: [
+      'LNbitsBox uses its own local certificate for secure access on your home network.',
+      'Follow the certificate installation steps shown on the first setup page, then reload the site.',
+      'If the warning continues, return to the certificate page and install the certificate again on that device.',
+    ],
+  },
+  {
+    title: 'I finished setup, but now the configurator is gone',
+    solution: [
+      'That is expected.',
+      'After setup is complete, LNbitsBox switches from the configurator to the normal LNbits interface.',
+      'Use `lnbits.local` for LNbits and `lnbits.local/box` for the admin panel.',
+    ],
+  },
+  {
+    title: 'I can’t log in to the admin panel',
+    solution: [
+      'Use the SSH password you created during setup.',
+      'Make sure you are opening `lnbits.local/box` and not the main LNbits page.',
+      'If you no longer know the password, recovery may require restoring from backup or reflashing the SD card.',
+    ],
+  },
+  {
+    title: 'My SD card seems corrupted or the system will not boot',
+    solution: [
+      'Power off your LNbitsBox and remove the SD card.',
+      'Reflash it using Raspberry Pi Imager with the latest LNbitsBox release from `https://github.com/lnbits/LNbitsBox/releases/latest`.',
+      'If you have Recovery Tool backups or your Spark seed phrase, keep those safe before starting.',
+    ],
+  },
+  {
+    title: 'How to reflash the SD card',
+    solution: [
+      'Download the latest LNbitsBox release from `https://github.com/lnbits/LNbitsBox/releases/latest`.',
+      'Open Raspberry Pi Imager, choose `Use custom`, select the downloaded LNbitsBox image, choose your SD card, and write the image.',
+      'When flashing is complete, safely eject the card, insert it into your LNbitsBox, and power the device back on.',
+    ],
+  },
 ]
 </script>
 
@@ -241,7 +309,7 @@ const sections = [
                 </h3>
                 <p class="font-display text-ln-muted text-sm leading-relaxed mb-3">
                   LNbitsBox supports remote access in two ways: through a paid tunnel service, or through
-                  Tor. Both are managed from the box after your initial setup is complete.
+                  Tor. Both are managed from the LNbitsBox after your initial setup is complete.
                 </p>
                 <p class="font-display text-ln-muted text-sm leading-relaxed">
                   The paid tunnel is designed for straightforward remote access from a normal browser.
@@ -276,7 +344,7 @@ const sections = [
             <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-6">
               The Recovery Tool is your main safety net for your LNbitsBox. It helps you create encrypted recovery backups,
               checks that a backup is usable before restoring it, and keeps regular backups running so you are better
-              prepared if your SD card fails or you need to move to a new box.
+              prepared if your SD card fails or you need to move to a new LNbitsBox.
             </p>
 
             <div class="space-y-4">
@@ -304,13 +372,13 @@ const sections = [
                   <li class="flex gap-3">
                     <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">2</span>
                     <p class="font-display text-ln-muted text-sm leading-relaxed">
-                      Enter a backup password. Every recovery archive is password protected, so store that password somewhere safe and separate from the box.
+                      Enter a backup password. Every recovery archive is password protected, so store that password somewhere safe and separate from the LNbitsBox.
                     </p>
                   </li>
                   <li class="flex gap-3">
                     <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">3</span>
                     <p class="font-display text-ln-muted text-sm leading-relaxed">
-                      Use <strong>Download Backup</strong> to save the archive to your computer, or <strong>Save on This Box</strong> to keep a copy in the local recovery folder for later download.
+                      Use <strong>Download Backup</strong> to save the archive to your computer, or <strong>Save on This LNbitsBox</strong> to keep a copy in the local recovery folder for later download.
                     </p>
                   </li>
                 </ol>
@@ -330,7 +398,7 @@ const sections = [
                     Keep your Spark seed phrase too
                   </h3>
                   <p class="font-display text-ln-muted text-sm leading-relaxed">
-                    Recovery archives help restore your box, but your Spark seed phrase is still the most important secret for recovering wallet access and funds.
+                    Recovery archives help restore your LNbitsBox, but your Spark seed phrase is still the most important secret for recovering wallet access and funds.
                   </p>
                 </div>
               </div>
@@ -340,7 +408,7 @@ const sections = [
                   Restore carefully
                 </h3>
                 <p class="font-display text-ln-muted text-sm leading-relaxed mb-3">
-                  The restore flow checks the uploaded backup before making changes. You can restore from a backup file on your computer or from one already saved on the box.
+                  The restore flow checks the uploaded backup before making changes. You can restore from a backup file on your computer or from one already saved on the LNbitsBox.
                 </p>
                 <p class="font-display text-ln-muted text-sm leading-relaxed">
                   After validation, choose only the components you want to restore. This gives you a chance to confirm the archive and avoid overwriting parts of the system unnecessarily.
@@ -355,8 +423,44 @@ const sections = [
                   If your LNbitsBox stays powered on, you can enable scheduled encrypted backups from the same Recovery Tool page.
                 </p>
                 <p class="font-display text-ln-muted text-sm leading-relaxed">
-                  Pick how often the backup should run, choose full or quick mode, and set the stored backup password. We still recommend occasionally downloading a copy off the box as part of your backup routine.
+                  Pick how often the backup should run, choose full or quick mode, and set the stored backup password. We still recommend occasionally downloading a copy off the LNbitsBox as part of your backup routine.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="troubleshooting"
+            class="scroll-mt-24 border border-ln-border rounded-3xl bg-ln-card/60 p-6 sm:p-8"
+          >
+            <p class="font-mono text-xs uppercase tracking-[0.25em] text-ln-pink mb-3">
+              Troubleshooting
+            </p>
+            <h2 class="font-display font-bold text-ln-text text-2xl sm:text-3xl tracking-tight mb-6">
+              Common issues and what to try
+            </h2>
+            <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-6">
+              If something is not working as expected, these are the most common issues and the fastest steps to try first.
+            </p>
+
+            <div class="space-y-4">
+              <div
+                v-for="item in troubleshootingItems"
+                :key="item.title"
+                class="rounded-2xl border border-ln-border bg-black/10 p-5"
+              >
+                <h3 class="font-display font-semibold text-ln-text text-lg mb-3">
+                  {{ item.title }}
+                </h3>
+                <ul class="list-disc list-inside space-y-2">
+                  <li
+                    v-for="step in item.solution"
+                    :key="step"
+                    class="font-display text-ln-muted text-sm leading-relaxed"
+                  >
+                    {{ step }}
+                  </li>
+                </ul>
               </div>
             </div>
           </section>
