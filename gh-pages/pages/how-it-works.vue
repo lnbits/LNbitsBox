@@ -135,7 +135,7 @@
           Ready in minutes, no experience required.
         </p>
         <a
-          href="https://shop.lnbits.com/LNbitsbox"
+          href="https://shop.lnbits.com/product/lnbitsbox"
           target="_blank" rel="noopener"
           class="inline-flex items-center gap-2.5 bg-ln-pink hover:bg-ln-pink-dim text-white font-mono text-sm uppercase tracking-wider px-8 py-4 rounded-xl transition-colors duration-150 glow-pink"
         >

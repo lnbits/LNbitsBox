@@ -8,7 +8,7 @@ const navLinks = [
   { label: 'FAQs', to: '/faqs' },
 ]
 
-const buyUrl = 'https://shop.lnbits.com/LNbitsbox'
+const buyUrl = 'https://shop.lnbits.com/product/lnbitsbox'
 </script>
 
 <template>
