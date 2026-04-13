@@ -114,9 +114,12 @@
           Spark is the Lightning funding system used by LNbitsBox. It lets LNbits interact
           with the Lightning network while you keep control of your wallet.
         </p>
-        <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed">
+        <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-4">
           Spark gives you a fully self-custodial Bitcoin experience with the ability to
           exit to Bitcoin at any time without relying on a third party.
+        </p>
+        <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed">
+          LNbitsBox comes with Spark L2 for easy self-custodial Lightning payments, with the option to connect to over 20 other funding sources.
         </p>
       </div>
     </section>
