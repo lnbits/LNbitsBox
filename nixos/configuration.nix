@@ -166,8 +166,10 @@
 
   # Import service modules
   imports = [
+    ./funding-source.nix
     ./lnbits-service.nix
     ./spark-sidecar-service.nix
+    ./phoenixd-service.nix
     ./configurator-service.nix
     ./caddy-proxy.nix
     ./admin-service.nix

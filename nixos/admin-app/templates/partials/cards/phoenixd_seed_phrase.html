@@ -1,0 +1,30 @@
+<div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5 transition-all duration-500" id="phoenixd-seed-card">
+    <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Phoenixd Seed Phrase</div>
+        <button
+            id="phoenixd-seed-toggle-btn"
+            type="button"
+            {% if not phoenixd_seed %}disabled{% endif %}
+            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            {% if phoenixd_seed %}Show Seed Phrase{% else %}Unavailable{% endif %}
+        </button>
+    </div>
+
+    <p class="text-ln-muted text-xs font-mono mb-4">
+        Keep this phrase private. Anyone with it can control the Phoenixd wallet.
+    </p>
+
+    <div
+        id="phoenixd-seed-value"
+        class="bg-ln-surface border border-ln-border rounded-lg p-3 font-mono text-sm text-ln-text break-words select-text"
+        data-seed-phrase="{{ phoenixd_seed or '' }}"
+        data-masked="true"
+    >
+        {% if phoenixd_seed %}
+        ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••
+        {% else %}
+        Phoenixd has not created a seed phrase yet.
+        {% endif %}
+    </div>
+</div>

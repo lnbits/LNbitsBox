@@ -28,12 +28,14 @@ if DEV_MODE:
     MNEMONIC_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
     ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")
+    FUNDING_SOURCE_FILE = Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
     SSH_USER = os.environ.get("USER")  # Use current user instead of lnbitsadmin
 else:
     MARKER_FILE = Path("/var/lib/lnbits/.configured")
     MNEMONIC_FILE = Path("/var/lib/spark-sidecar/mnemonic")
     ENV_FILE = Path("/etc/lnbits/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/var/lib/spark-sidecar/api-key.env")
+    FUNDING_SOURCE_FILE = Path("/var/lib/lnbitsbox/funding-source")
     SSH_USER = "lnbitsadmin"
 
 # In-memory state for wizard (cleared after completion)
@@ -180,6 +182,9 @@ def complete():
             pass
 
         # 3. Update LNbits env file with Spark configuration
+        FUNDING_SOURCE_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
+        FUNDING_SOURCE_FILE.write_text("spark\n")
+        FUNDING_SOURCE_FILE.chmod(0o644)
         update_lnbits_env()
 
         # 4. Clear wizard state (security)
@@ -214,7 +219,7 @@ def update_lnbits_env():
     api_token = secrets.token_hex(32)
 
     spark_config = f"""
-# Spark L2 Sidecar Configuration (added by configurator)
+# Funding Source Configuration
 LNBITS_BACKEND_WALLET_CLASS=SparkL2Wallet
 SPARK_L2_EXTERNAL_ENDPOINT=http://127.0.0.1:8765
 SPARK_L2_EXTERNAL_API_KEY={api_token}
@@ -226,8 +231,8 @@ SPARK_L2_EXTERNAL_API_KEY={api_token}
     else:
         existing = ""
 
-    # Check if Spark config already exists
-    if "SPARK_URL" not in existing:
+    # Check if funding-source config already exists
+    if "LNBITS_BACKEND_WALLET_CLASS=" not in existing:
         # Append Spark configuration
         updated = existing.rstrip() + "\n" + spark_config
         ENV_FILE.write_text(updated)

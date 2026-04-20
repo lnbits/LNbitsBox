@@ -15,7 +15,7 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   echo "═══════════════════════════════════════════════════════"
   echo ""
   echo "This will:"
-  echo "  • Stop LNbits and Spark sidecar services"
+  echo "  • Stop LNbits and funding source services"
   echo "  • Remove the configuration marker"
   echo "  • Re-enable the setup wizard"
   echo ""
@@ -32,8 +32,9 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
 
   echo ""
   echo "Stopping services..."
-  systemctl stop lnbits.service || true
-  systemctl stop spark-sidecar.service || true
+systemctl stop lnbits.service || true
+systemctl stop spark-sidecar.service || true
+systemctl stop phoenixd.service || true
 
   echo "Removing configuration marker..."
   rm -f /var/lib/lnbits/.configured

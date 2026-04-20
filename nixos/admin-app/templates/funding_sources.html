@@ -1,0 +1,15 @@
+{% extends "admin_page.html" %}
+
+{% block page_content %}
+<div class="mb-6">
+    {% include "partials/cards/funding_sources.html" %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
+<script id="initial-funding-sources" type="application/json">{{ funding_sources|tojson }}</script>
+<script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-funding.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
+{% endblock %}

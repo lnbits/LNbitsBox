@@ -50,8 +50,8 @@ EOF
 
   systemd.services.lnbits = {
     description = "LNbits server";
-    after = [ "network-online.target" "spark-sidecar.service" ];
-    wants = [ "network-online.target" "spark-sidecar.service" ];
+    after = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" ];
+    wants = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" ];
     wantedBy = [ "multi-user.target" ];
 
     # Only start if the system has been configured

@@ -47,6 +47,28 @@
         </div>
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 rounded-full" id="svc-phoenixd-dot"></div>
+                <span class="font-mono text-sm">Phoenixd</span>
+                <span class="text-ln-muted font-mono text-xs" id="svc-phoenixd-status">--</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="svc-phoenixd-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
+                <button id="svc-phoenixd-restart-btn" data-confirm-action="restart/phoenixd" data-confirm-message="Restart Phoenixd?"
+                        class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Restart
+                </button>
+                <button id="svc-phoenixd-start-btn" data-run-action="start/phoenixd"
+                        class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                    Start
+                </button>
+                <button id="svc-phoenixd-stop-btn" data-confirm-action="stop/phoenixd" data-confirm-message="Stop Phoenixd?"
+                        class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                    Stop
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
                 <div class="w-2.5 h-2.5 rounded-full" id="svc-tor-dot"></div>
                 <span class="font-mono text-sm">Tor</span>
                 <span class="text-ln-muted font-mono text-xs" id="svc-tor-status">--</span>

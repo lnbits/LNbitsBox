@@ -4,6 +4,7 @@
 import json
 import io
 import os
+import secrets
 import shlex
 import sys
 import tempfile
@@ -71,12 +72,34 @@ try:
 except Exception:
     SPARK_SIDECAR_API_KEY = ""
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
-ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "tor"]
+PHOENIXD_URL = os.environ.get("PHOENIXD_URL", "http://127.0.0.1:9740")
+FUNDING_SOURCE_STATE_FILE = (
+    Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
+    if DEV_MODE else Path("/var/lib/lnbitsbox/funding-source")
+)
+FUNDING_SOURCES = {
+    "spark": {
+        "label": "Spark",
+        "service": "spark-sidecar",
+        "wallet_class": "SparkL2Wallet",
+    },
+    "phoenixd": {
+        "label": "Phoenixd",
+        "service": "phoenixd",
+        "wallet_class": "PhoenixdWallet",
+    },
+}
+FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values()]
+ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "phoenixd", "tor"]
 LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
 SPARK_MNEMONIC_FILE = (
     Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
     if DEV_MODE else Path("/var/lib/spark-sidecar/mnemonic")
 )
+PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix") if DEV_MODE else Path("/var/lib/phoenixd/.phoenix")
+PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
+PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"
+LNBITS_ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env") if DEV_MODE else Path("/etc/lnbits/lnbits.env")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
 GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
@@ -140,6 +163,104 @@ RECOVERY_COMPONENT_LABELS = {
     "tor": "Tor metadata",
     "update": "Update state",
 }
+
+
+def _read_key_value_file(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    try:
+        for line in path.read_text().splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, value = stripped.split("=", 1)
+            values[key.strip()] = value.strip().strip('"').strip("'")
+    except Exception:
+        pass
+    return values
+
+
+def _read_selected_funding_source() -> str:
+    try:
+        selected = FUNDING_SOURCE_STATE_FILE.read_text().strip()
+        if selected in FUNDING_SOURCES:
+            return selected
+    except Exception:
+        pass
+    return "spark"
+
+
+def _write_selected_funding_source(source: str):
+    FUNDING_SOURCE_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    FUNDING_SOURCE_STATE_FILE.write_text(source + "\n")
+    FUNDING_SOURCE_STATE_FILE.chmod(0o644)
+
+
+def _read_phoenixd_api_password() -> str:
+    return _read_key_value_file(PHOENIXD_CONF_FILE).get("http-password", "")
+
+
+def _update_lnbits_funding_source_env(source: str):
+    existing = LNBITS_ENV_FILE.read_text().splitlines() if LNBITS_ENV_FILE.exists() else []
+    funding_keys = {
+        "LNBITS_BACKEND_WALLET_CLASS",
+        "SPARK_L2_EXTERNAL_ENDPOINT",
+        "SPARK_L2_EXTERNAL_API_KEY",
+        "PHOENIXD_API_ENDPOINT",
+        "PHOENIXD_API_PASSWORD",
+    }
+    kept = [
+        line for line in existing
+        if not any(line.startswith(key + "=") for key in funding_keys)
+        and not line.startswith("# Funding Source Configuration")
+    ]
+
+    if source == "spark":
+        api_key = SPARK_SIDECAR_API_KEY
+        if not api_key:
+            api_key = secrets.token_hex(32)
+            env_file = SPARK_MNEMONIC_FILE.parent / "api-key.env"
+            env_file.parent.mkdir(parents=True, exist_ok=True)
+            env_file.write_text(f"SPARK_SIDECAR_API_KEY={api_key}\n")
+            env_file.chmod(0o640)
+        funding_config = [
+            "# Funding Source Configuration",
+            "LNBITS_BACKEND_WALLET_CLASS=SparkL2Wallet",
+            "SPARK_L2_EXTERNAL_ENDPOINT=http://127.0.0.1:8765",
+            f"SPARK_L2_EXTERNAL_API_KEY={api_key}",
+        ]
+    elif source == "phoenixd":
+        password = _read_phoenixd_api_password()
+        if not password:
+            raise RuntimeError("Phoenixd API password is not available yet. Start Phoenixd once, then try again.")
+        funding_config = [
+            "# Funding Source Configuration",
+            "LNBITS_BACKEND_WALLET_CLASS=PhoenixdWallet",
+            "PHOENIXD_API_ENDPOINT=http://127.0.0.1:9740/",
+            f"PHOENIXD_API_PASSWORD={password}",
+        ]
+    else:
+        raise ValueError("Invalid funding source")
+
+    LNBITS_ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
+    LNBITS_ENV_FILE.write_text("\n".join(kept).rstrip() + "\n\n" + "\n".join(funding_config) + "\n")
+    LNBITS_ENV_FILE.chmod(0o640)
+
+
+def _funding_sources_payload() -> dict[str, Any]:
+    selected = _read_selected_funding_source()
+    return {
+        "selected": selected,
+        "sources": {
+            key: {
+                "label": value["label"],
+                "service": value["service"],
+                "selected": key == selected,
+                "service_status": get_service_status(value["service"]),
+            }
+            for key, value in FUNDING_SOURCES.items()
+        },
+        "phoenixd": get_phoenixd_status(),
+    }
 
 
 def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200, **payload):
@@ -1072,6 +1193,74 @@ def get_spark_balance():
     return None
 
 
+def _read_phoenixd_seed() -> str | None:
+    try:
+        seed = _normalize_mnemonic(PHOENIXD_SEED_FILE.read_text())
+        return seed or None
+    except Exception:
+        return None
+
+
+def _phoenixd_request(path: str):
+    try:
+        import requests
+        password = _read_phoenixd_api_password()
+        if not password:
+            return None
+        resp = requests.get(f"{PHOENIXD_URL.rstrip('/')}/{path.lstrip('/')}", auth=("", password), timeout=5)
+        if resp.ok:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
+
+def get_phoenixd_balance():
+    data = _phoenixd_request("getbalance")
+    if not isinstance(data, dict):
+        return None
+
+    def sats_from(*keys):
+        for key in keys:
+            value = data.get(key)
+            if value is None:
+                continue
+            try:
+                return int(value)
+            except Exception:
+                continue
+        return None
+
+    balance = sats_from("balanceSat", "balance", "balance_sats")
+    fee_credit = sats_from("feeCreditSat", "feeCredit", "fee_credit_sat")
+    return {"balance": balance, "fee_credit": fee_credit, "raw": data}
+
+
+def get_phoenixd_channels():
+    data = _phoenixd_request("listchannels")
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        channels = data.get("channels")
+        if isinstance(channels, list):
+            return channels
+    info = _phoenixd_request("getinfo")
+    if isinstance(info, dict) and isinstance(info.get("channels"), list):
+        return info["channels"]
+    return []
+
+
+def get_phoenixd_status():
+    channels = get_phoenixd_channels()
+    balance = get_phoenixd_balance()
+    return {
+        "seed_present": bool(_read_phoenixd_seed()),
+        "balance": balance,
+        "channels": channels,
+        "channel_count": len(channels),
+    }
+
+
 def get_cpu_percent():
     try:
         import psutil
@@ -1114,6 +1303,7 @@ def get_onion_address():
 def collect_stats():
     """Collect all system stats"""
     disk = shutil.disk_usage("/")
+    funding_sources = _funding_sources_payload()
     return {
         "timestamp": datetime.now().isoformat(),
         "cpu_percent": get_cpu_percent(),
@@ -1128,7 +1318,10 @@ def collect_stats():
         "services": {
             svc: get_service_status(svc) for svc in ALLOWED_SERVICES
         },
+        "funding_sources": funding_sources,
+        "funding_source": _read_selected_funding_source(),
         "spark_balance": get_spark_balance(),
+        "phoenixd_status": funding_sources.get("phoenixd", {}),
         "tor_onion": get_onion_address(),
         "network": get_network_info(),
     }
@@ -1215,6 +1408,18 @@ def remote_access():
     )
 
 
+@app.route("/box/funding-sources")
+@login_required
+def funding_sources_page():
+    return _render_admin_page(
+        "funding_sources.html",
+        page_key="funding_sources",
+        page_title="Funding Sources",
+        page_intro="Choose which wallet funds LNbits and inspect the selected funding source.",
+        funding_sources=_funding_sources_payload(),
+    )
+
+
 @app.route("/box/system")
 @login_required
 def system_page():
@@ -1252,6 +1457,8 @@ def advanced_page():
         page_title="Advanced",
         include_tunnel_status=True,
         spark_mnemonic=_read_spark_mnemonic(),
+        phoenixd_seed=_read_phoenixd_seed(),
+        funding_sources=_funding_sources_payload(),
     )
 
 
@@ -1351,6 +1558,45 @@ def api_stop_service(service):
     return _service_action(service, "stop", "stopping")
 
 
+@app.route("/box/api/funding-sources", methods=["GET"])
+@login_required
+def api_funding_sources():
+    payload = _funding_sources_payload()
+    return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/funding-sources/select", methods=["POST"])
+@login_required
+def api_select_funding_source():
+    payload = request.get_json(silent=True) or {}
+    source = str(payload.get("source", "")).strip()
+    if source not in FUNDING_SOURCES:
+        return _json_error("Invalid funding source", 400)
+
+    if source == "phoenixd" and not _read_phoenixd_api_password() and not DEV_MODE:
+        return _json_error("Phoenixd is not initialized yet. Start Phoenixd once, wait for it to create its config, then switch again.", 400)
+
+    try:
+        _write_selected_funding_source(source)
+        _update_lnbits_funding_source_env(source)
+    except Exception as e:
+        return _json_error(str(e), 500)
+
+    if DEV_MODE:
+        return _json_response(status="ok", message=f"DEV MODE: funding source set to {FUNDING_SOURCES[source]['label']}", data=_funding_sources_payload())
+
+    selected_service = FUNDING_SOURCES[source]["service"]
+    try:
+        subprocess.run(["systemctl", "stop", "lnbits.service"], capture_output=True, timeout=30, check=False)
+        for service in FUNDING_SOURCE_SERVICES:
+            subprocess.run(["systemctl", "stop", f"{service}.service"], capture_output=True, timeout=30, check=False)
+        subprocess.run(["systemctl", "start", f"{selected_service}.service"], capture_output=True, timeout=30, check=True)
+        subprocess.run(["systemctl", "restart", "lnbits.service"], capture_output=True, timeout=30, check=True)
+        return _json_response(status="ok", message=f"Funding source switched to {FUNDING_SOURCES[source]['label']}.", data=_funding_sources_payload())
+    except subprocess.CalledProcessError as e:
+        return _json_error(e.stderr.decode() or "Failed to switch funding source.", 500)
+
+
 @app.route("/box/api/spark/seed", methods=["POST"])
 @login_required
 def api_update_spark_seed():
@@ -1401,6 +1647,11 @@ def api_update_spark_seed():
 def _service_action(service, action, verb):
     if service not in ALLOWED_SERVICES:
         return _json_error("Invalid service", 400)
+
+    if service in FUNDING_SOURCE_SERVICES and action in {"start", "restart"}:
+        selected_service = FUNDING_SOURCES[_read_selected_funding_source()]["service"]
+        if service != selected_service:
+            return _json_error("Switch funding source first. Only the selected funding service can run.", 400)
 
     if DEV_MODE:
         return _json_response(status="ok", message=f"DEV MODE: would {action} {service}", data={"service": service, "action": action})

@@ -8,6 +8,7 @@
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     };
+    D.escapeHtml = escapeHtml;
 
     D.formatBytes = function (bytes) {
         if (bytes === 0) return '0 B';
@@ -68,8 +69,9 @@
             const payload = await resp.json();
             const s = payload.current;
 
-            const balance = s.spark_balance;
-            D.setText('stat-balance', balance && balance.balance !== undefined ? Number(balance.balance).toLocaleString() : '--');
+            const balance = s.funding_source === 'phoenixd' ? s.phoenixd_status?.balance : s.spark_balance;
+            D.setText('stat-balance', balance && balance.balance !== undefined && balance.balance !== null ? Number(balance.balance).toLocaleString() : '--');
+            D.setText('stat-balance-label', s.funding_source === 'phoenixd' ? 'Phoenixd Balance' : 'Spark Balance');
             D.setText('stat-uptime', s.uptime.formatted);
 
             const tempEl = D.el('stat-temp');
@@ -103,13 +105,17 @@
                 if (torCopy) torCopy.classList.add('hidden');
             }
 
-            ['lnbits', 'spark-sidecar', 'tor'].forEach(function (svc) {
+            ['lnbits', 'spark-sidecar', 'phoenixd', 'tor'].forEach(function (svc) {
                 const status = s.services[svc] || 'unknown';
                 const dot = D.el('svc-' + svc + '-dot');
                 if (dot) dot.className = 'w-2.5 h-2.5 rounded-full ' + D.svcColor(status);
                 D.setText('svc-' + svc + '-status', D.serviceStatusLabel(status));
                 D.setServiceActionVisibility(svc, status);
             });
+
+            if (typeof D.renderFundingSources === 'function') {
+                D.renderFundingSources(s.funding_sources);
+            }
 
             if (s.network) {
                 const net = s.network;
