@@ -14,7 +14,11 @@ pkgs.stdenv.mkDerivation {
   };
 
   nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-  buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+  buildInputs = [
+    pkgs.libxcrypt
+    pkgs.stdenv.cc.cc.lib
+    pkgs.zlib
+  ];
 
   dontBuild = true;
 
