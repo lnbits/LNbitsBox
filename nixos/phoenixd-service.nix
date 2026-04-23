@@ -37,10 +37,13 @@ in
 chain=mainnet
 http-bind-address=127.0.0.1
 http-bind-port=9740
-auto-liquidity=2000000
+auto-liquidity=2m
 EOF
       printf 'http-password=%s\n' "$(${pkgs.openssl}/bin/openssl rand -hex 32)" >> ${confFile}
     fi
+
+    chown phoenixd:phoenixd ${confFile}
+    chmod 0640 ${confFile}
   '';
 
   systemd.services.phoenixd = {

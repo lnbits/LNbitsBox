@@ -126,13 +126,14 @@ def ensure_phoenixd_config():
                 "chain=mainnet",
                 "http-bind-address=127.0.0.1",
                 "http-bind-port=9740",
-                "auto-liquidity=2000000",
+                "auto-liquidity=2m",
                 f"http-password={secrets.token_hex(32)}",
                 "",
             ])
         )
         PHOENIXD_CONF_FILE.chmod(0o640)
-    chgrp_if_group_exists(PHOENIXD_CONF_FILE, "phoenixd")
+    chown_if_user_exists(PHOENIXD_CONF_FILE, "phoenixd")
+    PHOENIXD_CONF_FILE.chmod(0o640)
 
 
 @app.route("/")
@@ -299,8 +300,11 @@ def complete():
         mnemonic_file.write_text(mnemonic + "\n")
         mnemonic_file.chmod(0o640)
 
-        # Set group ownership to the selected funding source service
-        chgrp_if_group_exists(mnemonic_file, source_info["secret_owner"])
+        # Set ownership to the selected funding source service.
+        if source == "phoenixd":
+            chown_if_user_exists(mnemonic_file, "phoenixd")
+        else:
+            chgrp_if_group_exists(mnemonic_file, source_info["secret_owner"])
 
         # 3. Update LNbits env file with selected funding source configuration
         FUNDING_SOURCE_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
