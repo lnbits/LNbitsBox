@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Funding Source - LNbitsBox{% endblock %}
+
+{% block step_indicator %}
+<div class="flex items-center justify-center gap-2 px-6 pt-5 pb-1">
+    <div class="w-8 h-8 rounded-full bg-ln-pink flex items-center justify-center step-active">
+        <span class="text-white font-mono font-bold text-xs">1</span>
+    </div>
+    <div class="w-10 h-px bg-ln-border"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-border flex items-center justify-center">
+        <span class="text-ln-muted font-mono font-bold text-xs">2</span>
+    </div>
+    <div class="w-10 h-px bg-ln-border"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-border flex items-center justify-center">
+        <span class="text-ln-muted font-mono font-bold text-xs">3</span>
+    </div>
+    <div class="w-10 h-px bg-ln-border"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-border flex items-center justify-center">
+        <span class="text-ln-muted font-mono font-bold text-xs">4</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h2 class="text-xl font-bold text-ln-text mb-1">Funding Source</h2>
+<p class="text-ln-muted text-sm mb-6">Choose which wallet backend will fund LNbits.</p>
+
+<form method="POST" class="space-y-3" id="funding-source-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="block cursor-pointer">
+        <input type="radio" name="funding_source" value="spark" class="sr-only peer" {% if selected == "spark" %}checked{% endif %}>
+        <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-ln-text font-semibold text-sm">Spark</p>
+                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use the Spark L2 sidecar as the LNbits funding wallet.</p>
+                </div>
+                <span class="text-xs font-mono text-ln-muted">Default</span>
+            </div>
+        </div>
+    </label>
+
+    <label class="block cursor-pointer">
+        <input type="radio" name="funding_source" value="phoenixd" class="sr-only peer" {% if selected == "phoenixd" %}checked{% endif %}>
+        <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-ln-text font-semibold text-sm">Phoenixd</p>
+                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Phoenixd as a self-custodial Lightning funding source with automatic liquidity.</p>
+                </div>
+                <span class="text-xs font-mono text-ln-muted">New</span>
+            </div>
+        </div>
+    </label>
+
+    <div class="{% if selected != 'phoenixd' %}hidden {% endif %}bg-amber-500/5 border border-amber-500/20 rounded-xl p-4" id="phoenixd-fee-notice">
+        <p class="text-amber-300 text-sm font-medium">Phoenixd channel opening fee</p>
+        <p class="text-amber-300/70 text-xs mt-1 leading-relaxed">
+            Phoenixd may charge a channel setup fee when a new channel is needed. Review
+            <a href="https://phoenix.acinq.co/server/auto-liquidity" target="_blank" rel="noopener noreferrer" class="text-amber-200 underline decoration-amber-200/40 hover:decoration-amber-200">Phoenixd auto-liquidity</a>
+            before receiving funds.
+        </p>
+    </div>
+
+    <button type="submit"
+            class="w-full bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98]">
+        Continue
+    </button>
+</form>
+
+<script>
+const fundingRadios = document.querySelectorAll('input[name="funding_source"]');
+const phoenixdNotice = document.getElementById('phoenixd-fee-notice');
+fundingRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+        phoenixdNotice?.classList.toggle('hidden', radio.value !== 'phoenixd' || !radio.checked);
+    });
+});
+</script>
+{% endblock %}
