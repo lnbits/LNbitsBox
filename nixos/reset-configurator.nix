@@ -15,7 +15,7 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   echo "═══════════════════════════════════════════════════════"
   echo ""
   echo "This will:"
-  echo "  • Stop LNbits and funding source services"
+  echo "  • Stop LNbits, admin, and funding source services"
   echo "  • Remove the configuration marker"
   echo "  • Re-enable the setup wizard"
   echo ""
@@ -32,12 +32,24 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
 
   echo ""
   echo "Stopping services..."
-systemctl stop lnbits.service || true
-systemctl stop spark-sidecar.service || true
-systemctl stop phoenixd.service || true
+  systemctl stop lnbits.service || true
+  systemctl stop lnbitspi-admin.service || true
+  systemctl stop spark-sidecar.service || true
+  systemctl stop phoenixd.service || true
 
   echo "Removing configuration marker..."
-  rm -f /var/lib/lnbits/.configured
+  if [ -e /var/lib/lnbits/.configured ]; then
+    rm -f /var/lib/lnbits/.configured
+  fi
+
+  if [ -e /var/lib/lnbits/.configured ]; then
+    echo "Error: failed to remove /var/lib/lnbits/.configured"
+    exit 1
+  fi
+
+  echo "Starting configurator service..."
+  systemctl reset-failed lnbitspi-configurator.service || true
+  systemctl start lnbitspi-configurator.service || true
 
   echo "Reloading Caddy to route to configurator..."
   systemctl reload caddy.service || true
@@ -126,8 +138,8 @@ systemctl stop phoenixd.service || true
   echo "The configuration wizard will be available at:"
   echo "  https://<this-device-ip>/"
   echo ""
-  echo "The configurator service will start automatically."
-  echo "LNbits and Spark sidecar will remain stopped until"
+  echo "The configurator service has been started."
+  echo "LNbits, admin, and funding source services will remain stopped until"
   echo "you complete the setup wizard."
   echo ""
 ''

@@ -206,6 +206,14 @@ ssh lnbitsadmin@<pi-ip-address>
 sudo lnbitspi-reset
 ```
 
+**Then reboot:**
+```bash
+sudo reboot
+```
+**And access the wizard again at:**
+`http://<pi-ip-address>/` or `http://lnbits.local/`
+
+
 This will:
 - Stop LNbits and Spark sidecar services
 - Remove the configuration marker
