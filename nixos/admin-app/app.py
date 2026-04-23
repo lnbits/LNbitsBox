@@ -88,8 +88,13 @@ FUNDING_SOURCES = {
         "service": "phoenixd",
         "wallet_class": "PhoenixdWallet",
     },
+    "ark": {
+        "label": "Ark",
+        "service": "",
+        "wallet_class": "",
+    },
 }
-FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values()]
+FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values() if source.get("service")]
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "phoenixd", "tor"]
 LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
 SPARK_MNEMONIC_FILE = (
@@ -255,12 +260,17 @@ def _funding_sources_payload() -> dict[str, Any]:
                 "label": value["label"],
                 "service": value["service"],
                 "selected": key == selected,
-                "service_status": get_service_status(value["service"]),
+                "service_status": get_service_status(value["service"]) if value["service"] else "unavailable",
             }
             for key, value in FUNDING_SOURCES.items()
         },
         "phoenixd": get_phoenixd_status(),
     }
+
+
+def _selected_funding_service() -> str | None:
+    source = FUNDING_SOURCES.get(_read_selected_funding_source(), {})
+    return source.get("service") or None
 
 
 def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200, **payload):
@@ -1415,8 +1425,10 @@ def funding_sources_page():
         "funding_sources.html",
         page_key="funding_sources",
         page_title="Funding Sources",
-        page_intro="Choose which wallet funds LNbits and inspect the selected funding source.",
+        page_intro="Inspect the funding source selected during first-run setup.",
         funding_sources=_funding_sources_payload(),
+        spark_mnemonic=_read_spark_mnemonic(),
+        phoenixd_seed=_read_phoenixd_seed(),
     )
 
 
@@ -1451,14 +1463,12 @@ def maintenance_page():
 @app.route("/box/advanced")
 @login_required
 def advanced_page():
+    funding_service = _selected_funding_service()
     return _render_admin_page(
         "advanced.html",
         page_key="advanced",
         page_title="Advanced",
-        include_tunnel_status=True,
-        spark_mnemonic=_read_spark_mnemonic(),
-        phoenixd_seed=_read_phoenixd_seed(),
-        funding_sources=_funding_sources_payload(),
+        visible_services=[funding_service] if funding_service else [],
     )
 
 
@@ -1565,38 +1575,6 @@ def api_funding_sources():
     return _json_response(status="ok", data=payload, **payload)
 
 
-@app.route("/box/api/funding-sources/select", methods=["POST"])
-@login_required
-def api_select_funding_source():
-    payload = request.get_json(silent=True) or {}
-    source = str(payload.get("source", "")).strip()
-    if source not in FUNDING_SOURCES:
-        return _json_error("Invalid funding source", 400)
-
-    if source == "phoenixd" and not _read_phoenixd_api_password() and not DEV_MODE:
-        return _json_error("Phoenixd is not initialized yet. Start Phoenixd once, wait for it to create its config, then switch again.", 400)
-
-    try:
-        _write_selected_funding_source(source)
-        _update_lnbits_funding_source_env(source)
-    except Exception as e:
-        return _json_error(str(e), 500)
-
-    if DEV_MODE:
-        return _json_response(status="ok", message=f"DEV MODE: funding source set to {FUNDING_SOURCES[source]['label']}", data=_funding_sources_payload())
-
-    selected_service = FUNDING_SOURCES[source]["service"]
-    try:
-        subprocess.run(["systemctl", "stop", "lnbits.service"], capture_output=True, timeout=30, check=False)
-        for service in FUNDING_SOURCE_SERVICES:
-            subprocess.run(["systemctl", "stop", f"{service}.service"], capture_output=True, timeout=30, check=False)
-        subprocess.run(["systemctl", "start", f"{selected_service}.service"], capture_output=True, timeout=30, check=True)
-        subprocess.run(["systemctl", "restart", "lnbits.service"], capture_output=True, timeout=30, check=True)
-        return _json_response(status="ok", message=f"Funding source switched to {FUNDING_SOURCES[source]['label']}.", data=_funding_sources_payload())
-    except subprocess.CalledProcessError as e:
-        return _json_error(e.stderr.decode() or "Failed to switch funding source.", 500)
-
-
 @app.route("/box/api/spark/seed", methods=["POST"])
 @login_required
 def api_update_spark_seed():
@@ -1651,7 +1629,7 @@ def _service_action(service, action, verb):
     if service in FUNDING_SOURCE_SERVICES and action in {"start", "restart"}:
         selected_service = FUNDING_SOURCES[_read_selected_funding_source()]["service"]
         if service != selected_service:
-            return _json_error("Switch funding source first. Only the selected funding service can run.", 400)
+            return _json_error("Only the enabled funding service can run. Change the funding source from the configurator.", 400)
 
     if DEV_MODE:
         return _json_response(status="ok", message=f"DEV MODE: would {action} {service}", data={"service": service, "action": action})

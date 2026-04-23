@@ -1,33 +1,25 @@
+{% set selected_source = funding_sources.selected if funding_sources else "spark" %}
+{% set selected_label = funding_sources.sources[selected_source].label if funding_sources and selected_source in funding_sources.sources else "Spark" %}
 <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5" id="funding-sources-card">
     <div class="flex items-start justify-between gap-4 mb-4">
         <div>
             <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Funding Sources</div>
             <p class="text-ln-muted text-xs font-mono mt-2 leading-relaxed">
-                Choose which wallet funds LNbits. Switching restarts LNbits and keeps only the selected funding service running.
+                Funding source selection is configured during first-run setup. This page shows the enabled funding source only.
             </p>
         </div>
         <span class="text-xs font-mono text-ln-muted" id="funding-selected-label">
-            {{ funding_sources.sources[funding_sources.selected].label if funding_sources else "Spark" }}
+            {{ selected_label }}
         </span>
     </div>
 
     <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
-        <label for="funding-source-select" class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-2">Selected Funding Source</label>
-        <div class="relative">
-            <select
-                id="funding-source-select"
-                class="w-full appearance-none bg-ln-card border border-ln-border rounded-lg px-3 py-3 pr-10 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
-            >
-                <option value="spark">Spark</option>
-                <option value="phoenixd">Phoenixd</option>
-            </select>
-            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ln-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-        </div>
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-2">Enabled Funding Source</div>
+        <div class="text-lg font-display font-bold text-ln-text">{{ selected_label }}</div>
         <p class="text-ln-muted text-xs font-mono mt-3" id="funding-source-summary">--</p>
     </div>
 
+    {% if selected_source == "spark" %}
     <div class="mt-4" data-funding-panel="spark">
         <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
             <div class="flex items-center justify-between gap-3">
@@ -38,9 +30,14 @@
                 <span class="text-xs font-mono text-ln-muted" id="funding-spark-state">--</span>
             </div>
         </div>
+        <div class="mt-4">
+            {% include "partials/cards/spark_seed_phrase.html" %}
+        </div>
     </div>
+    {% endif %}
 
-    <div class="mt-4 hidden" data-funding-panel="phoenixd">
+    {% if selected_source == "phoenixd" %}
+    <div class="mt-4" data-funding-panel="phoenixd">
         <div class="bg-amber-400/5 border border-amber-400/20 rounded-lg p-3" id="phoenixd-liquidity-notice">
             <p class="text-amber-200 text-xs font-mono leading-relaxed">
                 Phoenixd may charge a channel setup fee when a new channel is needed. Review
@@ -75,5 +72,38 @@
                 <div class="px-3 py-3 text-xs font-mono text-ln-muted">No channel data yet.</div>
             </div>
         </div>
+
+        <div class="mt-4">
+            {% include "partials/cards/phoenixd_seed_phrase.html" %}
+        </div>
     </div>
+    {% endif %}
+
+    {% if selected_source == "ark" %}
+    <div class="mt-4 bg-ln-surface border border-ln-border rounded-lg p-4" id="ark-funding-section">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Ark Funding Source</div>
+                <p class="text-xs font-mono text-ln-muted mt-2 leading-relaxed">
+                    Ark is the enabled funding source for this box. Admin support is informational only while Ark service controls are being prepared.
+                </p>
+            </div>
+            <span class="text-xs font-mono text-ln-muted whitespace-nowrap">Enabled</span>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="bg-ln-card border border-ln-border rounded-lg p-3">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Status</div>
+                <div class="text-xl font-display font-bold text-ln-text">Selected</div>
+            </div>
+            <div class="bg-ln-card border border-ln-border rounded-lg p-3">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Wallet</div>
+                <div class="text-xl font-display font-bold text-ln-text">Ark</div>
+            </div>
+            <div class="bg-ln-card border border-ln-border rounded-lg p-3">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Backend</div>
+                <div class="text-xl font-display font-bold text-ln-text">Pending</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>

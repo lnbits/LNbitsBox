@@ -5,59 +5,10 @@
     {% include "partials/cards/services.html" %}
     {% include "partials/cards/system_actions.html" %}
 </div>
-<div class="mb-6">
-    {% include "partials/cards/spark_seed_phrase.html" %}
-</div>
-<div class="mb-6">
-    {% include "partials/cards/phoenixd_seed_phrase.html" %}
-</div>
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/dashboard-core.js') }}"></script>
-<script id="initial-tunnel-status" type="application/json">{{ initial_tunnel_status|tojson }}</script>
-<script id="initial-funding-sources" type="application/json">{{ funding_sources|tojson }}</script>
 <script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
-<script src="{{ url_for('static', filename='js/dashboard-funding.js') }}"></script>
-<script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
-<script src="{{ url_for('static', filename='js/dashboard-spark.js') }}"></script>
-<script>
-const sparkSeedValue = document.getElementById('spark-seed-value');
-const sparkSeedToggleBtn = document.getElementById('spark-seed-toggle-btn');
-const phoenixdSeedValue = document.getElementById('phoenixd-seed-value');
-const phoenixdSeedToggleBtn = document.getElementById('phoenixd-seed-toggle-btn');
-
-if (sparkSeedValue && sparkSeedToggleBtn) {
-    sparkSeedToggleBtn.addEventListener('click', function () {
-        const seedPhrase = sparkSeedValue.dataset.seedPhrase || '';
-        if (!seedPhrase) {
-            return;
-        }
-
-        const isMasked = sparkSeedValue.dataset.masked === 'true';
-        sparkSeedValue.textContent = isMasked
-            ? seedPhrase
-            : '••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••';
-        sparkSeedValue.dataset.masked = isMasked ? 'false' : 'true';
-        sparkSeedToggleBtn.textContent = isMasked ? 'Hide Seed Phrase' : 'Show Seed Phrase';
-    });
-}
-
-if (phoenixdSeedValue && phoenixdSeedToggleBtn) {
-    phoenixdSeedToggleBtn.addEventListener('click', function () {
-        const seedPhrase = phoenixdSeedValue.dataset.seedPhrase || '';
-        if (!seedPhrase) {
-            return;
-        }
-
-        const isMasked = phoenixdSeedValue.dataset.masked === 'true';
-        phoenixdSeedValue.textContent = isMasked
-            ? seedPhrase
-            : '••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••';
-        phoenixdSeedValue.dataset.masked = isMasked ? 'false' : 'true';
-        phoenixdSeedToggleBtn.textContent = isMasked ? 'Hide Seed Phrase' : 'Show Seed Phrase';
-    });
-}
-</script>
 {% endblock %}
