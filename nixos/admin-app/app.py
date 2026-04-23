@@ -1424,8 +1424,8 @@ def funding_sources_page():
     return _render_admin_page(
         "funding_sources.html",
         page_key="funding_sources",
-        page_title="Funding Sources",
-        page_intro="Inspect the funding source selected during first-run setup.",
+        page_title="Funding Source",
+        page_intro="Inspect the active LNbits funding source.",
         funding_sources=_funding_sources_payload(),
         spark_mnemonic=_read_spark_mnemonic(),
         phoenixd_seed=_read_phoenixd_seed(),
@@ -1464,11 +1464,14 @@ def maintenance_page():
 @login_required
 def advanced_page():
     funding_service = _selected_funding_service()
+    visible_services = ["lnbits", "tor", "tunnel"]
+    if funding_service:
+        visible_services.insert(1, funding_service)
     return _render_admin_page(
         "advanced.html",
         page_key="advanced",
         page_title="Advanced",
-        visible_services=[funding_service] if funding_service else [],
+        visible_services=visible_services,
     )
 
 
