@@ -3,6 +3,8 @@
 {
   system.stateVersion = "24.11";
 
+  sdImage.imageName = "lnbitsbox-${version}.img";
+
   # Write version to filesystem for the admin app to read
   environment.etc."lnbitsbox-version".text = version;
 
