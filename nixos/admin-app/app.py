@@ -1471,6 +1471,7 @@ def advanced_page():
         "advanced.html",
         page_key="advanced",
         page_title="Advanced",
+        include_tunnel_status=True,
         visible_services=visible_services,
     )
 
