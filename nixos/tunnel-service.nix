@@ -2,10 +2,52 @@
 
 let
   stateDir = "/var/lib/lnbitsbox-tunnel";
+  stateFile = "${stateDir}/state.json";
   runtimeEnv = "${stateDir}/runtime.env";
   keyFile = "${stateDir}/reverse-proxy-key";
   startScript = pkgs.writeShellScript "lnbitsbox-reverse-tunnel" ''
     set -euo pipefail
+
+    if [ ! -f "${runtimeEnv}" ] && [ -f "${stateFile}" ]; then
+      ${pkgs.python3}/bin/python3 - <<'PY'
+import json
+import shlex
+from pathlib import Path
+
+state_file = Path("${stateFile}")
+runtime_env = Path("${runtimeEnv}")
+key_file = Path("${keyFile}")
+
+try:
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+except Exception:
+    state = {}
+
+tunnel = state.get("current_tunnel") or {}
+tunnel_id = tunnel.get("tunnel_id")
+remote_port = tunnel.get("remote_port")
+
+if tunnel_id and remote_port:
+    ssh_user = str(tunnel.get("ssh_user") or "ubuntu")
+    ssh_host = str(tunnel.get("ssh_host") or "lnpro.xyz")
+    runtime_env.write_text(
+        "\n".join(
+            [
+                f"REMOTE_PORT={int(remote_port)}",
+                f"SSH_USER={shlex.quote(ssh_user)}",
+                f"SSH_HOST={shlex.quote(ssh_host)}",
+                f"KEY_FILE={shlex.quote(str(key_file))}",
+                "LOCAL_PORT=5000",
+                "AUTOSSH_GATETIME=0",
+                "AUTOSSH_POLL=30",
+                "AUTOSSH_FIRST_POLL=30",
+            ]
+        ) + "\n",
+        encoding="utf-8",
+    )
+    runtime_env.chmod(0o600)
+PY
+    fi
 
     if [ ! -f "${runtimeEnv}" ]; then
       echo "Missing runtime env file: ${runtimeEnv}"
@@ -51,7 +93,7 @@ in
       ConditionPathExists = "/var/lib/lnbits/.configured";
     };
 
-    path = [ pkgs.openssh pkgs.coreutils pkgs.bash ];
+    path = [ pkgs.openssh pkgs.coreutils pkgs.bash pkgs.python3 ];
 
     serviceConfig = {
       Type = "simple";
