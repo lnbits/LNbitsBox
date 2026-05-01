@@ -87,16 +87,16 @@
         "uv2nix": "uv2nix_2"
       },
       "locked": {
-        "lastModified": 1773833962,
-        "narHash": "sha256-7V7jZe9Vwvp18lMdoDXNfqVTx1Z2MwATLaaGizpirFs=",
+        "lastModified": 1776935526,
+        "narHash": "sha256-vMFAwg0vUJF/Coq3QzJ+txw+Hu3uu+r/PXvo1oEL7LE=",
         "owner": "lnbits",
         "repo": "lnbits",
-        "rev": "b77c1030200858c2707f1e42c566a41d16ddb3bd",
+        "rev": "99e4f33142a547febfc683591eb87cdd1c0fd998",
         "type": "github"
       },
       "original": {
         "owner": "lnbits",
-        "ref": "dev",
+        "ref": "v1.5.4",
         "repo": "lnbits",
         "type": "github"
       }
@@ -313,11 +313,11 @@
     "spark-sidecar": {
       "flake": false,
       "locked": {
-        "lastModified": 1773834735,
-        "narHash": "sha256-wBjBNb4BSAscucfrFmFpLwHf/d8bPsIU1r+SHtVJn9o=",
-        "owner": "blackcoffeexbt",
+        "lastModified": 1774341917,
+        "narHash": "sha256-4Tpcke6fOSTxXowxlRWYpxF6watn/JVrpXrj+/N3odE=",
+        "owner": "lnbits",
         "repo": "spark_sidecar",
-        "rev": "1de0dfb5f58e249eba5d8661ed7217b332011374",
+        "rev": "7ea1cd84c38a978b3716e79bc0cb8dd7286dcdd7",
         "type": "github"
       },
       "original": {
