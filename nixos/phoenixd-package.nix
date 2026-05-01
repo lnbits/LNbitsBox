@@ -2,8 +2,13 @@
 
 let
   version = "0.7.3";
-  gradle = pkgs.gradle_8;
   java = pkgs.jdk21_headless;
+  gradlePackages = pkgs.callPackage "${pkgs.path}/pkgs/development/tools/build-managers/gradle/default.nix" { };
+  gradle = (gradlePackages.mkGradle {
+    version = "8.9";
+    hash = "sha256-1yXXB7+r1N/clYxiQAOzyArMwD9wN7USLEsdDvFc7Ks=";
+    defaultJava = java;
+  }).wrapped;
 in
 let
   self = pkgs.stdenv.mkDerivation {
