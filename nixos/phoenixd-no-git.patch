@@ -61,11 +61,15 @@
              linuxMain {
                  dependencies {
                      implementation("io.ktor:ktor-client-curl:${libs.versions.ktor.get()}")
-@@ -176,7 +168,7 @@
-     }
- }
- 
- distributions {
+@@ -167,7 +159,7 @@
+                 }
+             }
+         }
+-        if (currentOs.isMacOsX) {
++        if (buildNativeTargets && currentOs.isMacOsX) {
+             macosMain {
+                 dependencies {
+                     implementation("io.ktor:ktor-client-darwin:${libs.versions.ktor.get()}")
 @@ -184,7 +176,7 @@
              }
          }
