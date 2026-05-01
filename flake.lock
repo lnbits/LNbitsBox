@@ -133,6 +133,23 @@
         "type": "github"
       }
     },
+    "phoenixd": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773923588,
+        "narHash": "sha256-ZZ17E98t4zmKzpPe3ZweTw1mcsXb8U+7XwolrQADIQE=",
+        "owner": "ACINQ",
+        "repo": "phoenixd",
+        "rev": "ef2caeace7fd86dee52759a371cabbb55d9671fd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ACINQ",
+        "ref": "v0.7.3",
+        "repo": "phoenixd",
+        "type": "github"
+      }
+    },
     "pyproject-nix": {
       "inputs": {
         "nixpkgs": [
@@ -187,6 +204,7 @@
       "inputs": {
         "lnbits": "lnbits",
         "nixpkgs": "nixpkgs_2",
+        "phoenixd": "phoenixd",
         "raspberry-pi-nix": "raspberry-pi-nix",
         "spark-sidecar": "spark-sidecar"
       }

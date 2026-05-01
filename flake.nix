@@ -13,21 +13,31 @@
     # To update: nix flake lock --update-input lnbits
     lnbits.url = "github:lnbits/lnbits/v1.5.4";
 
+    # Phoenixd source - build the JVM distribution from source on NixOS/aarch64.
+    phoenixd.url = "github:ACINQ/phoenixd/v0.7.3";
+    phoenixd.flake = false;
+
     # Spark sidecar for L2 Lightning integration
     spark-sidecar.url = "github:blackcoffeexbt/spark_sidecar/feat/no-polling";
     spark-sidecar.flake = false;  # Not a flake, just source
   };
 
-  outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, spark-sidecar, ... }:
+  outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, ... }:
   let
     version = "0.9.8";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
+    mkPhoenixdPackage =
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in
+      pkgs.callPackage ./nixos/phoenixd-package.nix { inherit phoenixd; };
   in
   {
     # Compressed SD image (default, for releases)
     nixosConfigurations.pi4 = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits spark-sidecar version; };
+      specialArgs = { inherit lnbits phoenixd spark-sidecar version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image
@@ -38,7 +48,7 @@
     # Uncompressed SD image (for faster local testing)
     nixosConfigurations.pi4-uncompressed = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits spark-sidecar version; };
+      specialArgs = { inherit lnbits phoenixd spark-sidecar version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image
@@ -52,6 +62,8 @@
 
     # Expose packages for x86_64-linux (cross-compilation)
     packages.x86_64-linux = {
+      phoenixd = mkPhoenixdPackage "x86_64-linux";
+
       # Compressed SD image (default, for releases)
       sdImage = self.nixosConfigurations.pi4.config.system.build.sdImage;
 
@@ -67,6 +79,8 @@
 
     # Expose packages for aarch64-linux (native builds)
     packages.aarch64-linux = {
+      phoenixd = mkPhoenixdPackage "aarch64-linux";
+
       # Compressed SD image (default, for releases)
       sdImage = self.nixosConfigurations.pi4.config.system.build.sdImage;
 

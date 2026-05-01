@@ -1,32 +1,49 @@
-{ pkgs }:
+{ pkgs, phoenixd }:
 
 let
   version = "0.7.3";
+  gradle = pkgs.gradle_8;
+  java = pkgs.jdk21_headless;
 in
-pkgs.stdenv.mkDerivation {
+let
+  self = pkgs.stdenv.mkDerivation {
   pname = "phoenixd";
   inherit version;
 
-  src = pkgs.fetchzip {
-    url = "https://github.com/ACINQ/phoenixd/releases/download/v${version}/phoenixd-${version}-linux-arm64.zip";
-    hash = "sha256-ZHMgR+WwBRBsPRV9hK8bjvluvsxIf8o/CKIDWu7gH7g=";
-    stripRoot = false;
+  src = phoenixd;
+  patches = [ ./phoenixd-no-git.patch ];
+
+  nativeBuildInputs = [ gradle pkgs.unzip ];
+
+  # The upstream linux-arm64 native binary is unreliable on NixOS/aarch64.
+  # Build the JVM distribution from source instead.
+  mitmCache = gradle.fetchDeps {
+    pkg = self;
+    data = ./phoenixd-deps.json;
   };
 
-  nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-  buildInputs = [
-    pkgs.libxcrypt-legacy
-    pkgs.stdenv.cc.cc.lib
-    pkgs.zlib
-  ];
+  __darwinAllowLocalNetworking = true;
+  gradleBuildTask = "jvmDistZip";
+  gradleFlags = [ "-Dorg.gradle.java.home=${java}" ];
+  PHOENIXD_GIT_COMMIT = "nix";
+  PHOENIXD_JVM_ONLY = "1";
 
-  dontBuild = true;
+  doCheck = false;
 
   installPhase = ''
     runHook preInstall
 
-    install -Dm0755 phoenixd-${version}-linux-arm64/phoenixd $out/bin/phoenixd
-    install -Dm0755 phoenixd-${version}-linux-arm64/phoenix-cli $out/bin/phoenix-cli
+    mkdir -p $out/lib $out/bin
+    unzip -q build/distributions/phoenixd-${version}-jvm.zip -d $out/lib
+    mv $out/lib/phoenixd-${version}-jvm $out/lib/phoenixd
+
+    substituteInPlace $out/lib/phoenixd/bin/phoenixd \
+      --replace-fail 'if [ -n "$JAVA_HOME" ] ; then' 'JAVA_HOME="${java}"\nif [ -n "$JAVA_HOME" ] ; then'
+    substituteInPlace $out/lib/phoenixd/bin/phoenix-cli \
+      --replace-fail 'if [ -n "$JAVA_HOME" ] ; then' 'JAVA_HOME="${java}"\nif [ -n "$JAVA_HOME" ] ; then'
+
+    ln -s $out/lib/phoenixd/bin/phoenixd $out/bin/phoenixd
+    ln -s $out/lib/phoenixd/bin/phoenix-cli $out/bin/phoenix-cli
 
     runHook postInstall
   '';
@@ -35,6 +52,12 @@ pkgs.stdenv.mkDerivation {
     description = "Minimal self-custodial Lightning node with an HTTP API";
     homepage = "https://github.com/ACINQ/phoenixd";
     license = licenses.asl20;
-    platforms = [ "aarch64-linux" ];
+    platforms = platforms.linux;
+    sourceProvenance = with sourceTypes; [
+      fromSource
+      binaryBytecode # Gradle MITM cache
+    ];
   };
-}
+  };
+in
+self

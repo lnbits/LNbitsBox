@@ -1,7 +1,7 @@
-{ config, pkgs, ... }:
+{ config, pkgs, phoenixd, ... }:
 
 let
-  phoenixdPkg = pkgs.callPackage ./phoenixd-package.nix { };
+  phoenixdPkg = pkgs.callPackage ./phoenixd-package.nix { inherit phoenixd; };
   homeDir = "/var/lib/phoenixd";
   stateDir = "${homeDir}/.phoenix";
   seedFile = "${stateDir}/seed.dat";
