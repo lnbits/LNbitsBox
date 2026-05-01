@@ -11,6 +11,7 @@ in
   users.users.lnbits = {
     isSystemUser = true;
     group = "lnbits";
+    extraGroups = [ "phoenixd" ];
   };
   users.groups.lnbits = {};
 
