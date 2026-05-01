@@ -11,7 +11,7 @@ pkgs.buildNpmPackage {
   # 2. Run: nix build .#toplevel -L or nix build .#toplevel -L &2>1 | grep "got:"
   # 3. Copy the hash from the error message
   # 4. Update this field with the correct hash
-  npmDepsHash = "sha256-DsxMBn3ZiAnTEsv97e6f4NLi+Mw5VDi4aQKIA4k80nQ=";
+  npmDepsHash = "sha256-noKP8jdGC1Iw4igJKC2XgnoH1g9PKjBqgzU2Tahuu1I=";
 
   # Skip build step - spark_sidecar doesn't need compilation
   dontNpmBuild = true;
