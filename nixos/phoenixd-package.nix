@@ -3,16 +3,24 @@
 let
   version = "0.7.3";
   java = pkgs.jdk21_headless;
-  gradlePackages = import "${pkgs.path}/pkgs/development/tools/build-managers/gradle/default.nix" {
-    inherit (pkgs) jdk11 jdk17 jdk21;
-  };
-  wrapGradle = pkgs.callPackage gradlePackages.wrapGradle { };
-  gradleUnwrapped = pkgs.callPackage (gradlePackages.gen {
-    version = "8.9";
-    hash = "sha256-1yXXB7+r1N/clYxiQAOzyArMwD9wN7USLEsdDvFc7Ks=";
-    defaultJava = java;
-  }) { };
-  gradle = wrapGradle gradleUnwrapped null;
+  gradlePackages = pkgs.callPackage "${pkgs.path}/pkgs/development/tools/build-managers/gradle/default.nix" { };
+  gradle =
+    if gradlePackages ? mkGradle then
+      (gradlePackages.mkGradle {
+        version = "8.9";
+        hash = "sha256-1yXXB7+r1N/clYxiQAOzyArMwD9wN7USLEsdDvFc7Ks=";
+        defaultJava = java;
+      }).wrapped
+    else
+      let
+        wrapGradle = pkgs.callPackage gradlePackages.wrapGradle { };
+        gradleUnwrapped = pkgs.callPackage (gradlePackages.gen {
+          version = "8.9";
+          hash = "sha256-1yXXB7+r1N/clYxiQAOzyArMwD9wN7USLEsdDvFc7Ks=";
+          defaultJava = java;
+        }) { };
+      in
+      wrapGradle gradleUnwrapped null;
 in
 let
   self = pkgs.stdenv.mkDerivation {
