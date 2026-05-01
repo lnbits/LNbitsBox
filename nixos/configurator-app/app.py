@@ -350,6 +350,7 @@ def update_lnbits_env(source: str):
         "SPARK_L2_EXTERNAL_API_KEY",
         "PHOENIXD_API_ENDPOINT",
         "PHOENIXD_API_PASSWORD",
+        "PHOENIXD_DATA_DIR",
     }
     kept = [
         line for line in existing_lines
@@ -380,6 +381,7 @@ def update_lnbits_env(source: str):
             "LNBITS_BACKEND_WALLET_CLASS=PhoenixdWallet",
             "PHOENIXD_API_ENDPOINT=http://127.0.0.1:9740/",
             f"PHOENIXD_API_PASSWORD={phoenixd_password}",
+            f'PHOENIXD_DATA_DIR="{PHOENIXD_STATE_DIR}"',
         ]
     else:
         raise ValueError("Invalid funding source")

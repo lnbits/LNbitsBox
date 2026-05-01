@@ -64,7 +64,7 @@ EOF
       Group = "phoenixd";
       WorkingDirectory = homeDir;
       ExecCondition = "${pkgs.bash}/bin/bash -c 'test -f ${selectedFundingSourceFile} && grep -qx phoenixd ${selectedFundingSourceFile}'";
-      ExecStart = "${pkgs.bash}/bin/bash -c 'printf \"I understand\\nI understand\\n\" | exec ${phoenixdPkg}/bin/phoenixd --seed-path ${seedFile}'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'printf \"I understand\\nI understand\\n\" | exec ${phoenixdPkg}/bin/phoenixd'";
       Restart = "on-failure";
       RestartSec = 5;
       LimitNOFILE = 4096;
