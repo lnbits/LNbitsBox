@@ -11,7 +11,7 @@
 
     # LNbits flake input - using sparkwallet branch until merged into a release
     # To update: nix flake lock --update-input lnbits
-    lnbits.url = "github:lnbits/lnbits/sparkwallet";
+    lnbits.url = "github:lnbits/lnbits/v1.5.4";
 
     # Spark sidecar for L2 Lightning integration
     spark-sidecar.url = "github:lnbits/spark_sidecar";
