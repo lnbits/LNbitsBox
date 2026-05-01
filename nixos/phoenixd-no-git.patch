@@ -88,3 +88,14 @@
          create("macosX64") {
              configureNativeDistribution("macosX64Binaries", "macosX64", "macos-x64")
          }
+
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -1,6 +1,7 @@
+ pluginManagement {
+     repositories {
+         gradlePluginPortal()
++        mavenCentral()
+     }
+ }
+ 
