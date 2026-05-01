@@ -2,6 +2,8 @@
 
 To build the image yourself, follow these instructions for Debian/Ubuntu systems.
 
+For Phoenixd version bumps, see [Phoenixd Upgrade Guide](./phoenixd-upgrades.md).
+
 ## Build Options
 
 You can build two variants of the SD image:
