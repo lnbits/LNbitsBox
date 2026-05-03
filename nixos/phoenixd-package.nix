@@ -30,7 +30,7 @@ let
   src = phoenixd;
   patches = [ ./phoenixd-no-git.patch ];
 
-  nativeBuildInputs = [ gradle pkgs.unzip ];
+  nativeBuildInputs = [ gradle pkgs.makeWrapper pkgs.unzip ];
 
   # The upstream linux-arm64 native binary is unreliable on NixOS/aarch64.
   # Build the JVM distribution from source instead.
@@ -54,13 +54,10 @@ let
     unzip -q build/distributions/phoenixd-${version}-jvm.zip -d $out/lib
     mv $out/lib/phoenixd-${version}-jvm $out/lib/phoenixd
 
-    substituteInPlace $out/lib/phoenixd/bin/phoenixd \
-      --replace-fail 'if [ -n "$JAVA_HOME" ] ; then' 'JAVA_HOME="${java}"\nif [ -n "$JAVA_HOME" ] ; then'
-    substituteInPlace $out/lib/phoenixd/bin/phoenix-cli \
-      --replace-fail 'if [ -n "$JAVA_HOME" ] ; then' 'JAVA_HOME="${java}"\nif [ -n "$JAVA_HOME" ] ; then'
-
-    ln -s $out/lib/phoenixd/bin/phoenixd $out/bin/phoenixd
-    ln -s $out/lib/phoenixd/bin/phoenix-cli $out/bin/phoenix-cli
+    makeWrapper $out/lib/phoenixd/bin/phoenixd $out/bin/phoenixd \
+      --set JAVA_HOME ${java}
+    makeWrapper $out/lib/phoenixd/bin/phoenix-cli $out/bin/phoenix-cli \
+      --set JAVA_HOME ${java}
 
     runHook postInstall
   '';
