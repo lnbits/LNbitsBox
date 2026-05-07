@@ -13,10 +13,6 @@ in
   };
   users.groups.arkade-sidecar = {};
 
-  systemd.tmpfiles.rules = [
-    "d ${stateDir} 0750 root arkade-sidecar - -"
-  ];
-
   systemd.services.arkade-sidecar = {
     description = "Arkade Lightning sidecar";
     after = [ "network-online.target" ];
@@ -31,6 +27,8 @@ in
       Type = "simple";
       User = "arkade-sidecar";
       Group = "arkade-sidecar";
+      StateDirectory = "arkade-sidecar";
+      StateDirectoryMode = "0750";
       ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || grep -qx ark ${selectedFundingSourceFile}'";
 
       Environment = [
