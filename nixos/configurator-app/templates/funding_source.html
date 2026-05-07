@@ -34,7 +34,12 @@
         <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <p class="text-ln-text font-semibold text-sm">Spark</p>
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                            <img src="{{ url_for('static', filename='spark.svg') }}" alt="" class="w-7 h-7 object-contain">
+                        </span>
+                        <p class="text-ln-text font-semibold text-2xl">Spark</p>
+                    </div>
                     <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Spark for fast, low-cost self-custodial payments with Lightning compatibility and support for bitcoin-native assets.</p>
                 </div>
             </div>
@@ -46,8 +51,13 @@
         <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <p class="text-ln-text font-semibold text-sm">Phoenixd</p>
-                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Phoenixd for a simple self-custodial Lightning funding source with automatic channel management and liquidity via ACINQ.</p>
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                            <img src="{{ url_for('static', filename='phoenix.svg') }}" alt="" class="w-7 h-7 object-contain">
+                        </span>
+                        <p class="text-ln-text font-semibold text-2xl">Phoenixd</p>
+                    </div>
+                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Phoenixd for a simple self-custodial Lightning funding source with automatic channel management and liquidity.</p>
                 </div>
             </div>
         </div>
@@ -65,8 +75,13 @@
         <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <p class="text-ln-text font-semibold text-sm">Ark</p>
-                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Ark for self-custodial Lightning payments with fast Lightning payments via Boltz.</p>
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                            <img src="{{ url_for('static', filename='arkade.svg') }}" alt="" class="w-7 h-7 object-contain">
+                        </span>
+                        <p class="text-ln-text font-semibold text-2xl">Ark</p>
+                    </div>
+                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Ark for self-custodial Lightning payments.</p>
                 </div>
             </div>
         </div>
