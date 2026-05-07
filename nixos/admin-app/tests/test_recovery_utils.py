@@ -88,7 +88,7 @@ class RecoveryUtilsTest(unittest.TestCase):
     def test_validate_manifest_catches_missing_file(self):
         payloads = self._component_payloads()
         manifest = build_backup_manifest(
-            backup_type="quick",
+            backup_type="full",
             current_version="0.1.49",
             encrypted=False,
             components=payloads,

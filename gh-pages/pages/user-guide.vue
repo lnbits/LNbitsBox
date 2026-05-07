@@ -373,7 +373,7 @@ function toggleTroubleshootingItem(index) {
                   <li class="flex gap-3">
                     <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">1</span>
                     <p class="font-display text-ln-muted text-sm leading-relaxed">
-                      Choose <strong>Full backup</strong> for the most complete snapshot. This includes LNbits data, Spark wallet files, tunnel state, and device configuration.
+                      Create an encrypted recovery backup to capture LNbits data, Spark, Ark, and Phoenixd wallet files, tunnel state, and device configuration.
                     </p>
                   </li>
                   <li class="flex gap-3">
@@ -392,14 +392,6 @@ function toggleTroubleshootingItem(index) {
               </div>
 
               <div class="grid sm:grid-cols-2 gap-4">
-                <div class="rounded-2xl border border-ln-border bg-black/10 p-5">
-                  <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
-                    Full vs Quick backups
-                  </h3>
-                  <p class="font-display text-ln-muted text-sm leading-relaxed">
-                    Full backups are the best default for most people. Quick backups are smaller, but they skip some broader device state and are better suited to lighter routine snapshots.
-                  </p>
-                </div>
                 <div class="rounded-2xl border border-ln-pink/20 bg-ln-pink/5 p-5">
                   <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
                     Keep your Spark seed phrase too
@@ -430,7 +422,7 @@ function toggleTroubleshootingItem(index) {
                   If your LNbitsBox stays powered on, you can enable scheduled encrypted backups from the same Recovery Tool page.
                 </p>
                 <p class="font-display text-ln-muted text-sm leading-relaxed">
-                  Pick how often the backup should run, choose full or quick mode, and set the stored backup password. We still recommend occasionally downloading a copy off the LNbitsBox as part of your backup routine.
+                  Pick how often the backup should run and set the stored backup password. We still recommend occasionally downloading a copy off the LNbitsBox as part of your backup routine.
                 </p>
               </div>
             </div>

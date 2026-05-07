@@ -94,21 +94,25 @@ FUNDING_SOURCES = {
 FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values() if source.get("service")]
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor"]
 LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
+SPARK_STATE_DIR = (
+    Path("/tmp/lnbitspi-test/spark-sidecar")
+    if DEV_MODE else Path("/var/lib/spark-sidecar")
+)
 SPARK_MNEMONIC_FILE = (
-    Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
-    if DEV_MODE else Path("/var/lib/spark-sidecar/mnemonic")
+    SPARK_STATE_DIR / "mnemonic"
+)
+ARKADE_STATE_DIR = (
+    Path("/tmp/lnbitspi-test/arkade-sidecar")
+    if DEV_MODE else Path("/var/lib/arkade-sidecar")
 )
 ARKADE_MNEMONIC_FILE = (
-    Path("/tmp/lnbitspi-test/arkade-sidecar/mnemonic")
-    if DEV_MODE else Path("/var/lib/arkade-sidecar/mnemonic")
+    ARKADE_STATE_DIR / "mnemonic"
 )
 SPARK_API_KEY_FILE = (
-    Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")
-    if DEV_MODE else Path("/var/lib/spark-sidecar/api-key.env")
+    SPARK_STATE_DIR / "api-key.env"
 )
 ARKADE_API_KEY_FILE = (
-    Path("/tmp/lnbitspi-test/arkade-sidecar/api-key.env")
-    if DEV_MODE else Path("/var/lib/arkade-sidecar/api-key.env")
+    ARKADE_STATE_DIR / "api-key.env"
 )
 PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix") if DEV_MODE else Path("/var/lib/phoenixd/.phoenix")
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
@@ -170,8 +174,9 @@ _tunnel_remote_sync = {
 
 RECOVERY_COMPONENT_LABELS = {
     "database": "LNbits database",
-    "spark": "Spark wallet seed",
-    "ark": "Ark wallet seed",
+    "spark": "Spark wallet state",
+    "ark": "Ark wallet state",
+    "phoenixd": "Phoenixd wallet state",
     "config": "Device config",
     "tunnel": "Tunnel config",
     "wifi": "Wi-Fi config",
@@ -621,7 +626,6 @@ def _default_schedule() -> dict[str, Any]:
     return {
         "enabled": False,
         "interval_hours": 24,
-        "backup_type": "full",
         "destination": "local",
         "passphrase": "",
         "last_run_at": None,
@@ -687,14 +691,6 @@ def _recovery_component_sources() -> dict[str, list[tuple[str, Path]]]:
         "database": [
             ("database/database.sqlite3", LNBITS_DB_PATH),
         ],
-        "spark": [
-            ("spark/mnemonic", SPARK_MNEMONIC_FILE),
-            ("spark/api-key.env", SPARK_API_KEY_FILE),
-        ],
-        "ark": [
-            ("ark/mnemonic", ARKADE_MNEMONIC_FILE),
-            ("ark/api-key.env", ARKADE_API_KEY_FILE),
-        ],
         "config": [
             ("config/lnbits.env", Path("/etc/lnbits/lnbits.env") if not DEV_MODE else Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")),
             ("config/version.txt", VERSION_FILE),
@@ -717,23 +713,61 @@ def _recovery_component_sources() -> dict[str, list[tuple[str, Path]]]:
     }
 
 
-def _allowed_recovery_paths() -> dict[str, tuple[str, Path]]:
-    allowed = {}
-    for component, sources in _recovery_component_sources().items():
-        for archive_path, destination_path in sources:
-            allowed[archive_path] = (component, destination_path)
-    return allowed
+def _recovery_component_tree_roots() -> dict[str, tuple[str, Path]]:
+    return {
+        "spark": ("spark", SPARK_STATE_DIR),
+        "ark": ("ark", ARKADE_STATE_DIR),
+        "phoenixd": ("phoenixd", PHOENIXD_STATE_DIR),
+        "tunnel": ("tunnel", TUNNEL_STATE_DIR),
+    }
 
 
-def _backup_component_payloads(backup_type: str) -> dict[str, list[dict[str, Any]]]:
+def _archive_tree_entries(component: str, archive_prefix: str, root_path: Path) -> list[dict[str, Any]]:
+    if not root_path.exists():
+        return []
+    entries: list[dict[str, Any]] = []
+    for source_path in sorted(root_path.rglob("*")):
+        if not source_path.is_file():
+            continue
+        relative = source_path.relative_to(root_path).as_posix()
+        entry = _archive_entry(f"{archive_prefix}/{relative}", source_path)
+        if entry:
+            entries.append(entry)
+    return entries
+
+
+def _resolve_tree_destination(component: str, archive_path: str) -> Path | None:
+    prefix, root_path = _recovery_component_tree_roots().get(component, (None, None))
+    if not prefix or not root_path:
+        return None
+    marker = f"{prefix}/"
+    if not archive_path.startswith(marker):
+        return None
+    relative = archive_path[len(marker):]
+    if not relative:
+        return None
+    relative_path = Path(relative)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        return None
+    return root_path / relative_path
+
+
+def _resolve_recovery_destination_path(component: str, archive_path: str) -> Path | None:
+    destination = _resolve_tree_destination(component, archive_path)
+    if destination is not None:
+        return destination
+    for allowed_component, sources in _recovery_component_sources().items():
+        for allowed_archive_path, destination_path in sources:
+            if component == allowed_component and archive_path == allowed_archive_path:
+                return destination_path
+    return None
+
+
+def _backup_component_payloads() -> dict[str, list[dict[str, Any]]]:
     component_sources = _recovery_component_sources()
-    included = {"database", "spark", "ark", "config", "tunnel"}
-    if backup_type == "full":
-        included.update({"wifi", "tor", "update"})
+    tree_roots = _recovery_component_tree_roots()
     payloads: dict[str, list[dict[str, Any]]] = {}
     for component, sources in component_sources.items():
-        if component not in included:
-            continue
         entries = []
         for archive_path, destination_path in sources:
             entry = _archive_entry(archive_path, destination_path)
@@ -741,27 +775,31 @@ def _backup_component_payloads(backup_type: str) -> dict[str, list[dict[str, Any
                 entries.append(entry)
         if entries:
             payloads[component] = entries
+    for component, (archive_prefix, root_path) in tree_roots.items():
+        entries = _archive_tree_entries(component, archive_prefix, root_path)
+        if entries:
+            payloads[component] = entries
     return payloads
 
 
-def _recovery_manifest(backup_type: str, encrypted: bool, payloads: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+def _recovery_manifest(encrypted: bool, payloads: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
     return build_backup_manifest(
-        backup_type=backup_type,
+        backup_type="full",
         current_version=get_current_version(),
         encrypted=encrypted,
         components=payloads,
-        spark_seed_present=bool(_read_spark_mnemonic() or _read_arkade_mnemonic()),
+        spark_seed_present=bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed()),
         tunnel_configured=bool((_load_tunnel_state().get("current_tunnel") or {}).get("tunnel_id")),
         created_by="manual",
     )
 
 
-def _create_recovery_backup_bytes(backup_type: str, passphrase: str | None = None, *, created_by: str = "manual") -> tuple[bytes, dict[str, Any]]:
-    services = _services_for_restore(list({"database", "spark", "ark", "tunnel"} if backup_type == "full" else {"database"}))
+def _create_recovery_backup_bytes(passphrase: str | None = None, *, created_by: str = "manual") -> tuple[bytes, dict[str, Any]]:
+    services = _services_for_restore(["database", "spark", "ark", "phoenixd", "tunnel"])
     try:
         _stop_services(services)
-        payloads = _backup_component_payloads(backup_type)
-        manifest = _recovery_manifest(backup_type, bool(passphrase), payloads)
+        payloads = _backup_component_payloads()
+        manifest = _recovery_manifest(bool(passphrase), payloads)
         manifest["created_by"] = created_by
         plain_backup = package_plain_backup(manifest, payloads)
         if passphrase:
@@ -775,7 +813,7 @@ def _create_recovery_backup_bytes(backup_type: str, passphrase: str | None = Non
 
 def _backup_filename(manifest: dict[str, Any]) -> str:
     ts = manifest["created_at"].replace(":", "").replace("-", "").replace("+00:00", "Z")
-    return f"lnbitsbox-recovery-{manifest['backup_type']}-{ts}.zip"
+    return f"lnbitsbox-recovery-{ts}.zip"
 
 
 def _record_backup_success(*, manifest: dict[str, Any], storage: str, file_path: str | None, validated: bool):
@@ -876,6 +914,8 @@ def _services_for_restore(components: list[str]) -> list[str]:
         services.add("spark-sidecar.service")
     if "ark" in components:
         services.add("arkade-sidecar.service")
+    if "phoenixd" in components:
+        services.add("phoenixd.service")
     if "tunnel" in components:
         services.add(f"{TUNNEL_SERVICE_NAME}.service")
     return sorted(services)
@@ -895,20 +935,32 @@ def _start_services(service_names: list[str]):
         subprocess.run(["systemctl", "start", service], capture_output=True, timeout=30, check=False)
 
 
+def _restore_component_ownership(component: str, destination_path: Path):
+    if component == "database":
+        shutil.chown(destination_path, user="lnbits", group="lnbits")
+    elif component == "spark":
+        shutil.chown(destination_path, user="root", group="spark-sidecar")
+    elif component == "ark":
+        if destination_path.name in {"mnemonic", "api-key.env"}:
+            shutil.chown(destination_path, user="root", group="arkade-sidecar")
+        else:
+            shutil.chown(destination_path, user="arkade-sidecar", group="arkade-sidecar")
+    elif component == "phoenixd":
+        shutil.chown(destination_path, user="phoenixd", group="phoenixd")
+    elif component == "tunnel":
+        shutil.chown(destination_path, user="root", group="root")
+
+
 def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any], selected_components: list[str]) -> dict[str, Any]:
     restored_files = []
-    allowed_paths = _allowed_recovery_paths()
     for file_info in manifest.get("files", []):
         component = file_info.get("component")
         if component not in selected_components:
             continue
         archive_path = file_info.get("archive_path")
-        allowed = allowed_paths.get(archive_path)
-        if not allowed:
+        destination_path = _resolve_recovery_destination_path(component, archive_path)
+        if destination_path is None:
             raise ValueError(f"Archive contains unsupported restore path: {archive_path}")
-        allowed_component, destination_path = allowed
-        if allowed_component != component:
-            raise ValueError(f"Archive component mismatch for {archive_path}")
         payload = inner_zip.read(archive_path)
         _write_restored_file(destination_path, payload, file_info.get("mode"))
         restored_files.append({
@@ -916,14 +968,7 @@ def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any
             "path": str(destination_path),
         })
         try:
-            if destination_path == LNBITS_DB_PATH:
-                shutil.chown(destination_path, user="lnbits", group="lnbits")
-            elif destination_path in (SPARK_MNEMONIC_FILE, SPARK_API_KEY_FILE):
-                shutil.chown(destination_path, user="root", group="spark-sidecar")
-            elif destination_path in (ARKADE_MNEMONIC_FILE, ARKADE_API_KEY_FILE):
-                shutil.chown(destination_path, user="root", group="arkade-sidecar")
-            elif destination_path in (TUNNEL_STATE_FILE, TUNNEL_KEY_FILE, TUNNEL_RUNTIME_ENV):
-                shutil.chown(destination_path, user="root", group="root")
+            _restore_component_ownership(component, destination_path)
         except Exception:
             pass
     return {"restored_files": restored_files}
@@ -946,6 +991,7 @@ def _post_restore_report(selected_components: list[str], manifest: dict[str, Any
             "lnbits": get_service_status("lnbits"),
             "spark-sidecar": get_service_status("spark-sidecar"),
             "arkade-sidecar": get_service_status("arkade-sidecar"),
+            "phoenixd": get_service_status("phoenixd"),
             TUNNEL_SERVICE_NAME: _tunnel_service_status(),
         },
     }
@@ -980,19 +1026,15 @@ def _recovery_status_payload() -> dict[str, Any]:
 
 
 def _manifest_path_issues(manifest: dict[str, Any]) -> list[str]:
-    allowed_paths = _allowed_recovery_paths()
     issues = []
     for file_info in manifest.get("files", []):
         archive_path = file_info.get("archive_path")
         component = file_info.get("component")
-        allowed = allowed_paths.get(archive_path)
-        if not allowed:
+        destination_path = _resolve_recovery_destination_path(component, archive_path)
+        if destination_path is None:
             issues.append(f"Unsupported archive path: {archive_path}")
             continue
-        allowed_component, allowed_destination = allowed
-        if component != allowed_component:
-            issues.append(f"Component mismatch for {archive_path}")
-        if file_info.get("destination_path") != str(allowed_destination):
+        if file_info.get("destination_path") != str(destination_path):
             issues.append(f"Destination mismatch for {archive_path}")
     return issues
 
@@ -1062,7 +1104,6 @@ def _scheduled_backup_worker():
                     if not passphrase:
                         raise ValueError("Scheduled backup passphrase is missing.")
                     content, manifest = _create_recovery_backup_bytes(
-                        schedule.get("backup_type", "full"),
                         passphrase=passphrase,
                         created_by="scheduled",
                     )
@@ -1862,14 +1903,11 @@ def api_recovery_backup_file_download(filename: str):
 @app.route("/box/api/recovery/backup/download", methods=["POST"])
 @login_required
 def api_recovery_backup_download():
-    backup_type = (request.form.get("backup_type") or "full").strip().lower()
     passphrase = request.form.get("passphrase", "")
-    if backup_type not in ("quick", "full"):
-        return _json_error("Invalid backup type", 400)
     if not passphrase:
         return _json_error("Backup password is required.", 400)
 
-    content, manifest = _create_recovery_backup_bytes(backup_type, passphrase=passphrase)
+    content, manifest = _create_recovery_backup_bytes(passphrase=passphrase)
     _record_backup_success(
         manifest=manifest,
         storage="Downloaded from browser",
@@ -1889,14 +1927,11 @@ def api_recovery_backup_download():
 @login_required
 def api_recovery_backup_save():
     payload = request.get_json(silent=True) or {}
-    backup_type = str(payload.get("backup_type") or "full").strip().lower()
     passphrase = str(payload.get("passphrase") or "")
-    if backup_type not in ("quick", "full"):
-        return _json_error("Invalid backup type", 400)
     if not passphrase:
         return _json_error("Backup password is required.", 400)
 
-    content, manifest = _create_recovery_backup_bytes(backup_type, passphrase=passphrase)
+    content, manifest = _create_recovery_backup_bytes(passphrase=passphrase)
     result = _write_recovery_destination_file("local", content, manifest)
     return _json_response(
         status="ok",
@@ -2008,13 +2043,10 @@ def api_recovery_schedule_set():
     payload = request.get_json(silent=True) or {}
     enabled = bool(payload.get("enabled"))
     interval_hours = max(1, min(168, int(payload.get("interval_hours") or 24)))
-    backup_type = str(payload.get("backup_type") or "full").strip().lower()
     destination = "local"
     passphrase = str(payload.get("passphrase") or "")
     existing = _recovery_schedule()
 
-    if backup_type not in ("quick", "full"):
-        return _json_error("Invalid backup type", 400)
     if enabled and not passphrase and not existing.get("passphrase"):
         return _json_error("A backup password is required for scheduled backups.", 400)
 
@@ -2025,7 +2057,6 @@ def api_recovery_schedule_set():
     schedule = {
         "enabled": enabled,
         "interval_hours": interval_hours,
-        "backup_type": backup_type,
         "destination": destination,
         "passphrase": passphrase or existing.get("passphrase", ""),
         "last_run_at": existing.get("last_run_at"),
