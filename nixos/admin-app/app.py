@@ -93,6 +93,14 @@ FUNDING_SOURCES = {
 }
 FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values() if source.get("service")]
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor"]
+LNBITS_DEFAULT_ENV = [
+    "LNBITS_ADMIN_UI=true",
+    "LNBITS_HOST=127.0.0.1",
+    "LNBITS_PORT=5000",
+    "LNBITS_RESERVE_FEE_MIN=15000",
+    "LNBITS_RESERVE_FEE_PERCENT=1.0",
+    "LNBITS_FUNDING_SOURCE_PAY_INVOICE_WAIT_SECONDS=20",
+]
 LNBITS_STATE_DIR = Path("/tmp/lnbitspi-test/lnbits") if DEV_MODE else Path("/var/lib/lnbits")
 LNBITS_DB_PATH = LNBITS_STATE_DIR / "database.sqlite3"
 LNBITS_EXTENSIONS_DIR = (
@@ -264,6 +272,15 @@ def _update_lnbits_funding_source_env(source: str):
         if not any(line.startswith(key + "=") for key in funding_keys)
         and not line.startswith("# Funding Source Configuration")
     ]
+    kept_keys = {
+        line.split("=", 1)[0]
+        for line in kept
+        if "=" in line and not line.strip().startswith("#")
+    }
+    missing_defaults = [
+        line for line in LNBITS_DEFAULT_ENV
+        if line.split("=", 1)[0] not in kept_keys
+    ]
 
     if source == "spark":
         api_key = _read_sidecar_api_key(SPARK_API_KEY_FILE, "SPARK_SIDECAR_API_KEY")
@@ -306,7 +323,11 @@ def _update_lnbits_funding_source_env(source: str):
         raise ValueError("Invalid funding source")
 
     LNBITS_ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LNBITS_ENV_FILE.write_text("\n".join(kept).rstrip() + "\n\n" + "\n".join(funding_config) + "\n")
+    content_lines = [line for line in kept if line.strip()]
+    content_lines.extend(missing_defaults)
+    content_lines.append("")
+    content_lines.extend(funding_config)
+    LNBITS_ENV_FILE.write_text("\n".join(content_lines).rstrip() + "\n")
     LNBITS_ENV_FILE.chmod(0o640)
 
 

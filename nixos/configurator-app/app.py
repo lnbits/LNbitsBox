@@ -70,6 +70,14 @@ FUNDING_SOURCES = {
         "service": "phoenixd.service",
     },
 }
+LNBITS_DEFAULT_ENV = [
+    "LNBITS_ADMIN_UI=true",
+    "LNBITS_HOST=127.0.0.1",
+    "LNBITS_PORT=5000",
+    "LNBITS_RESERVE_FEE_MIN=15000",
+    "LNBITS_RESERVE_FEE_PERCENT=1.0",
+    "LNBITS_FUNDING_SOURCE_PAY_INVOICE_WAIT_SECONDS=20",
+]
 
 # In-memory state for wizard (cleared after completion)
 wizard_state = {}
@@ -376,6 +384,15 @@ def update_lnbits_env(source: str):
         if not any(line.startswith(key + "=") for key in funding_keys)
         and not line.startswith("# Funding Source Configuration")
     ]
+    kept_keys = {
+        line.split("=", 1)[0]
+        for line in kept
+        if "=" in line and not line.strip().startswith("#")
+    }
+    missing_defaults = [
+        line for line in LNBITS_DEFAULT_ENV
+        if line.split("=", 1)[0] not in kept_keys
+    ]
 
     if source == "spark":
         api_token = secrets.token_hex(32)
@@ -424,7 +441,11 @@ def update_lnbits_env(source: str):
         raise ValueError("Invalid funding source")
 
     ENV_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
-    ENV_FILE.write_text("\n".join(kept).rstrip() + "\n\n" + "\n".join(funding_config) + "\n")
+    content_lines = [line for line in kept if line.strip()]
+    content_lines.extend(missing_defaults)
+    content_lines.append("")
+    content_lines.extend(funding_config)
+    ENV_FILE.write_text("\n".join(content_lines).rstrip() + "\n")
     ENV_FILE.chmod(0o640)
 
 
