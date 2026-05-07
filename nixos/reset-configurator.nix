@@ -160,7 +160,10 @@ let
     #!/usr/bin/env bash
     set -euo pipefail
 
+    MKDIR=${pkgs.coreutils}/bin/mkdir
     RM=${pkgs.coreutils}/bin/rm
+    CHMOD=${pkgs.coreutils}/bin/chmod
+    CHOWN=${pkgs.coreutils}/bin/chown
     SYSTEMCTL=${pkgs.systemd}/bin/systemctl
 
     if [ "$EUID" -ne 0 ]; then
@@ -193,6 +196,12 @@ let
     remove_path /var/lib/lnbitsbox-tunnel
     remove_path /var/lib/lnbitsbox-recovery
     remove_path /etc/lnbits/lnbits.env
+
+    # Recreate required LNbits paths so later starts do not fail namespace setup.
+    "$MKDIR" -p /var/lib/lnbits /var/lib/lnbits-extensions
+    "$CHOWN" lnbits:lnbits /var/lib/lnbits /var/lib/lnbits-extensions || true
+    "$CHMOD" 0751 /var/lib/lnbits || true
+    "$CHMOD" 0750 /var/lib/lnbits-extensions || true
 
     echo "Re-enabling the configurator..."
     "$SYSTEMCTL" reset-failed lnbitspi-configurator.service || true
