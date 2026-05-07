@@ -308,6 +308,10 @@ def _funding_sources_payload() -> dict[str, Any]:
             }
             for key, value in FUNDING_SOURCES.items()
         },
+        "spark": {
+            "balance": get_spark_balance(),
+            "seed_present": bool(_read_spark_mnemonic()),
+        },
         "arkade": get_arkade_status(),
         "phoenixd": get_phoenixd_status(),
     }

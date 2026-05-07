@@ -17,15 +17,13 @@
 
     {% if selected_source == "spark" %}
     <div class="mt-4" data-funding-panel="spark">
-        <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Spark Status</div>
-                    <p class="text-xs font-mono text-ln-muted mt-2">Spark L2 sidecar funding source.</p>
-                </div>
-                <span class="text-xs font-mono text-ln-muted" id="funding-spark-state">--</span>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Spark Balance</div>
+                <div class="text-xl font-display font-bold text-ln-text"><span id="spark-balance">--</span> <span class="text-xs font-mono text-ln-muted">sats</span></div>
             </div>
         </div>
+
         <div class="mt-4">
             {% include "partials/cards/spark_seed_phrase.html" %}
         </div>
@@ -77,27 +75,10 @@
 
     {% if selected_source == "ark" %}
     <div class="mt-4" data-funding-panel="ark">
-        <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Arkade Status</div>
-                    <p class="text-xs font-mono text-ln-muted mt-2">Arkade sidecar funding source.</p>
-                </div>
-                <span class="text-xs font-mono text-ln-muted" id="funding-arkade-state">--</span>
-            </div>
-        </div>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Status</div>
-                <div class="text-xl font-display font-bold text-ln-text" id="arkade-wallet-state">--</div>
-            </div>
             <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
                 <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Ark Balance</div>
                 <div class="text-xl font-display font-bold text-ln-text"><span id="arkade-balance">--</span> <span class="text-xs font-mono text-ln-muted">sats</span></div>
-            </div>
-            <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Endpoint</div>
-                <div class="text-lg font-display font-bold text-ln-text">127.0.0.1:8765</div>
             </div>
         </div>
 

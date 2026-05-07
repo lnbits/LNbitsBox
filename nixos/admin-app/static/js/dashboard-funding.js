@@ -46,6 +46,10 @@
         D.setText('funding-arkade-state', selected === 'ark' ? 'Selected' : D.serviceStatusLabel(payload.sources.ark?.service_status));
         D.setText('funding-phoenixd-state', selected === 'phoenixd' ? 'Selected' : D.serviceStatusLabel(payload.sources.phoenixd?.service_status));
 
+        const spark = payload.spark || {};
+        const sparkBalance = spark.balance || {};
+        D.setText('spark-balance', fmt(sparkBalance.balance));
+
         const arkade = payload.arkade || {};
         const arkBalance = arkade.balance || {};
         D.setText('arkade-wallet-state', arkade.mnemonic_missing ? 'Missing seed' : (selected === 'ark' ? 'Selected' : D.serviceStatusLabel(payload.sources.ark?.service_status)));
