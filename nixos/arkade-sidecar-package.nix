@@ -1,11 +1,15 @@
 { pkgs, arkade-sidecar }:
 
+let
+  nodejs = pkgs.nodejs_22;
+in
 pkgs.buildNpmPackage {
   pname = "arkade-sidecar";
   version = "0.1.0";
 
   src = arkade-sidecar;
   npmDepsHash = "sha256-MUMCMmydH/UFJgKNuiYGVK2Z1EZGeK4azMnFm600iKI=";
+  inherit nodejs;
 
   dontNpmBuild = true;
   dontBuild = true;
@@ -37,7 +41,7 @@ fi
 export ARKADE_MNEMONIC="\$(cat "\$MNEMONIC_FILE")"
 
 cd $out/lib/arkade-sidecar
-exec ${pkgs.nodejs}/bin/node server.mjs "\$@"
+exec ${nodejs}/bin/node server.mjs "\$@"
 EOF
 
     chmod +x $out/bin/arkade-sidecar
