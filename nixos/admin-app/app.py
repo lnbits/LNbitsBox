@@ -375,12 +375,13 @@ def _start_factory_reset():
         _perform_factory_reset_dev_mode()
         return
 
+    reset_command = Path("/run/current-system/sw/bin/lnbitspi-factory-reset")
     subprocess.run(
         [
             "systemd-run",
             "--no-block",
             "--unit=lnbitsbox-factory-reset",
-            "lnbitspi-factory-reset",
+            str(reset_command),
         ],
         check=True,
         capture_output=True,

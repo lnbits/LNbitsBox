@@ -47,6 +47,10 @@
     };
   };
 
+  systemd.services.avahi-daemon.preStart = ''
+    rm -f /run/avahi-daemon/pid
+  '';
+
   # OpenSSH for headless access
   services.openssh.enable = true;
   services.openssh.settings = {
