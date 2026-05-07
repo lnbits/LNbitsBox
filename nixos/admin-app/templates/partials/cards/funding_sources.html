@@ -76,29 +76,33 @@
     {% endif %}
 
     {% if selected_source == "ark" %}
-    <div class="mt-4 bg-ln-surface border border-ln-border rounded-lg p-4" id="ark-funding-section">
-        <div class="flex items-start justify-between gap-3">
-            <div>
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Ark Funding Source</div>
-                <p class="text-xs font-mono text-ln-muted mt-2 leading-relaxed">
-                    Ark is the enabled funding source for this box. Admin support is informational only while Ark service controls are being prepared.
-                </p>
+    <div class="mt-4" data-funding-panel="ark">
+        <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
+            <div class="flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Arkade Status</div>
+                    <p class="text-xs font-mono text-ln-muted mt-2">Arkade sidecar funding source.</p>
+                </div>
+                <span class="text-xs font-mono text-ln-muted" id="funding-arkade-state">--</span>
             </div>
-            <span class="text-xs font-mono text-ln-muted whitespace-nowrap">Enabled</span>
         </div>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div class="bg-ln-card border border-ln-border rounded-lg p-3">
+            <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
                 <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Status</div>
-                <div class="text-xl font-display font-bold text-ln-text">Selected</div>
+                <div class="text-xl font-display font-bold text-ln-text" id="arkade-wallet-state">--</div>
             </div>
-            <div class="bg-ln-card border border-ln-border rounded-lg p-3">
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Wallet</div>
-                <div class="text-xl font-display font-bold text-ln-text">Ark</div>
+            <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Ark Balance</div>
+                <div class="text-xl font-display font-bold text-ln-text"><span id="arkade-balance">--</span> <span class="text-xs font-mono text-ln-muted">sats</span></div>
             </div>
-            <div class="bg-ln-card border border-ln-border rounded-lg p-3">
-                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Backend</div>
-                <div class="text-xl font-display font-bold text-ln-text">Pending</div>
+            <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
+                <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-2">Endpoint</div>
+                <div class="text-lg font-display font-bold text-ln-text">127.0.0.1:8765</div>
             </div>
+        </div>
+
+        <div class="mt-4">
+            {% include "partials/cards/arkade_seed_phrase.html" %}
         </div>
     </div>
     {% endif %}

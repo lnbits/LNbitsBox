@@ -1,4 +1,4 @@
-{% set visible_services = visible_services|default(["lnbits", "spark-sidecar", "phoenixd", "tor", "tunnel"]) %}
+{% set visible_services = visible_services|default(["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor", "tunnel"]) %}
 <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
     <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-4">Services</div>
     <div class="space-y-3">
@@ -51,6 +51,30 @@
                     Start
                 </button>
                 <button id="svc-spark-sidecar-stop-btn" data-confirm-action="stop/spark-sidecar" data-confirm-message="Stop Spark?"
+                        class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                    Stop
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% if "arkade-sidecar" in visible_services %}
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 rounded-full" id="svc-arkade-sidecar-dot"></div>
+                <span class="font-mono text-sm">Arkade</span>
+                <span class="text-ln-muted font-mono text-xs" id="svc-arkade-sidecar-status">--</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="svc-arkade-sidecar-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
+                <button id="svc-arkade-sidecar-restart-btn" data-confirm-action="restart/arkade-sidecar" data-confirm-message="Restart Arkade?"
+                        class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Restart
+                </button>
+                <button id="svc-arkade-sidecar-start-btn" data-run-action="start/arkade-sidecar"
+                        class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                    Start
+                </button>
+                <button id="svc-arkade-sidecar-stop-btn" data-confirm-action="stop/arkade-sidecar" data-confirm-message="Stop Arkade?"
                         class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
                     Stop
                 </button>

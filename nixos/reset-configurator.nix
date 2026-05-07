@@ -21,7 +21,7 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   echo ""
   echo "This will NOT:"
   echo "  • Delete your LNbits data or database"
-  echo "  • Delete your Spark mnemonic (unless you choose to)"
+  echo "  • Delete your funding-source seed phrase (unless you choose to)"
   echo ""
   read -p "Continue with reset? [y/N] " -n 1 -r
   echo
@@ -36,6 +36,7 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
   systemctl stop lnbitspi-admin.service || true
   systemctl stop spark-sidecar.service || true
   systemctl stop phoenixd.service || true
+  systemctl stop arkade-sidecar.service || true
 
   echo "Removing configuration marker..."
   if [ -e /var/lib/lnbits/.configured ]; then
@@ -56,26 +57,36 @@ pkgs.writeScriptBin "lnbitspi-reset" ''
 
   echo ""
   echo "─────────────────────────────────────────────────────"
-  echo "Mnemonic Management"
+  echo "Seed Phrase Management"
   echo "─────────────────────────────────────────────────────"
-  if [ -f /var/lib/spark-sidecar/mnemonic ]; then
-    echo "A Spark mnemonic file exists at:"
-    echo "  /var/lib/spark-sidecar/mnemonic"
+  if [ -f /var/lib/spark-sidecar/mnemonic ] || [ -f /var/lib/arkade-sidecar/mnemonic ] || [ -f /var/lib/phoenixd/.phoenix/seed.dat ]; then
+    if [ -f /var/lib/spark-sidecar/mnemonic ]; then
+      seed_file="/var/lib/spark-sidecar/mnemonic"
+      seed_name="Spark"
+    elif [ -f /var/lib/arkade-sidecar/mnemonic ]; then
+      seed_file="/var/lib/arkade-sidecar/mnemonic"
+      seed_name="Ark"
+    else
+      seed_file="/var/lib/phoenixd/.phoenix/seed.dat"
+      seed_name="Phoenixd"
+    fi
+    echo "A $seed_name seed file exists at:"
+    echo "  $seed_file"
     echo ""
     echo "If you delete it, you will need to generate or import"
     echo "a new seed phrase. Make sure you have it backed up!"
     echo ""
-    read -p "Delete the mnemonic file? [y/N] " -n 1 -r
+    read -p "Delete the seed file? [y/N] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      echo "Deleting mnemonic file..."
-      rm -f /var/lib/spark-sidecar/mnemonic
-      echo "Mnemonic deleted."
+      echo "Deleting seed file..."
+      rm -f "$seed_file"
+      echo "Seed file deleted."
     else
-      echo "Keeping mnemonic file (you can import it in the wizard)."
+      echo "Keeping seed file (you can import it in the wizard)."
     fi
   else
-    echo "No mnemonic file found. Skipping."
+    echo "No funding-source seed file found. Skipping."
   fi
 
   echo ""

@@ -9,9 +9,9 @@
     raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
     raspberry-pi-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # LNbits flake input - using dev branch
+    # LNbits flake input - pinned to the Arkade funding-source branch until it lands upstream.
     # To update: nix flake lock --update-input lnbits
-    lnbits.url = "github:lnbits/lnbits/v1.5.4";
+    lnbits.url = "github:blackcoffeexbt/lnbits/feat/arkade-funding-source";
 
     # Phoenixd source - build the JVM distribution from source on NixOS/aarch64.
     phoenixd.url = "github:ACINQ/phoenixd/v0.7.3";
@@ -20,9 +20,13 @@
     # Spark sidecar for L2 Lightning integration
     spark-sidecar.url = "github:blackcoffeexbt/spark_sidecar/feat/no-polling";
     spark-sidecar.flake = false;  # Not a flake, just source
+
+    # Arkade sidecar for Ark funding-source integration
+    arkade-sidecar.url = "github:lnbits/arkade_sidecar";
+    arkade-sidecar.flake = false;
   };
 
-  outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, ... }:
+  outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, arkade-sidecar, ... }:
   let
     version = "0.9.8";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
@@ -37,7 +41,7 @@
     # Compressed SD image (default, for releases)
     nixosConfigurations.pi4 = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits phoenixd spark-sidecar version; };
+      specialArgs = { inherit lnbits phoenixd spark-sidecar arkade-sidecar version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image
@@ -48,7 +52,7 @@
     # Uncompressed SD image (for faster local testing)
     nixosConfigurations.pi4-uncompressed = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits phoenixd spark-sidecar version; };
+      specialArgs = { inherit lnbits phoenixd spark-sidecar arkade-sidecar version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image

@@ -120,8 +120,8 @@ cachix use raspberry-pi-nix
 Clone the repository:
 
 ```bash
-git clone https://github.com/blackcoffeexbt/lnbitspi
-cd lnbitspi
+git clone https://github.com/lnbits/LNbitsBox
+cd LNbitsBox
 ```
 
 Build the SD image:

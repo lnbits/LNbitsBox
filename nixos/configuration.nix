@@ -147,7 +147,8 @@
       https://<this-device-ip>/
 
     Not configured yet? The setup wizard will guide you through:
-      • Generating/importing your Spark wallet seed phrase
+      • Choosing Spark, Phoenixd, or Ark as the funding source
+      • Generating/importing your wallet seed phrase
       • Setting your SSH password
       • Launching LNbits
 
@@ -172,6 +173,7 @@
     ./lnbits-service.nix
     ./spark-sidecar-service.nix
     ./phoenixd-service.nix
+    ./arkade-sidecar-service.nix
     ./configurator-service.nix
     ./caddy-proxy.nix
     ./admin-service.nix
