@@ -61,7 +61,7 @@ jobs:
       - name: Build SD image
         timeout-minutes: 120
         run: |
-          nix build .#sdImage -L --out-link result-sdimage
+          nix build .#sdImageUncompressed -L --out-link result-sdimage
           ls -lah result-sdimage/sd-image
 
       - name: Build and push system toplevel for OTA updates
@@ -74,7 +74,7 @@ jobs:
       - name: Collect artefacts
         run: |
           mkdir -p dist
-          cp -v result-sdimage/sd-image/*.img.zst dist/
+          zstd -T0 --ultra -22 result-sdimage/sd-image/*.img -o dist/lnbitsbox-${GITHUB_REF_NAME#v}.img.zst
           sha256sum dist/*.img.zst | tee dist/SHA256SUMS.txt
 
       - name: Create update manifest

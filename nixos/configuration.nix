@@ -5,6 +5,11 @@
 
   sdImage.imageName = "lnbitsbox-${version}.img";
 
+  documentation.enable = false;
+  documentation.doc.enable = false;
+  documentation.info.enable = false;
+  documentation.man.enable = false;
+
   # Write version to filesystem for the admin app to read
   environment.etc."lnbitsbox-version".text = version;
 

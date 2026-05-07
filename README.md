@@ -49,7 +49,7 @@ All directories are owned by their respective system users and persist across re
 ### Step 1: Download the image
 
 1. Go to **[Releases](../../releases)**
-2. Download the latest `nixos-sd-image-*-aarch64-linux.img.zst` file
+2. Download the latest `lnbitsbox-<version>.img.zst` file
 3. (Optional) Download `SHA256SUMS.txt` to verify integrity
 
 ### Step 2: Flash to SD card
@@ -81,8 +81,8 @@ lsblk
 sudo umount /dev/sdX*
 
 # Decompress first, then write
-zstd -d nixos-sd-image-*.img.zst
-sudo dd if=nixos-sd-image-*.img of=/dev/sdX bs=4M status=progress conv=fsync
+zstd -d lnbitsbox-*.img.zst
+sudo dd if=lnbitsbox-*.img of=/dev/sdX bs=4M status=progress conv=fsync
 ```
 
 **macOS:**
@@ -94,7 +94,7 @@ diskutil list
 diskutil unmountDisk /dev/diskX
 
 # Write the image (use rdiskX for faster writing)
-zstd -dc nixos-sd-image-*.img.zst | sudo dd of=/dev/rdiskX bs=4m
+zstd -dc lnbitsbox-*.img.zst | sudo dd of=/dev/rdiskX bs=4m
 
 # Eject when complete
 diskutil eject /dev/diskX

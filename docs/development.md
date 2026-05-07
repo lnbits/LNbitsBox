@@ -11,7 +11,7 @@ You can build two variants of the SD image:
 
 | Build Type | Command | Output | Use Case |
 |------------|---------|--------|----------|
-| **Compressed** (default) | `nix build .#sdImage -L` | `*.img.zst` | For distribution, GitHub releases (smaller file size) |
+| **Compressed** | `nix build .#sdImage -L` | `*.img.zst` | For distribution, GitHub releases (smaller file size) |
 | **Uncompressed** | `nix build .#sdImageUncompressed -L` | `*.img` | For local testing (faster build, faster flashing) |
 | **Quick Test** | `./build-test.sh` | `*.img` (copied to repo root) | Fastest way to build and prepare for flashing |
 
@@ -133,7 +133,7 @@ Build the SD image:
 ./build-test.sh
 
 # OR: Manual builds
-# Compressed image (default, smaller for distribution)
+# Compressed image (smaller for distribution)
 nix build .#sdImage -L
 
 # Uncompressed image (faster for local testing, skips compression)
@@ -160,8 +160,8 @@ Copy the image to a distribution directory:
 ```bash
 mkdir -p dist
 
-# For compressed images (releases)
-cp -v result/sd-image/*.img.zst dist/
+# For release images, build uncompressed first and recompress aggressively
+zstd -T0 --ultra -22 result/sd-image/*.img -o dist/lnbitsbox-$(git describe --tags --always | sed "s/^v//").img.zst
 sha256sum dist/*.img.zst > dist/SHA256SUMS.txt
 
 # For uncompressed images (if using build-test.sh, already in repo root)
