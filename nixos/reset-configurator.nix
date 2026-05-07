@@ -160,6 +160,9 @@ let
     #!/usr/bin/env bash
     set -euo pipefail
 
+    RM=${pkgs.coreutils}/bin/rm
+    SYSTEMCTL=${pkgs.systemd}/bin/systemctl
+
     if [ "$EUID" -ne 0 ]; then
       echo "Error: This command must be run as root"
       exit 1
@@ -168,17 +171,17 @@ let
     remove_path() {
       local target="$1"
       if [ -e "$target" ] || [ -L "$target" ]; then
-        rm -rf "$target"
+        "$RM" -rf "$target"
       fi
     }
 
     echo "Stopping LNbitsBox services for factory reset..."
-    systemctl stop lnbits.service || true
-    systemctl stop lnbitspi-admin.service || true
-    systemctl stop spark-sidecar.service || true
-    systemctl stop phoenixd.service || true
-    systemctl stop arkade-sidecar.service || true
-    systemctl stop lnbitsbox-reverse-tunnel.service || true
+    "$SYSTEMCTL" stop lnbits.service || true
+    "$SYSTEMCTL" stop lnbitspi-admin.service || true
+    "$SYSTEMCTL" stop spark-sidecar.service || true
+    "$SYSTEMCTL" stop phoenixd.service || true
+    "$SYSTEMCTL" stop arkade-sidecar.service || true
+    "$SYSTEMCTL" stop lnbitsbox-reverse-tunnel.service || true
 
     echo "Removing LNbits and wallet state..."
     remove_path /var/lib/lnbits
@@ -192,13 +195,9 @@ let
     remove_path /etc/lnbits/lnbits.env
 
     echo "Re-enabling the configurator..."
-    systemctl reset-failed lnbitspi-configurator.service || true
-    systemctl start lnbitspi-configurator.service || true
-    if command -v reload-caddy-config >/dev/null 2>&1; then
-      reload-caddy-config || true
-    else
-      systemctl reload caddy.service || true
-    fi
+    "$SYSTEMCTL" reset-failed lnbitspi-configurator.service || true
+    "$SYSTEMCTL" start lnbitspi-configurator.service || true
+    "$SYSTEMCTL" reload caddy.service || true
 
     echo "Factory reset complete."
   '';
