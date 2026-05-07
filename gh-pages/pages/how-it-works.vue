@@ -99,7 +99,7 @@
       </div>
     </section>
 
-    <!-- ── SPARK EXPLANATION ──────────────────────────────────── -->
+    <!-- ── FUNDING SOURCES ────────────────────────────────────── -->
     <section class="px-5 sm:px-8 py-24 border-t border-ln-border">
       <div class="max-w-3xl mx-auto text-center">
         <div class="w-12 h-12 rounded-xl bg-ln-pink/10 flex items-center justify-center mx-auto mb-6">
@@ -108,18 +108,19 @@
           </svg>
         </div>
         <h2 class="font-display font-bold text-ln-text text-2xl sm:text-3xl tracking-tight mb-6">
-          Lightning funding with Spark
+          Choose your Lightning funding source
         </h2>
         <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-4">
-          Spark is the Lightning funding system used by LNbitsBox. It lets LNbits interact
-          with the Lightning network while you keep control of your wallet.
+          LNbitsBox supports Spark, Phoenixd, and Arkade so you can choose the Lightning
+          funding setup that fits how you want to run LNbits.
         </p>
         <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-4">
-          Spark gives you a fully self-custodial Bitcoin experience with the ability to
-          exit to Bitcoin at any time without relying on a third party.
+          Spark offers a self-custodial Lightning experience with the ability to exit to
+          Bitcoin at any time without relying on a third party.
         </p>
         <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed">
-          LNbitsBox comes with Spark L2 for easy self-custodial Lightning payments, with the option to connect to over 20 other funding sources.
+          Phoenixd keeps things simple with automatic channel management, and Arkade adds
+          another built-in self-custodial option right out of the box.
         </p>
       </div>
     </section>

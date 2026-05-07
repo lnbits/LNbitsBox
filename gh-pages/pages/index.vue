@@ -145,9 +145,9 @@
             What it is
           </h2>
           <p class="font-display text-ln-muted text-base sm:text-lg leading-relaxed mb-4">
-            A small device that runs LNbits with a built-in Lightning wallet
-            powered by Spark. You own it, you control it, and everything stays
-            with you.
+            A small device that runs LNbits with built-in Lightning funding options
+            including Spark, Phoenixd, and Arkade. You own it, you control it,
+            and everything stays with you.
           </p>
         </div>
 

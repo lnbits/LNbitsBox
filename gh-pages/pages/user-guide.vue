@@ -62,7 +62,7 @@ const troubleshootingItems = [
     solution: [
       'Power off your LNbitsBox and remove the SD card.',
       'Reflash it using Raspberry Pi Imager with the latest LNbitsBox release from `https://github.com/lnbits/LNbitsBox/releases/latest`.',
-      'If you have Recovery Tool backups or your Spark seed phrase, keep those safe before starting.',
+      'If you have Recovery Tool backups or funding-source seed phrases for Spark, Phoenixd, or Arkade, keep those safe before starting.',
     ],
   },
   {
@@ -242,7 +242,7 @@ function toggleTroubleshootingItem(index) {
                   <li class="flex gap-3">
                     <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">2</span>
                     <p class="font-display text-ln-muted text-sm leading-relaxed">
-                      Write down and securely store the seed phrase shown during setup. This backup is
+                      Write down and securely store the seed phrase shown for your chosen funding source during setup. This backup is
                       critical for recovering access if you lose access to your LNbitsBox.
                     </p>
                   </li>
@@ -373,7 +373,7 @@ function toggleTroubleshootingItem(index) {
                   <li class="flex gap-3">
                     <span class="w-6 h-6 flex-shrink-0 rounded-lg bg-ln-pink/10 text-ln-pink font-mono text-xs flex items-center justify-center">1</span>
                     <p class="font-display text-ln-muted text-sm leading-relaxed">
-                      Create an encrypted recovery backup to capture LNbits data, Spark, Ark, and Phoenixd wallet files, tunnel state, and device configuration.
+                      Create an encrypted recovery backup to capture LNbits data, Spark, Arkade, and Phoenixd wallet files, tunnel state, and device configuration.
                     </p>
                   </li>
                   <li class="flex gap-3">
@@ -394,10 +394,10 @@ function toggleTroubleshootingItem(index) {
               <div class="grid sm:grid-cols-2 gap-4">
                 <div class="rounded-2xl border border-ln-pink/20 bg-ln-pink/5 p-5">
                   <h3 class="font-display font-semibold text-ln-text text-lg mb-2">
-                    Keep your Spark seed phrase too
+                    Keep your funding-source seed phrase too
                   </h3>
                   <p class="font-display text-ln-muted text-sm leading-relaxed">
-                    Recovery archives help restore your LNbitsBox, but your Spark seed phrase is still the most important secret for recovering wallet access and funds.
+                    Recovery archives help restore your LNbitsBox, but the seed phrase for your chosen funding source is still the most important secret for recovering wallet access and funds.
                   </p>
                 </div>
               </div>

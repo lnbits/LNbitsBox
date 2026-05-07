@@ -2,7 +2,7 @@
 const faqs = [
   {
     q: 'What is LNbitsBox?',
-    a: 'LNbitsBox is a small, ready-to-use device that runs LNbits with a self-custodial Lightning wallet powered by Spark. You plug it in, open the setup page in your browser, create your wallet, and you\'re ready to send and accept Bitcoin payments.',
+    a: 'LNbitsBox is a small, ready-to-use device that runs LNbits with built-in Lightning funding options including Spark, Phoenixd, and Arkade. You plug it in, open the setup page in your browser, choose your funding source, create your wallet, and you\'re ready to send and accept Bitcoin payments.',
   },
   // do i have to to be on the same network to use lnbits and lnbits extensions?
   {
@@ -19,11 +19,11 @@ const faqs = [
   },
   {
     q: 'Do I control my own funds?',
-    a: 'Yes. LNbitsBox uses Spark, a self-custodial Bitcoin layer 2. Your wallet keys stay on your device and you can exit to on-chain Bitcoin at any time. No third party ever controls your funds.',
+    a: 'Yes. LNbitsBox is designed around self-custodial funding sources. Your wallet keys stay on your device, and Spark, Phoenixd, and Arkade all let you run LNbits without handing custody to a third party.',
   },
   {
-    q: 'What is Spark?',
-    a: 'Spark is the Bitcoin layer 2 built into LNbits. It connects your LNbits to the Bitcoin network while keeping you in full control of your wallet. You don\'t need to manage channels or understand how Lightning works — Spark handles that for you.',
+    q: 'What Lightning wallets does the LNbitsBox support?',
+    a: 'LNbitsBox supports Spark, Phoenixd, and Arkade out of the box, and you can also connect LNbits to 20+ other funding sources if you want more flexibility later.',
   },
   {
     q: 'Is it suitable for a shop or business?',

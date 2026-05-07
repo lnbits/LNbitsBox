@@ -15,12 +15,12 @@ export default defineNuxtConfig({
         {
           name: 'description',
           content:
-            'LNbitsBox is plug-and-play LNbits in a box with self-custodial bitcoin use provided by Spark. It provides a simple, self-custodial way to accept Bitcoin payments with the Lightning Network.',
+            'LNbitsBox is plug-and-play LNbits in a box with self-custodial Lightning funding options including Spark, Phoenixd, and Arkade. It provides a simple way to accept Bitcoin payments while keeping control of your wallet.',
         },
         { property: 'og:title', content: 'LNbitsBox' },
         {
           property: 'og:description',
-          content: 'LNbitsBox is plug-and-play LNbits in a box with self-custodial bitcoin use provided by Spark. It provides a simple, self-custodial way to accept Bitcoin payments with the Lightning Network.',
+          content: 'LNbitsBox is plug-and-play LNbits in a box with self-custodial Lightning funding options including Spark, Phoenixd, and Arkade. It provides a simple way to accept Bitcoin payments while keeping control of your wallet.',
         },
         { name: 'color-scheme', content: 'light dark' },
         { name: 'theme-color', content: '#f8f8fc', media: '(prefers-color-scheme: light)' },
