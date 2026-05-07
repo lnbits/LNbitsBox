@@ -2,14 +2,15 @@
 
 let
   version = "0.7.3";
-  java = pkgs.jdk21_headless;
+  buildJava = pkgs.jdk21_headless;
+  runtimeJava = pkgs.jre_headless;
   gradlePackages = pkgs.callPackage "${pkgs.path}/pkgs/development/tools/build-managers/gradle/default.nix" { };
   gradle =
     if gradlePackages ? mkGradle then
       (gradlePackages.mkGradle {
         version = "8.9";
         hash = "sha256-1yXXB7+r1N/clYxiQAOzyArMwD9wN7USLEsdDvFc7Ks=";
-        defaultJava = java;
+        defaultJava = buildJava;
       }).wrapped
     else
       let
@@ -17,7 +18,7 @@ let
         gradleUnwrapped = pkgs.callPackage (gradlePackages.gen {
           version = "8.9";
           hash = "sha256-1yXXB7+r1N/clYxiQAOzyArMwD9wN7USLEsdDvFc7Ks=";
-          defaultJava = java;
+          defaultJava = buildJava;
         }) { };
       in
       wrapGradle gradleUnwrapped null;
@@ -41,7 +42,7 @@ let
 
   __darwinAllowLocalNetworking = true;
   gradleBuildTask = "jvmDistZip";
-  gradleFlags = [ "-Dorg.gradle.java.home=${java}" ];
+  gradleFlags = [ "-Dorg.gradle.java.home=${buildJava}" ];
   PHOENIXD_GIT_COMMIT = "nix";
   PHOENIXD_JVM_ONLY = "1";
 
@@ -55,9 +56,11 @@ let
     mv $out/lib/phoenixd-${version}-jvm $out/lib/phoenixd
 
     makeWrapper $out/lib/phoenixd/bin/phoenixd $out/bin/phoenixd \
-      --set JAVA_HOME ${java}
+      --set JAVA_HOME ${runtimeJava} \
+      --prefix PATH : ${runtimeJava}/bin
     makeWrapper $out/lib/phoenixd/bin/phoenix-cli $out/bin/phoenix-cli \
-      --set JAVA_HOME ${java}
+      --set JAVA_HOME ${runtimeJava} \
+      --prefix PATH : ${runtimeJava}/bin
 
     runHook postInstall
   '';

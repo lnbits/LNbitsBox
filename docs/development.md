@@ -3,6 +3,7 @@
 To build the image yourself, follow these instructions for Debian/Ubuntu systems.
 
 For Phoenixd version bumps, see [Phoenixd Upgrade Guide](./phoenixd-upgrades.md).
+For manual release publishing and oversized GitHub asset workarounds, see [Release Guide](./release.md).
 
 ## Build Options
 
