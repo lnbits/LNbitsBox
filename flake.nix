@@ -18,7 +18,7 @@
     phoenixd.flake = false;
 
     # Spark sidecar for L2 Lightning integration
-    spark-sidecar.url = "github:blackcoffeexbt/spark_sidecar/feat/no-polling";
+    spark-sidecar.url = "github:lnbits/spark_sidecar";
     spark-sidecar.flake = false;  # Not a flake, just source
 
     # Arkade sidecar for Ark funding-source integration
