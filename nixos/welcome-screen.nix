@@ -70,7 +70,25 @@ let
       fi
 
       # Service statuses
-      spark_status=$(service_status spark-sidecar)
+      funding_source="spark"
+      if [ -f /var/lib/lnbitsbox/funding-source ]; then
+        funding_source=$(tr -d '\n' < /var/lib/lnbitsbox/funding-source 2>/dev/null || echo spark)
+      fi
+      case "$funding_source" in
+        phoenixd)
+          funding_label="Phoenixd"
+          funding_service="phoenixd"
+          ;;
+        ark)
+          funding_label="Arkade"
+          funding_service="arkade-sidecar"
+          ;;
+        *)
+          funding_label="Spark"
+          funding_service="spark-sidecar"
+          ;;
+      esac
+      funding_status=$(service_status "$funding_service")
       lnbits_status=$(service_status lnbits)
       caddy_status=$(service_status caddy)
       tor_status=$(service_status tor)
@@ -118,7 +136,7 @@ LOGO
       if [ "$configured" = true ]; then
         # --- Configured mode ---
         printf "  ''${BOLD}Services''${RESET}\n"
-        printf "    Spark Sidecar   %b\n" "$spark_status"
+        printf "    %-15s %b\n" "$funding_label" "$funding_status"
         printf "    LNbits          %b\n" "$lnbits_status"
         printf "    Caddy           %b\n" "$caddy_status"
         printf "    Tor             %b\n" "$tor_status"
@@ -149,7 +167,8 @@ LOGO
           printf "  Open a browser and go to:\n"
           printf "    ''${BOLD}http://lnbits.local/''${RESET} or ''${BOLD}https://%s/''${RESET}\n\n" "$first_ip"
           printf "  The setup wizard will guide you through:\n"
-          printf "    • Generating your Spark wallet seed phrase\n"
+          printf "    • Choosing Spark, Phoenixd, or Ark as the funding source\n"
+          printf "    • Generating your wallet seed phrase\n"
           printf "    • Setting a SSH password\n"
           printf "    • Launching LNbits\n"
         else

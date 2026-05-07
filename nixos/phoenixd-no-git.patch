@@ -1,0 +1,101 @@
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -4,7 +4,6 @@
+ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+ import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest
+-import java.io.ByteArrayOutputStream
+ 
+ plugins {
+     alias(libs.plugins.multiplatform)
+@@ -12,15 +11,8 @@
+     distribution
+ }
+ 
+-/** Get the current git commit hash. */
+-fun gitCommitHash(): String {
+-    val stream = ByteArrayOutputStream()
+-    project.exec {
+-        commandLine = "git rev-parse --verify --long HEAD".split(" ")
+-        standardOutput = stream
+-    }
+-    return String(stream.toByteArray()).split("\n").first()
+-}
++fun gitCommitHash(): String = System.getenv("PHOENIXD_GIT_COMMIT") ?: "nix"
++val buildNativeTargets = System.getenv("PHOENIXD_JVM_ONLY") != "1"
+ 
+ /**
+  * Generates a `BuildVersions` file in build/generated-src containing the current git commit and the lightning-kmp version.
+@@ -84,7 +76,7 @@
+         }
+     }
+ 
+-    if (currentOs.isLinux && arch != "aarch64") {
++    if (buildNativeTargets && currentOs.isLinux && arch != "aarch64") {
+         // there is no kotlin native toolchain for linux arm64 yet, but we can still build for the JVM
+         // see https://youtrack.jetbrains.com/issue/KT-51794/Cant-run-JVM-targets-on-ARM-Linux-when-using-Kotlin-Multiplatform-plugin
+         linuxX64 {
+@@ -106,7 +98,7 @@
+         }
+     }
+ 
+-    if (currentOs.isMacOsX) {
++    if (buildNativeTargets && currentOs.isMacOsX) {
+         macosX64 {
+             phoenixBinaries()
+         }
+@@ -153,14 +145,14 @@
+                 implementation("ch.qos.logback:logback-classic:${libs.versions.test.logback.get()}")
+             }
+         }
+-        if (currentOs.isLinux || currentOs.isMacOsX) {
++        if (buildNativeTargets && (currentOs.isLinux || currentOs.isMacOsX)) {
+             nativeMain {
+                 dependencies {
+                     implementation("app.cash.sqldelight:native-driver:${libs.versions.sqldelight.get()}")
+                 }
+             }
+         }
+-        if (currentOs.isLinux) {
++        if (buildNativeTargets && currentOs.isLinux) {
+             linuxMain {
+                 dependencies {
+                     implementation("io.ktor:ktor-client-curl:${libs.versions.ktor.get()}")
+@@ -167,7 +159,7 @@
+                 }
+             }
+         }
+-        if (currentOs.isMacOsX) {
++        if (buildNativeTargets && currentOs.isMacOsX) {
+             macosMain {
+                 dependencies {
+                     implementation("io.ktor:ktor-client-darwin:${libs.versions.ktor.get()}")
+@@ -184,7 +176,7 @@
+             }
+         }
+     }
+-    if (currentOs.isLinux && arch != "aarch64") {
++    if (buildNativeTargets && currentOs.isLinux && arch != "aarch64") {
+         create("linuxX64") {
+             configureNativeDistribution("linuxX64Binaries", "linuxX64", "linux-x64")
+         }
+@@ -193,7 +185,7 @@
+             configureNativeDistribution("linuxArm64Binaries", "linuxArm64", "linux-arm64")
+         }
+     }
+-    if (currentOs.isMacOsX) {
++    if (buildNativeTargets && currentOs.isMacOsX) {
+         create("macosX64") {
+             configureNativeDistribution("macosX64Binaries", "macosX64", "macos-x64")
+         }
+
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -1,6 +1,7 @@
+ pluginManagement {
+     repositories {
+         gradlePluginPortal()
++        mavenCentral()
+     }
+ }
+ 

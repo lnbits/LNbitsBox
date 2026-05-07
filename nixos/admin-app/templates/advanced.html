@@ -5,8 +5,70 @@
     {% include "partials/cards/services.html" %}
     {% include "partials/cards/system_actions.html" %}
 </div>
-<div class="mb-6">
-    {% include "partials/cards/spark_seed_phrase.html" %}
+
+<section class="bg-ln-card border border-red-500/30 rounded-2xl" style="padding: 1.25rem 1rem 0.75rem;">
+    <div class="flex flex-col">
+        <div class="max-w-2xl">
+            <div class="text-red-400 text-xs font-mono uppercase tracking-[0.3em] mb-2">Danger Zone</div>
+            <h2 class="text-lg sm:text-xl font-display font-semibold text-ln-text">Factory Reset</h2>
+            <p class="text-ln-muted text-sm font-mono mt-3 leading-relaxed">
+                Reset LNbitsBox back to factory settings. This removes saved recovery backups, clears LNbits state, deletes wallet databases and seed phrases, and returns the box to the first-run configurator.
+            </p>
+        </div>
+        <button id="factory-reset-open-btn"
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-3 px-5 rounded-lg transition-colors mt-3">
+            Factory Reset
+        </button>
+    </div>
+</section>
+
+<div id="factory-reset-first-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-red-500/30 rounded-2xl p-6 max-w-xl w-full">
+        <p class="text-lg font-display font-semibold mb-3">Factory Reset LNbitsBox</p>
+        <p class="text-ln-muted text-sm font-mono leading-relaxed mb-6">
+            Are you sure you want to reset your LNbitsBox to factory settings. This will wipe LNbits and all bitcoin wallet states and seed phrases.
+        </p>
+        <p class="text-ln-muted text-sm font-mono leading-relaxed mb-6">
+        Make sure you have a back up of any active wallets before proceeding
+        </p>
+        <div class="flex gap-3">
+            <button id="factory-reset-first-cancel-btn"
+                    class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                Cancel
+            </button>
+            <button id="factory-reset-first-proceed-btn"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors">
+                Proceed with Factory Reset
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="factory-reset-second-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-ln-card border border-red-500/30 rounded-2xl p-6 max-w-xl w-full">
+        <p class="text-lg font-display font-semibold mb-3">Final Confirmation</p>
+        <p class="text-ln-muted text-sm font-mono leading-relaxed mb-5">
+            Are you really sure? This will delete your LNbits state and all wallet data and cannot be undone.
+        </p>
+        <p class="text-ln-muted text-sm font-mono leading-relaxed mb-5 mt-6">
+        Please make sure you have a backup of any important wallet data before proceeding.
+        </p>
+        <label class="flex items-start gap-3 mb-6 mt-6">
+            <input id="factory-reset-confirm-checkbox" type="checkbox" class="mt-1 text-red-500 focus:ring-red-500/40">
+            <span class="text-sm font-mono text-ln-text">Yes, I want to reset my LNbitsBox to factory settings</span>
+        </label>
+        <div class="flex gap-3">
+            <button id="factory-reset-second-cancel-btn"
+                    class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
+                Cancel
+            </button>
+            <button id="factory-reset-confirm-btn"
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                Proceed with Factory Reset
+            </button>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -15,26 +77,6 @@
 <script id="initial-tunnel-status" type="application/json">{{ initial_tunnel_status|tojson }}</script>
 <script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-factory-reset.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
-<script src="{{ url_for('static', filename='js/dashboard-spark.js') }}"></script>
-<script>
-const sparkSeedValue = document.getElementById('spark-seed-value');
-const sparkSeedToggleBtn = document.getElementById('spark-seed-toggle-btn');
-
-if (sparkSeedValue && sparkSeedToggleBtn) {
-    sparkSeedToggleBtn.addEventListener('click', function () {
-        const seedPhrase = sparkSeedValue.dataset.seedPhrase || '';
-        if (!seedPhrase) {
-            return;
-        }
-
-        const isMasked = sparkSeedValue.dataset.masked === 'true';
-        sparkSeedValue.textContent = isMasked
-            ? seedPhrase
-            : '••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••';
-        sparkSeedValue.dataset.masked = isMasked ? 'false' : 'true';
-        sparkSeedToggleBtn.textContent = isMasked ? 'Hide Seed Phrase' : 'Show Seed Phrase';
-    });
-}
-</script>
 {% endblock %}

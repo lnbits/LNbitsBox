@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "arkade-sidecar": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1776444151,
+        "narHash": "sha256-ZXJN9ujFjFkYQSvc2I+TvfdhrD8GCiy5n43rePnzZ9E=",
+        "owner": "lnbits",
+        "repo": "arkade_sidecar",
+        "rev": "727d764fc1a0562fa66f484857fea4ca3d639d07",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lnbits",
+        "repo": "arkade_sidecar",
+        "type": "github"
+      }
+    },
     "build-system-pkgs": {
       "inputs": {
         "nixpkgs": [
@@ -87,16 +103,16 @@
         "uv2nix": "uv2nix_2"
       },
       "locked": {
-        "lastModified": 1773833962,
-        "narHash": "sha256-7V7jZe9Vwvp18lMdoDXNfqVTx1Z2MwATLaaGizpirFs=",
-        "owner": "lnbits",
+        "lastModified": 1778143433,
+        "narHash": "sha256-UhA30SHP2awQEtaxUTcIYcOm8CyslJfaZAG2XNEdV5c=",
+        "owner": "blackcoffeexbt",
         "repo": "lnbits",
-        "rev": "b77c1030200858c2707f1e42c566a41d16ddb3bd",
+        "rev": "bacb103267a1d2a17abe914cd70abaeef7167c85",
         "type": "github"
       },
       "original": {
-        "owner": "lnbits",
-        "ref": "dev",
+        "owner": "blackcoffeexbt",
+        "ref": "feat/arkade-funding-source",
         "repo": "lnbits",
         "type": "github"
       }
@@ -130,6 +146,23 @@
         "owner": "NixOS",
         "ref": "nixos-24.11",
         "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "phoenixd": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773923588,
+        "narHash": "sha256-ZZ17E98t4zmKzpPe3ZweTw1mcsXb8U+7XwolrQADIQE=",
+        "owner": "ACINQ",
+        "repo": "phoenixd",
+        "rev": "ef2caeace7fd86dee52759a371cabbb55d9671fd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ACINQ",
+        "ref": "v0.7.3",
+        "repo": "phoenixd",
         "type": "github"
       }
     },
@@ -185,8 +218,10 @@
     },
     "root": {
       "inputs": {
+        "arkade-sidecar": "arkade-sidecar",
         "lnbits": "lnbits",
         "nixpkgs": "nixpkgs_2",
+        "phoenixd": "phoenixd",
         "raspberry-pi-nix": "raspberry-pi-nix",
         "spark-sidecar": "spark-sidecar"
       }
@@ -313,16 +348,15 @@
     "spark-sidecar": {
       "flake": false,
       "locked": {
-        "lastModified": 1773834735,
-        "narHash": "sha256-wBjBNb4BSAscucfrFmFpLwHf/d8bPsIU1r+SHtVJn9o=",
-        "owner": "blackcoffeexbt",
+        "lastModified": 1774341917,
+        "narHash": "sha256-4Tpcke6fOSTxXowxlRWYpxF6watn/JVrpXrj+/N3odE=",
+        "owner": "lnbits",
         "repo": "spark_sidecar",
-        "rev": "1de0dfb5f58e249eba5d8661ed7217b332011374",
+        "rev": "7ea1cd84c38a978b3716e79bc0cb8dd7286dcdd7",
         "type": "github"
       },
       "original": {
-        "owner": "blackcoffeexbt",
-        "ref": "feat/no-polling",
+        "owner": "lnbits",
         "repo": "spark_sidecar",
         "type": "github"
       }

@@ -4,6 +4,7 @@ let
   sparkPkg = pkgs.callPackage ./spark-sidecar-package.nix { inherit spark-sidecar; };
   stateDir = "/var/lib/spark-sidecar";
   mnemonicFile = "${stateDir}/mnemonic";
+  selectedFundingSourceFile = "/var/lib/lnbitsbox/funding-source";
 in
 {
   # Dedicated system user for the service
@@ -33,6 +34,7 @@ in
       Type = "simple";
       User = "spark-sidecar";
       Group = "spark-sidecar";
+      ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || grep -qx spark ${selectedFundingSourceFile}'";
 
       # Environment variables for Spark sidecar
       Environment = [

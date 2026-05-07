@@ -3,6 +3,8 @@
 {
   system.stateVersion = "24.11";
 
+  sdImage.imageName = "lnbitsbox-${version}.img";
+
   # Write version to filesystem for the admin app to read
   environment.etc."lnbitsbox-version".text = version;
 
@@ -44,6 +46,10 @@
       addresses = true;
     };
   };
+
+  systemd.services.avahi-daemon.preStart = ''
+    rm -f /run/avahi-daemon/pid
+  '';
 
   # OpenSSH for headless access
   services.openssh.enable = true;
@@ -145,7 +151,8 @@
       https://<this-device-ip>/
 
     Not configured yet? The setup wizard will guide you through:
-      • Generating/importing your Spark wallet seed phrase
+      • Choosing Spark, Phoenixd, or Ark as the funding source
+      • Generating/importing your wallet seed phrase
       • Setting your SSH password
       • Launching LNbits
 
@@ -166,8 +173,11 @@
 
   # Import service modules
   imports = [
+    ./funding-source.nix
     ./lnbits-service.nix
     ./spark-sidecar-service.nix
+    ./phoenixd-service.nix
+    ./arkade-sidecar-service.nix
     ./configurator-service.nix
     ./caddy-proxy.nix
     ./admin-service.nix

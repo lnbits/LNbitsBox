@@ -1,27 +1,27 @@
-<div class="bg-ln-surface border border-ln-border rounded-lg p-4 transition-all duration-500" id="spark-seed-card">
+<div class="bg-ln-surface border border-ln-border rounded-lg p-4 transition-all duration-500" id="arkade-seed-card">
     <div class="flex items-center justify-between gap-3 mb-3">
-        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Spark Wallet Seed Phrase</div>
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Ark Wallet Seed Phrase</div>
         <button
-            id="spark-seed-toggle-btn"
+            id="arkade-seed-toggle-btn"
             type="button"
-            {% if not spark_mnemonic %}disabled{% endif %}
+            {% if not arkade_mnemonic %}disabled{% endif %}
             class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
         >
-            {% if spark_mnemonic %}Show Seed Phrase{% else %}Unavailable{% endif %}
+            {% if arkade_mnemonic %}Show Seed Phrase{% else %}Unavailable{% endif %}
         </button>
     </div>
 
     <p class="text-ln-muted text-xs font-mono mb-4">
-        Keep this phrase private. Anyone with it can control the Spark wallet.
+        Keep this phrase private. Anyone with it can control the Ark wallet.
     </p>
 
     <div
-        id="spark-seed-value"
+        id="arkade-seed-value"
         class="bg-ln-surface border border-ln-border rounded-lg p-3 font-mono text-sm text-ln-text break-words select-text"
-        data-seed-phrase="{{ spark_mnemonic or '' }}"
+        data-seed-phrase="{{ arkade_mnemonic or '' }}"
         data-masked="true"
     >
-        {% if spark_mnemonic %}
+        {% if arkade_mnemonic %}
         ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••
         {% else %}
         Seed phrase not available.
@@ -30,49 +30,49 @@
 
     <div class="mt-4 pt-4 border-t border-ln-border/80">
         <p class="text-amber-300 text-xs font-mono leading-relaxed mb-3">
-            Warning: changing the seed phrase switches Spark to a different wallet. Make sure the current wallet seed phrase is backed up before continuing.
+            Warning: changing the seed phrase switches Ark to a different wallet. Make sure the current wallet seed phrase is backed up before continuing.
         </p>
         <button
-            id="spark-seed-change-btn"
+            id="arkade-seed-change-btn"
             type="button"
-            {% if not spark_mnemonic %}disabled{% endif %}
+            {% if not arkade_mnemonic %}disabled{% endif %}
             class="bg-red-500 hover:bg-red-600 border border-red-400/20 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-mono uppercase tracking-wider px-4 py-2 rounded-lg transition-colors"
         >
-            Change Spark Seed Phrase
+            Change Ark Seed Phrase
         </button>
     </div>
 </div>
 
-<div id="spark-seed-change-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="arkade-seed-change-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-lg w-full">
         <div class="flex items-center justify-between gap-3 mb-4">
             <div>
-                <p class="text-lg font-display font-semibold">Change Spark Seed Phrase</p>
-                <p class="text-ln-muted text-xs font-mono mt-1">Replace the Spark wallet seed phrase with a different 12-word BIP39 phrase.</p>
+                <p class="text-lg font-display font-semibold">Change Ark Seed Phrase</p>
+                <p class="text-ln-muted text-xs font-mono mt-1">Replace the Ark wallet seed phrase with a different 12-word BIP39 phrase.</p>
             </div>
-            <button id="spark-seed-change-close-btn" class="text-ln-muted hover:text-ln-text transition-colors" type="button" aria-label="Close">
+            <button id="arkade-seed-change-close-btn" class="text-ln-muted hover:text-ln-text transition-colors" type="button" aria-label="Close">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
         <div class="bg-red-400/5 border border-red-400/20 rounded-lg p-3 mb-4">
             <p class="text-red-300 text-xs font-mono leading-relaxed">
-                This will replace your current Spark wallet seed phrase. If you have not backed up the old seed phrase, you may permanently lose access to that wallet and any funds controlled by it.
+                This will replace your current Ark wallet seed phrase. If you have not backed up the old seed phrase, you may permanently lose access to that wallet and any funds controlled by it.
             </p>
         </div>
 
         <div class="bg-ln-surface/50 border border-ln-border rounded-lg p-3 mb-4">
             <p class="text-ln-muted text-xs font-mono leading-relaxed">Before continuing:</p>
             <ul class="mt-2 space-y-1 text-xs font-mono text-ln-text">
-                <li>- Confirm you have written down the current Spark seed phrase.</li>
+                <li>- Confirm you have written down the current Ark seed phrase.</li>
                 <li>- Confirm the new phrase is a valid 12-word BIP39 seed phrase.</li>
-                <li>- Spark will restart automatically after the update.</li>
+                <li>- Arkade will restart automatically after the update.</li>
             </ul>
         </div>
 
-        <label for="spark-seed-new-input" class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">New Seed Phrase</label>
+        <label for="arkade-seed-new-input" class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">New Seed Phrase</label>
         <textarea
-            id="spark-seed-new-input"
+            id="arkade-seed-new-input"
             rows="4"
             spellcheck="false"
             autocapitalize="none"
@@ -80,18 +80,18 @@
             class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors"
             placeholder="Enter the new 12-word BIP39 seed phrase"
         ></textarea>
-        <p id="spark-seed-form-error" class="hidden mt-2 text-red-300 text-xs font-mono"></p>
+        <p id="arkade-seed-form-error" class="hidden mt-2 text-red-300 text-xs font-mono"></p>
 
         <div class="flex gap-3 mt-5">
             <button
-                id="spark-seed-change-cancel-btn"
+                id="arkade-seed-change-cancel-btn"
                 type="button"
                 class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors"
             >
                 Cancel
             </button>
             <button
-                id="spark-seed-change-continue-btn"
+                id="arkade-seed-change-continue-btn"
                 type="button"
                 class="flex-1 bg-red-500 hover:bg-red-600 text-white font-mono text-sm py-2.5 rounded-lg transition-colors"
             >
@@ -101,23 +101,23 @@
     </div>
 </div>
 
-<div id="spark-seed-backup-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="arkade-seed-backup-modal" class="admin-modal-layer fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-ln-card border border-ln-border rounded-2xl p-6 max-w-lg w-full glow-pink">
         <p class="text-lg font-display font-semibold mb-2">Back Up Your Current Wallet First</p>
         <p class="text-ln-muted text-sm font-mono mb-4">
-            This will change the Spark wallet seed phrase and restart Spark automatically. Make sure you have a backup of the current wallet seed phrase before you continue.
+            This will change the Ark wallet seed phrase and restart Arkade automatically. Make sure you have a backup of the current wallet seed phrase before you continue.
         </p>
         <label class="flex items-start gap-3 bg-ln-surface border border-ln-border rounded-lg p-3 mb-6">
-            <input id="spark-seed-backed-up-checkbox" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink">
-            <span class="text-sm font-mono text-ln-text">I have backed up the current Spark seed phrase and understand this switches Spark to a different wallet.</span>
+            <input id="arkade-seed-backed-up-checkbox" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink">
+            <span class="text-sm font-mono text-ln-text">I have backed up the current Ark seed phrase and understand this switches Ark to a different wallet.</span>
         </label>
         <div class="flex gap-3">
-            <button id="spark-seed-backup-cancel-btn"
+            <button id="arkade-seed-backup-cancel-btn"
                     type="button"
                     class="flex-1 bg-ln-surface border border-ln-border text-ln-text font-mono text-sm py-2.5 rounded-lg hover:bg-ln-card-hover transition-colors">
                 Cancel
             </button>
-            <button id="spark-seed-backup-confirm-btn"
+            <button id="arkade-seed-backup-confirm-btn"
                     type="button"
                     disabled
                     class="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-mono text-sm py-2.5 rounded-lg transition-colors">

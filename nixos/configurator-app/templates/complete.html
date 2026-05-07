@@ -9,13 +9,19 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
     </div>
-    <div class="w-12 h-px bg-ln-pink/40"></div>
+    <div class="w-10 h-px bg-ln-pink/40"></div>
     <div class="w-8 h-8 rounded-full bg-ln-pink/20 border border-ln-pink/40 flex items-center justify-center">
         <svg class="w-4 h-4 text-ln-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
     </div>
-    <div class="w-12 h-px bg-ln-pink/40"></div>
+    <div class="w-10 h-px bg-ln-pink/40"></div>
+    <div class="w-8 h-8 rounded-full bg-ln-pink/20 border border-ln-pink/40 flex items-center justify-center">
+        <svg class="w-4 h-4 text-ln-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+    </div>
+    <div class="w-10 h-px bg-ln-pink/40"></div>
     <div class="w-8 h-8 rounded-full bg-ln-pink flex items-center justify-center step-active">
         <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -63,12 +69,33 @@
 </div>
 
 {# ── CTA ── #}
-<a href="/box"
-   class="block w-full text-center bg-ln-pink hover:bg-ln-pink-dim text-white font-semibold py-3.5 rounded-xl transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,30,230,0.3)] active:scale-[0.98] mb-4">
-    Open LNbitsBox Admin Panel
-</a>
+<button id="open-admin-btn"
+   type="button"
+   disabled
+   class="block w-full text-center bg-ln-pink text-white font-semibold py-3.5 rounded-xl transition-all duration-200 opacity-60 cursor-not-allowed mb-4">
+    Starting LNbitsBox
+</button>
 
 <p class="text-center text-ln-muted text-xs font-mono">
     To reconfigure: <span class="text-ln-pink/70">sudo lnbitspi-reset</span>
 </p>
+
+<script>
+    (function () {
+        const button = document.getElementById('open-admin-btn');
+        if (!button) return;
+
+        window.setTimeout(function () {
+            button.disabled = false;
+            button.textContent = 'Open LNbitsBox Admin Panel';
+            button.classList.remove('opacity-60', 'cursor-not-allowed');
+            button.classList.add('hover:bg-ln-pink-dim', 'hover:shadow-[0_0_30px_rgba(255,30,230,0.3)]', 'active:scale-[0.98]');
+        }, 5000);
+
+        button.addEventListener('click', function () {
+            if (button.disabled) return;
+            window.location.href = '/box';
+        });
+    })();
+</script>
 {% endblock %}

@@ -1,6 +1,15 @@
+{% set visible_services = visible_services|default(["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor", "tunnel"]) %}
 <div class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
     <div class="text-ln-muted text-xs font-mono uppercase tracking-wider mb-4">Services</div>
     <div class="space-y-3">
+        {% if not visible_services %}
+        <div class="bg-ln-surface border border-ln-border rounded-lg p-4">
+            <p class="text-ln-muted text-xs font-mono leading-relaxed">
+                The enabled funding source does not expose admin service controls yet.
+            </p>
+        </div>
+        {% endif %}
+        {% if "lnbits" in visible_services %}
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-2.5 h-2.5 rounded-full" id="svc-lnbits-dot"></div>
@@ -23,6 +32,8 @@
                 </button>
             </div>
         </div>
+        {% endif %}
+        {% if "spark-sidecar" in visible_services %}
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-2.5 h-2.5 rounded-full" id="svc-spark-sidecar-dot"></div>
@@ -45,6 +56,56 @@
                 </button>
             </div>
         </div>
+        {% endif %}
+        {% if "arkade-sidecar" in visible_services %}
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 rounded-full" id="svc-arkade-sidecar-dot"></div>
+                <span class="font-mono text-sm">Arkade</span>
+                <span class="text-ln-muted font-mono text-xs" id="svc-arkade-sidecar-status">--</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="svc-arkade-sidecar-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
+                <button id="svc-arkade-sidecar-restart-btn" data-confirm-action="restart/arkade-sidecar" data-confirm-message="Restart Arkade?"
+                        class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Restart
+                </button>
+                <button id="svc-arkade-sidecar-start-btn" data-run-action="start/arkade-sidecar"
+                        class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                    Start
+                </button>
+                <button id="svc-arkade-sidecar-stop-btn" data-confirm-action="stop/arkade-sidecar" data-confirm-message="Stop Arkade?"
+                        class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                    Stop
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% if "phoenixd" in visible_services %}
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 rounded-full" id="svc-phoenixd-dot"></div>
+                <span class="font-mono text-sm">Phoenixd</span>
+                <span class="text-ln-muted font-mono text-xs" id="svc-phoenixd-status">--</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="svc-phoenixd-actions-loading" class="text-ln-muted text-xs font-mono">Checking...</span>
+                <button id="svc-phoenixd-restart-btn" data-confirm-action="restart/phoenixd" data-confirm-message="Restart Phoenixd?"
+                        class="hidden text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-ln-pink/30">
+                    Restart
+                </button>
+                <button id="svc-phoenixd-start-btn" data-run-action="start/phoenixd"
+                        class="hidden text-ln-muted hover:text-emerald-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-emerald-400/30">
+                    Start
+                </button>
+                <button id="svc-phoenixd-stop-btn" data-confirm-action="stop/phoenixd" data-confirm-message="Stop Phoenixd?"
+                        class="hidden text-ln-muted hover:text-red-400 text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1 border border-ln-border rounded-lg hover:border-red-400/30">
+                    Stop
+                </button>
+            </div>
+        </div>
+        {% endif %}
+        {% if "tor" in visible_services %}
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-2.5 h-2.5 rounded-full" id="svc-tor-dot"></div>
@@ -67,6 +128,8 @@
                 </button>
             </div>
         </div>
+        {% endif %}
+        {% if "tunnel" in visible_services %}
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-2.5 h-2.5 rounded-full" id="svc-tunnel-dot"></div>
@@ -93,5 +156,6 @@
                 </button>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>

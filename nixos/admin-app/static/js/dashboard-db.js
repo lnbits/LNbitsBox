@@ -98,16 +98,16 @@
         const hour = 60 * 60 * 1000;
         const day = 24 * hour;
         return [
-            { filename: 'lnbitsbox-recovery-full-20260318-1015.zip', modified_at: new Date(now - (2 * hour)).toISOString(), size: 26624 },
-            { filename: 'lnbitsbox-recovery-full-20260318-0640.zip', modified_at: new Date(now - (6 * hour)).toISOString(), size: 26602 },
-            { filename: 'lnbitsbox-recovery-full-20260317-2210.zip', modified_at: new Date(now - (12 * hour)).toISOString(), size: 26631 },
-            { filename: 'lnbitsbox-recovery-full-20260316-0900.zip', modified_at: new Date(now - (2 * day)).toISOString(), size: 26588 },
-            { filename: 'lnbitsbox-recovery-full-20260314-0815.zip', modified_at: new Date(now - (4 * day)).toISOString(), size: 26619 },
-            { filename: 'lnbitsbox-recovery-full-20260312-0730.zip', modified_at: new Date(now - (6 * day)).toISOString(), size: 26648 },
-            { filename: 'lnbitsbox-recovery-full-20260308-0700.zip', modified_at: new Date(now - (10 * day)).toISOString(), size: 26608 },
-            { filename: 'lnbitsbox-recovery-full-20260303-0700.zip', modified_at: new Date(now - (15 * day)).toISOString(), size: 26622 },
-            { filename: 'lnbitsbox-recovery-full-20260225-0700.zip', modified_at: new Date(now - (21 * day)).toISOString(), size: 26597 },
-            { filename: 'lnbitsbox-recovery-full-20260210-0700.zip', modified_at: new Date(now - (36 * day)).toISOString(), size: 26604 },
+            { filename: 'lnbitsbox-recovery-20260318T101500Z.zip', modified_at: new Date(now - (2 * hour)).toISOString(), size: 26624 },
+            { filename: 'lnbitsbox-recovery-20260318T064000Z.zip', modified_at: new Date(now - (6 * hour)).toISOString(), size: 26602 },
+            { filename: 'lnbitsbox-recovery-20260317T221000Z.zip', modified_at: new Date(now - (12 * hour)).toISOString(), size: 26631 },
+            { filename: 'lnbitsbox-recovery-20260316T090000Z.zip', modified_at: new Date(now - (2 * day)).toISOString(), size: 26588 },
+            { filename: 'lnbitsbox-recovery-20260314T081500Z.zip', modified_at: new Date(now - (4 * day)).toISOString(), size: 26619 },
+            { filename: 'lnbitsbox-recovery-20260312T073000Z.zip', modified_at: new Date(now - (6 * day)).toISOString(), size: 26648 },
+            { filename: 'lnbitsbox-recovery-20260308T070000Z.zip', modified_at: new Date(now - (10 * day)).toISOString(), size: 26608 },
+            { filename: 'lnbitsbox-recovery-20260303T070000Z.zip', modified_at: new Date(now - (15 * day)).toISOString(), size: 26622 },
+            { filename: 'lnbitsbox-recovery-20260225T070000Z.zip', modified_at: new Date(now - (21 * day)).toISOString(), size: 26597 },
+            { filename: 'lnbitsbox-recovery-20260210T070000Z.zip', modified_at: new Date(now - (36 * day)).toISOString(), size: 26604 },
         ];
     }
 
@@ -261,7 +261,6 @@
 
     D.downloadRecoveryBackup = function () {
         const passphrase = el('recovery-passphrase')?.value || '';
-        const backupType = 'full';
         if (!passphrase) {
             D.showNotice('Enter a backup password first.', 'Validation');
             return;
@@ -277,7 +276,6 @@
         iframe.name = form.target;
         [
             ['csrf_token', document.querySelector('meta[name="csrf-token"]')?.content || ''],
-            ['backup_type', backupType],
             ['passphrase', passphrase],
         ].forEach(function (pair) {
             const input = document.createElement('input');
@@ -298,7 +296,6 @@
 
     D.saveRecoveryBackup = async function () {
         const passphrase = el('recovery-passphrase')?.value || '';
-        const backupType = 'full';
         if (!passphrase) {
             D.showNotice('Enter a backup password first.', 'Validation');
             return;
@@ -309,7 +306,6 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    backup_type: backupType,
                     passphrase: passphrase,
                 }),
             });
@@ -402,7 +398,7 @@
             const components = data.components || data.data?.components || {};
 
             D.setText('restore-compatibility', compatibility.message || 'Unknown');
-            D.setText('restore-manifest-summary', (manifest.backup_type || 'backup') + ' from ' + (manifest.created_at || 'unknown date'));
+            D.setText('restore-manifest-summary', 'Recovery archive from ' + (manifest.created_at || 'unknown date'));
             el('restore-validation-panel')?.classList.remove('hidden');
 
             const issueBox = el('restore-issues');
@@ -512,7 +508,6 @@
         const payload = {
             enabled: !!el('recovery-schedule-enabled')?.checked,
             interval_hours: Number(el('recovery-schedule-hours')?.value || 24),
-            backup_type: 'full',
             passphrase: hasStoredPassphrase && passphraseValue === SCHEDULE_PASSCODE_MASK ? '' : passphraseValue,
         };
         D.setRecoveryBusy(true, 'Saving encrypted backup schedule...');

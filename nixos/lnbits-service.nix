@@ -11,6 +11,7 @@ in
   users.users.lnbits = {
     isSystemUser = true;
     group = "lnbits";
+    extraGroups = [ "phoenixd" ];
   };
   users.groups.lnbits = {};
 
@@ -50,8 +51,8 @@ EOF
 
   systemd.services.lnbits = {
     description = "LNbits server";
-    after = [ "network-online.target" "spark-sidecar.service" ];
-    wants = [ "network-online.target" "spark-sidecar.service" ];
+    after = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "arkade-sidecar.service" ];
+    wants = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "arkade-sidecar.service" ];
     wantedBy = [ "multi-user.target" ];
 
     # Only start if the system has been configured
@@ -63,6 +64,7 @@ EOF
       Type = "simple";
       User = "lnbits";
       Group = "lnbits";
+      RuntimeDirectory = "lnbitsbox";
 
       # Note: We don't set WorkingDirectory because LNbits needs to run from
       # its installation directory to find static files. The environment
@@ -74,6 +76,14 @@ EOF
       Environment = [
         "LNBITS_DATA_FOLDER=${dataDir}"
         "LNBITS_EXTENSIONS_PATH=${extensionsDir}"
+      ];
+
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/mkdir -p ${dataDir}"
+        "${pkgs.coreutils}/bin/mkdir -p ${extensionsDir}"
+        "${pkgs.coreutils}/bin/chown lnbits:lnbits ${dataDir} ${extensionsDir}"
+        "${pkgs.coreutils}/bin/chmod 0751 ${dataDir}"
+        "${pkgs.coreutils}/bin/chmod 0750 ${extensionsDir}"
       ];
 
       # Change to the site-packages directory before starting so LNbits can find
