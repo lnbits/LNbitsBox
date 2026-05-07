@@ -34,6 +34,11 @@
   bindClick('restore-validate-btn', function () { D.validateRestoreBackup(); });
   bindClick('restore-confirm-btn', function () { D.startRestore(); });
   bindClick('restore-result-close-btn', function () { D.closeRestoreModal(); });
+  bindClick('factory-reset-open-btn', function () { D.openFactoryResetFirstModal(); });
+  bindClick('factory-reset-first-cancel-btn', function () { D.closeFactoryResetModals(); });
+  bindClick('factory-reset-first-proceed-btn', function () { D.openFactoryResetSecondModal(); });
+  bindClick('factory-reset-second-cancel-btn', function () { D.closeFactoryResetModals(); });
+  bindClick('factory-reset-confirm-btn', function () { D.submitFactoryReset(); });
   bindClick('update-check-btn', function () { D.checkForUpdate(); });
   bindClick('update-now-btn', function () { D.confirmUpdate(); });
   bindClick('confirm-cancel-btn', function () { D.closeModal(); });

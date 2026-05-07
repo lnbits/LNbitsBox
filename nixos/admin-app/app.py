@@ -93,7 +93,13 @@ FUNDING_SOURCES = {
 }
 FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values() if source.get("service")]
 ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor"]
-LNBITS_DB_PATH = Path("/var/lib/lnbits/database.sqlite3")
+LNBITS_STATE_DIR = Path("/tmp/lnbitspi-test/lnbits") if DEV_MODE else Path("/var/lib/lnbits")
+LNBITS_DB_PATH = LNBITS_STATE_DIR / "database.sqlite3"
+LNBITS_EXTENSIONS_DIR = (
+    Path("/tmp/lnbitspi-test/lnbits-extensions")
+    if DEV_MODE else Path("/var/lib/lnbits-extensions")
+)
+LNBITS_CONFIGURED_MARKER = LNBITS_STATE_DIR / ".configured"
 SPARK_STATE_DIR = (
     Path("/tmp/lnbitspi-test/spark-sidecar")
     if DEV_MODE else Path("/var/lib/spark-sidecar")
@@ -115,6 +121,7 @@ ARKADE_API_KEY_FILE = (
     ARKADE_STATE_DIR / "api-key.env"
 )
 PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix") if DEV_MODE else Path("/var/lib/phoenixd/.phoenix")
+PHOENIXD_HOME_DIR = PHOENIXD_STATE_DIR.parent
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
 PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"
 LNBITS_ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env") if DEV_MODE else Path("/etc/lnbits/lnbits.env")
@@ -136,6 +143,9 @@ TUNNEL_STATE_DIR = (
 TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
 TUNNEL_KEY_FILE = TUNNEL_STATE_DIR / "reverse-proxy-key"
 TUNNEL_RUNTIME_ENV = TUNNEL_STATE_DIR / "runtime.env"
+LNBITSBOX_STATE_DIR = (
+    Path("/tmp/lnbitspi-test/lnbitsbox") if DEV_MODE else Path("/var/lib/lnbitsbox")
+)
 WPA_SUPPLICANT_CONF = Path("/etc/wpa_supplicant.conf")
 TOR_HOSTNAME_FILE = Path("/var/lib/tor/onion/lnbits/hostname")
 RECOVERY_STATE_DIR = Path("/tmp/lnbitspi-test/recovery") if DEV_MODE else Path("/var/lib/lnbitsbox-recovery")
@@ -336,6 +346,46 @@ def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200
 
 def _json_error(message: str, status_code: int = 500, **payload):
     return _json_response(status="error", message=message, status_code=status_code, **payload)
+
+
+def _remove_path(path: Path):
+    if path.is_symlink() or path.is_file():
+        path.unlink(missing_ok=True)
+    elif path.exists():
+        shutil.rmtree(path)
+
+
+def _perform_factory_reset_dev_mode():
+    for target in (
+        RECOVERY_STATE_DIR,
+        LNBITS_STATE_DIR,
+        LNBITS_EXTENSIONS_DIR,
+        SPARK_STATE_DIR,
+        ARKADE_STATE_DIR,
+        PHOENIXD_HOME_DIR,
+        TUNNEL_STATE_DIR,
+        LNBITSBOX_STATE_DIR,
+    ):
+        _remove_path(target)
+    _remove_path(LNBITS_ENV_FILE)
+
+
+def _start_factory_reset():
+    if DEV_MODE:
+        _perform_factory_reset_dev_mode()
+        return
+
+    subprocess.run(
+        [
+            "systemd-run",
+            "--no-block",
+            "--unit=lnbitsbox-factory-reset",
+            "lnbitspi-factory-reset",
+        ],
+        check=True,
+        capture_output=True,
+        timeout=10,
+    )
 
 
 # ── Tunnel Helpers ──────────────────────────────────────────────────
@@ -1726,6 +1776,28 @@ def api_reboot():
         return jsonify({"status": "ok", "message": "DEV MODE: would reboot"})
     subprocess.Popen(["systemd-run", "--no-block", "systemctl", "reboot"])
     return jsonify({"status": "ok", "message": "Rebooting..."})
+
+
+@app.route("/box/api/factory-reset", methods=["POST"])
+@login_required
+def api_factory_reset():
+    payload = request.get_json(silent=True) or {}
+    if payload.get("acknowledged") is not True:
+        return _json_error("Factory reset confirmation is required.", 400)
+
+    try:
+        _start_factory_reset()
+    except subprocess.CalledProcessError as exc:
+        stderr = exc.stderr.decode().strip() if exc.stderr else ""
+        return _json_error(stderr or "Failed to start factory reset.", 500)
+    except Exception as exc:
+        return _json_error(str(exc), 500)
+
+    return _json_response(
+        status="ok",
+        message="Factory reset started. LNbitsBox will return to the setup wizard in a few seconds.",
+        data={"redirect": "/", "delay_ms": 3000},
+    )
 
 
 @app.route("/box/api/restart/<service>", methods=["POST"])
