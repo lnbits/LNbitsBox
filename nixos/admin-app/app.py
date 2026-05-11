@@ -746,6 +746,33 @@ def _write_runtime_env(tunnel: dict[str, Any]):
     os.chmod(TUNNEL_RUNTIME_ENV, 0o600)
 
 
+def _start_tunnel_service_if_needed(tunnel: dict[str, Any], service_status: str | None = None) -> tuple[bool, str]:
+    if not tunnel.get("tunnel_id"):
+        return False, "No tunnel configured"
+    if not tunnel.get("remote_port"):
+        return False, "Tunnel remote port missing"
+    if not TUNNEL_KEY_FILE.exists():
+        return False, "Tunnel key not found. Create tunnel again."
+
+    current_status = service_status or _tunnel_service_status()
+    if current_status == "active":
+        return False, "Tunnel service already active"
+
+    if DEV_MODE:
+        return True, "DEV MODE: would start tunnel service"
+
+    _write_runtime_env(tunnel)
+    subprocess.run(
+        ["systemctl", "enable", f"{TUNNEL_SERVICE_NAME}.service"],
+        check=True, capture_output=True, timeout=20
+    )
+    subprocess.run(
+        ["systemctl", "restart", f"{TUNNEL_SERVICE_NAME}.service"],
+        check=True, capture_output=True, timeout=20
+    )
+    return True, "Tunnel service restarted"
+
+
 def _tunnel_connect_script(tunnel: dict[str, Any] | None) -> str | None:
     if not tunnel:
         return None
@@ -2700,6 +2727,9 @@ def api_tunnel_poll():
     state = _sync_tunnel_state_from_remote(state, client_id)
     current = state.get("current_tunnel")
     pending = state.get("pending_invoice")
+    service_status = _tunnel_service_status()
+    auto_started = False
+    auto_start_message: str | None = None
 
     if DEV_MODE and pending and pending.get("action") == "renew":
         # Simple mock progression for local UI development
@@ -2713,14 +2743,23 @@ def api_tunnel_poll():
         _save_tunnel_state(state)
         pending = None
         paid = True
+        try:
+            auto_started, auto_start_message = _start_tunnel_service_if_needed(current, service_status=service_status)
+            if auto_started:
+                service_status = "active" if DEV_MODE else _tunnel_service_status()
+        except subprocess.CalledProcessError as e:
+            auto_started = False
+            auto_start_message = e.stderr.decode() or "Failed to start tunnel service"
 
     payload = {
         "paid": paid,
         "client_id": client_id,
         "current_tunnel": state.get("current_tunnel"),
         "pending_invoice": pending,
-        "service_status": _tunnel_service_status(),
+        "service_status": service_status,
         "connect_script": _tunnel_connect_script(state.get("current_tunnel")),
+        "auto_started": auto_started,
+        "auto_start_message": auto_start_message,
     }
     return _json_response(status="ok", data=payload, **payload)
 
@@ -2737,25 +2776,14 @@ def api_tunnel_start():
         return jsonify({"status": "error", "message": "No tunnel configured"}), 404
     if pending:
         return jsonify({"status": "error", "message": "Tunnel invoice is still unpaid"}), 409
-    if not current.get("remote_port"):
-        return jsonify({"status": "error", "message": "Tunnel remote port missing"}), 400
-    if not TUNNEL_KEY_FILE.exists():
-        return jsonify({"status": "error", "message": "Tunnel key not found. Create tunnel again."}), 400
-
-    if DEV_MODE:
-        return jsonify({"status": "ok", "message": "DEV MODE: would start tunnel service"})
 
     try:
-        _write_runtime_env(current)
-        subprocess.run(
-            ["systemctl", "enable", f"{TUNNEL_SERVICE_NAME}.service"],
-            check=True, capture_output=True, timeout=20
-        )
-        subprocess.run(
-            ["systemctl", "restart", f"{TUNNEL_SERVICE_NAME}.service"],
-            check=True, capture_output=True, timeout=20
-        )
-        return jsonify({"status": "ok", "message": "Tunnel service restarted"})
+        started, message = _start_tunnel_service_if_needed(current)
+        if not started and message == "Tunnel service already active":
+            return jsonify({"status": "ok", "message": message})
+        if not started:
+            return jsonify({"status": "error", "message": message}), 400
+        return jsonify({"status": "ok", "message": message})
     except subprocess.CalledProcessError as e:
         return jsonify({"status": "error", "message": e.stderr.decode()}), 500
     except Exception as e:
