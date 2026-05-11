@@ -208,10 +208,8 @@ LOG_SERVICE_OPTIONS = [
     {"key": "spark", "label": "Spark", "unit": "spark-sidecar.service"},
     {"key": "ark", "label": "Ark", "unit": "arkade-sidecar.service"},
     {"key": "caddy", "label": "Caddy", "unit": "caddy.service"},
-    {"key": "system", "label": "System", "unit": None},
     {"key": "tunnel", "label": "Tunnel", "unit": f"{TUNNEL_SERVICE_NAME}.service"},
     {"key": "tor", "label": "Tor", "unit": "tor.service"},
-    {"key": "admin", "label": "Admin App", "unit": "lnbitspi-admin.service"},
 ]
 LOG_SERVICE_BY_KEY = {entry["key"]: entry for entry in LOG_SERVICE_OPTIONS}
 FUNDING_LOG_KEYS = {"spark", "ark", "phoenixd"}
@@ -359,11 +357,28 @@ def _funding_sources_payload() -> dict[str, Any]:
             for key, value in FUNDING_SOURCES.items()
         },
         "spark": {
-            "balance": get_spark_balance(),
+            "balance": get_spark_balance() if selected == "spark" else None,
             "seed_present": bool(_read_spark_mnemonic()),
         },
-        "arkade": get_arkade_status(),
-        "phoenixd": get_phoenixd_status(),
+        "arkade": (
+            get_arkade_status()
+            if selected == "ark"
+            else {
+                "seed_present": bool(_read_arkade_mnemonic()),
+                "balance": None,
+                "mnemonic_missing": False,
+            }
+        ),
+        "phoenixd": (
+            get_phoenixd_status()
+            if selected == "phoenixd"
+            else {
+                "seed_present": bool(_read_phoenixd_seed()),
+                "balance": None,
+                "channels": [],
+                "channel_count": 0,
+            }
+        ),
     }
 
 
@@ -1471,7 +1486,7 @@ def get_spark_balance():
     try:
         import requests
         api_key = _read_sidecar_api_key(SPARK_API_KEY_FILE, "SPARK_SIDECAR_API_KEY")
-        headers = {"X-API-KEY": api_key} if api_key else {}
+        headers = {"X-API-Key": api_key} if api_key else {}
         resp = requests.post(f"{SPARK_URL}/v1/balance", headers=headers, timeout=5)
         if resp.ok:
             data = resp.json()
@@ -1650,7 +1665,7 @@ def collect_stats():
         },
         "funding_sources": funding_sources,
         "funding_source": _read_selected_funding_source(),
-        "spark_balance": get_spark_balance(),
+        "spark_balance": funding_sources.get("spark", {}).get("balance"),
         "arkade_status": funding_sources.get("arkade", {}),
         "phoenixd_status": funding_sources.get("phoenixd", {}),
         "tor_onion": get_onion_address(),
