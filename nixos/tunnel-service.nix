@@ -78,6 +78,7 @@ PY
       -o ServerAliveCountMax=3 \
       -o ExitOnForwardFailure=yes \
       -o StrictHostKeyChecking=accept-new \
+      -o UserKnownHostsFile=${stateDir}/known_hosts \
       -i "''${KEY_FILE:-${keyFile}}" \
       -R "''${REMOTE_PORT}:localhost:''${LOCAL_PORT:-5000}" \
       "''${SSH_USER}@''${SSH_HOST}"
