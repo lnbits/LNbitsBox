@@ -6,6 +6,10 @@
     {% include "partials/cards/system_actions.html" %}
 </div>
 
+<div class="mb-6">
+    {% include "partials/cards/logs.html" %}
+</div>
+
 <section class="bg-ln-card border border-red-500/30 rounded-2xl" style="padding: 1.25rem 1rem 0.75rem;">
     <div class="flex flex-col">
         <div class="max-w-2xl">
@@ -77,6 +81,7 @@
 <script id="initial-tunnel-status" type="application/json">{{ initial_tunnel_status|tojson }}</script>
 <script src="{{ url_for('static', filename='js/dashboard-services.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-tunnel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard-logs.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-factory-reset.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard-app.js') }}"></script>
 {% endblock %}

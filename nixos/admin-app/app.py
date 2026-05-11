@@ -202,6 +202,19 @@ RECOVERY_COMPONENT_LABELS = {
     "update": "Update state",
 }
 
+LOG_SERVICE_OPTIONS = [
+    {"key": "lnbits", "label": "LNbits", "unit": "lnbits.service"},
+    {"key": "phoenixd", "label": "Phoenixd", "unit": "phoenixd.service"},
+    {"key": "spark", "label": "Spark", "unit": "spark-sidecar.service"},
+    {"key": "ark", "label": "Ark", "unit": "arkade-sidecar.service"},
+    {"key": "caddy", "label": "Caddy", "unit": "caddy.service"},
+    {"key": "system", "label": "System", "unit": None},
+    {"key": "tunnel", "label": "Tunnel", "unit": f"{TUNNEL_SERVICE_NAME}.service"},
+    {"key": "tor", "label": "Tor", "unit": "tor.service"},
+    {"key": "admin", "label": "Admin App", "unit": "lnbitspi-admin.service"},
+]
+LOG_SERVICE_BY_KEY = {entry["key"]: entry for entry in LOG_SERVICE_OPTIONS}
+
 
 def _read_key_value_file(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
@@ -358,6 +371,15 @@ def _selected_funding_service() -> str | None:
     return source.get("service") or None
 
 
+def _default_log_service_key() -> str:
+    selected = _read_selected_funding_source()
+    if selected == "phoenixd":
+        return "phoenixd"
+    if selected == "ark":
+        return "ark"
+    return "lnbits"
+
+
 def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200, **payload):
     body = dict(payload)
     if data is not None:
@@ -367,6 +389,44 @@ def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200
 
 def _json_error(message: str, status_code: int = 500, **payload):
     return _json_response(status="error", message=message, status_code=status_code, **payload)
+
+
+def _get_log_service(service_key: str) -> dict[str, str]:
+    service = LOG_SERVICE_BY_KEY.get(service_key)
+    if not service:
+        raise ValueError("Invalid log service")
+    return service
+
+
+def _run_journalctl(unit_name: str | None, *, lines: int | None = None) -> str:
+    if DEV_MODE and shutil.which("journalctl") is None:
+        limit_note = f"last {lines} lines" if lines else "full log"
+        return (
+            "DEV MODE: journalctl is not available on this host.\n"
+            f"Requested unit: {unit_name or 'system journal'}\n"
+            f"Requested view: {limit_note}\n"
+        )
+
+    args = ["journalctl", "--no-pager", "-o", "short-iso"]
+    if unit_name:
+        args.extend(["-u", unit_name])
+    else:
+        args.append("-b")
+    if lines is not None:
+        args.extend(["-n", str(lines)])
+
+    result = subprocess.run(
+        args,
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    if result.returncode != 0 and not result.stdout.strip():
+        target = unit_name or "system journal"
+        message = (result.stderr or "").strip() or f"Failed to read logs for {target}"
+        raise RuntimeError(message)
+    return result.stdout or ""
 
 
 def _remove_path(path: Path):
@@ -1718,6 +1778,8 @@ def advanced_page():
         page_key="advanced",
         page_title="Advanced",
         include_tunnel_status=True,
+        log_services=LOG_SERVICE_OPTIONS,
+        default_log_service=_default_log_service_key(),
         visible_services=visible_services,
     )
 
@@ -1845,6 +1907,59 @@ def api_stop_service(service):
 def api_funding_sources():
     payload = _funding_sources_payload()
     return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/logs/<service_key>", methods=["GET"])
+@login_required
+def api_service_logs(service_key: str):
+    try:
+        service = _get_log_service(service_key)
+    except ValueError as exc:
+        return _json_error(str(exc), 400)
+
+    lines_param = request.args.get("lines", "200").strip()
+    try:
+        lines = max(20, min(int(lines_param), 1000))
+    except ValueError:
+        return _json_error("Invalid line count", 400)
+
+    try:
+        content = _run_journalctl(service["unit"], lines=lines)
+    except Exception as exc:
+        return _json_error(str(exc), 500)
+
+    payload = {
+        "service": service["key"],
+        "label": service["label"],
+        "unit": service["unit"],
+        "lines": lines,
+        "content": content,
+        "loaded_at": datetime.now().isoformat(),
+    }
+    return _json_response(status="ok", data=payload, **payload)
+
+
+@app.route("/box/api/logs/<service_key>/download", methods=["GET"])
+@login_required
+def api_service_logs_download(service_key: str):
+    try:
+        service = _get_log_service(service_key)
+    except ValueError as exc:
+        return _json_error(str(exc), 400)
+
+    try:
+        content = _run_journalctl(service["unit"])
+    except Exception as exc:
+        return _json_error(str(exc), 500)
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    filename = f"lnbitsbox-{service['key']}-{timestamp}.log"
+    return send_file(
+        io.BytesIO(content.encode("utf-8")),
+        mimetype="text/plain; charset=utf-8",
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 @app.route("/box/api/spark/seed", methods=["POST"])

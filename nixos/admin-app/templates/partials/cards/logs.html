@@ -1,0 +1,42 @@
+<section class="bg-ln-card border border-ln-border rounded-xl p-4 sm:p-5">
+    <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+            <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Logs</div>
+        </div>
+        <a id="logs-download-link"
+           href="{{ url_for('api_service_logs_download', service_key=default_log_service) }}"
+           class="inline-flex items-center justify-center min-h-11 text-ln-muted hover:text-ln-pink text-sm font-mono uppercase tracking-wider transition-colors px-4 py-2.5 border border-ln-border rounded-lg hover:border-ln-pink/30 shrink-0">
+            Download
+        </a>
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div class="flex-1">
+            <label for="logs-service-select" class="text-ln-muted text-xs font-mono uppercase tracking-wider block mb-1.5">Service log</label>
+            <select id="logs-service-select"
+                    class="w-full bg-ln-surface border border-ln-border rounded-lg px-3 py-2 text-sm font-mono text-ln-text focus:border-ln-pink/50 focus:outline-none transition-colors">
+                {% for service in log_services %}
+                <option value="{{ service.key }}" {% if service.key == default_log_service %}selected{% endif %}>{{ service.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <label class="flex items-center gap-2 bg-ln-surface border border-ln-border rounded-lg px-3 py-2">
+            <input id="logs-live-toggle" type="checkbox" class="h-4 w-4 rounded border-ln-border bg-ln-card text-ln-pink focus:ring-ln-pink" checked>
+            <span class="text-sm font-mono text-ln-text">Live</span>
+        </label>
+        <button id="logs-refresh-btn"
+                class="bg-ln-surface hover:bg-ln-card-hover border border-ln-border hover:border-ln-pink/30 text-ln-text font-mono text-sm py-2 px-4 rounded-lg transition-all duration-200">
+            Refresh
+        </button>
+    </div>
+
+    <div class="bg-ln-surface border border-ln-border rounded-lg p-3">
+        <div class="flex items-center justify-between gap-3 mb-3">
+            <span id="logs-status" class="text-ln-muted text-xs font-mono">Ready</span>
+            <span class="text-ln-muted text-xs font-mono">Recent lines</span>
+        </div>
+        <pre id="logs-viewer"
+             class="font-mono text-xs text-ln-text whitespace-pre-wrap break-words"
+             style="min-height: 18rem; max-height: 28rem; overflow: auto; margin: 0;">Loading...</pre>
+    </div>
+</section>
