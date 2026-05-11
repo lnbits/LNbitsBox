@@ -214,6 +214,7 @@ LOG_SERVICE_OPTIONS = [
     {"key": "admin", "label": "Admin App", "unit": "lnbitspi-admin.service"},
 ]
 LOG_SERVICE_BY_KEY = {entry["key"]: entry for entry in LOG_SERVICE_OPTIONS}
+FUNDING_LOG_KEYS = {"spark", "ark", "phoenixd"}
 
 
 def _read_key_value_file(path: Path) -> dict[str, str]:
@@ -371,6 +372,10 @@ def _selected_funding_service() -> str | None:
     return source.get("service") or None
 
 
+def _is_selected_funding_service(service: str) -> bool:
+    return service == _selected_funding_service()
+
+
 def _default_log_service_key() -> str:
     selected = _read_selected_funding_source()
     if selected == "phoenixd":
@@ -378,6 +383,17 @@ def _default_log_service_key() -> str:
     if selected == "ark":
         return "ark"
     return "lnbits"
+
+
+def _visible_log_services() -> list[dict[str, str | None]]:
+    active_funding = _read_selected_funding_source()
+    services: list[dict[str, str | None]] = []
+    for service in LOG_SERVICE_OPTIONS:
+        key = str(service["key"])
+        if key in FUNDING_LOG_KEYS and key != active_funding:
+            continue
+        services.append(service)
+    return services
 
 
 def _json_response(*, data: dict[str, Any] | None = None, status_code: int = 200, **payload):
@@ -1778,7 +1794,7 @@ def advanced_page():
         page_key="advanced",
         page_title="Advanced",
         include_tunnel_status=True,
-        log_services=LOG_SERVICE_OPTIONS,
+        log_services=_visible_log_services(),
         default_log_service=_default_log_service_key(),
         visible_services=visible_services,
     )
@@ -1984,14 +2000,26 @@ def api_update_spark_seed():
 
     if DEV_MODE:
         _write_spark_mnemonic(new_mnemonic)
+        if _is_selected_funding_service("spark-sidecar"):
+            return _json_response(
+                status="ok",
+                message="Spark seed phrase updated successfully. Spark is restarting now.",
+                data={"service": "spark-sidecar", "action": "restart"},
+            )
         return _json_response(
             status="ok",
-            message="Spark seed phrase updated successfully. Spark is restarting now.",
-            data={"service": "spark-sidecar", "action": "restart"},
+            message="Spark seed phrase saved. Spark remains stopped because it is not the active funding source.",
+            data={"service": "spark-sidecar", "action": "none"},
         )
 
     try:
         _write_spark_mnemonic(new_mnemonic)
+        if not _is_selected_funding_service("spark-sidecar"):
+            return _json_response(
+                status="ok",
+                message="Spark seed phrase saved. Spark remains stopped because it is not the active funding source.",
+                data={"service": "spark-sidecar", "action": "none"},
+            )
         subprocess.run(
             ["systemctl", "restart", "spark-sidecar.service"],
             check=True,
@@ -2031,14 +2059,26 @@ def api_update_arkade_seed():
 
     if DEV_MODE:
         _write_arkade_mnemonic(new_mnemonic)
+        if _is_selected_funding_service("arkade-sidecar"):
+            return _json_response(
+                status="ok",
+                message="Ark seed phrase updated successfully. Arkade is restarting now.",
+                data={"service": "arkade-sidecar", "action": "restart"},
+            )
         return _json_response(
             status="ok",
-            message="Ark seed phrase updated successfully. Arkade is restarting now.",
-            data={"service": "arkade-sidecar", "action": "restart"},
+            message="Ark seed phrase saved. Arkade remains stopped because it is not the active funding source.",
+            data={"service": "arkade-sidecar", "action": "none"},
         )
 
     try:
         _write_arkade_mnemonic(new_mnemonic)
+        if not _is_selected_funding_service("arkade-sidecar"):
+            return _json_response(
+                status="ok",
+                message="Ark seed phrase saved. Arkade remains stopped because it is not the active funding source.",
+                data={"service": "arkade-sidecar", "action": "none"},
+            )
         subprocess.run(
             ["systemctl", "restart", "arkade-sidecar.service"],
             check=True,

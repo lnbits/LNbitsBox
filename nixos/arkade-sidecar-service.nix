@@ -18,6 +18,7 @@ in
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.coreutils pkgs.gnugrep ];
 
     unitConfig = {
       ConditionPathExists = "/var/lib/lnbits/.configured";
@@ -29,7 +30,7 @@ in
       Group = "arkade-sidecar";
       StateDirectory = "arkade-sidecar";
       StateDirectoryMode = "0750";
-      ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || grep -qx ark ${selectedFundingSourceFile}'";
+      ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || ${pkgs.gnugrep}/bin/grep -qx ark ${selectedFundingSourceFile}'";
 
       Environment = [
         "ARKADE_MNEMONIC_FILE=${mnemonicFile}"
@@ -44,7 +45,7 @@ in
         "ARKADE_SWAP_STORAGE_PATH=${stateDir}/arkade-swaps.sqlite"
       ];
 
-      EnvironmentFile = "${stateDir}/api-key.env";
+      EnvironmentFile = "-${stateDir}/api-key.env";
 
       ExecStart = "${arkadePkg}/bin/arkade-sidecar";
 

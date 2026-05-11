@@ -24,6 +24,7 @@ in
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
+    path = [ pkgs.coreutils pkgs.gnugrep ];
 
     # Only start if the system has been configured
     unitConfig = {
@@ -34,7 +35,7 @@ in
       Type = "simple";
       User = "spark-sidecar";
       Group = "spark-sidecar";
-      ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || grep -qx spark ${selectedFundingSourceFile}'";
+      ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || ${pkgs.gnugrep}/bin/grep -qx spark ${selectedFundingSourceFile}'";
 
       # Environment variables for Spark sidecar
       Environment = [
@@ -46,7 +47,7 @@ in
       ];
 
       # API key written by the configurator during first-run setup
-      EnvironmentFile = "${stateDir}/api-key.env";
+      EnvironmentFile = "-${stateDir}/api-key.env";
 
       ExecStart = "${sparkPkg}/bin/spark-sidecar";
 
