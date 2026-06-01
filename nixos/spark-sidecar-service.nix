@@ -63,4 +63,28 @@ in
       LockPersonality = true;
     };
   };
+
+  systemd.services.spark-sidecar-restart = {
+    description = "Scheduled restart for Spark Lightning L2 sidecar";
+
+    unitConfig = {
+      ConditionPathExists = "/var/lib/lnbits/.configured";
+    };
+
+    serviceConfig = {
+      Type = "oneshot";
+      ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || ${pkgs.gnugrep}/bin/grep -qx spark ${selectedFundingSourceFile}'";
+      ExecStart = "${pkgs.systemd}/bin/systemctl try-restart spark-sidecar.service";
+    };
+  };
+
+  systemd.timers.spark-sidecar-restart = {
+    description = "Restart Spark Lightning L2 sidecar at 07:00 and 19:00 daily";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = [ "*-*-* 07:00:00" "*-*-* 19:00:00" ];
+      Persistent = true;
+      Unit = "spark-sidecar-restart.service";
+    };
+  };
 }
