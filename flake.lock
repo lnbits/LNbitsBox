@@ -152,16 +152,16 @@
     "phoenixd": {
       "flake": false,
       "locked": {
-        "lastModified": 1773923588,
-        "narHash": "sha256-ZZ17E98t4zmKzpPe3ZweTw1mcsXb8U+7XwolrQADIQE=",
+        "lastModified": 1779278870,
+        "narHash": "sha256-eKLiizSR9BhV640OHE1FaWyk+dAnIPDrMmqE5FEpAPc=",
         "owner": "ACINQ",
         "repo": "phoenixd",
-        "rev": "ef2caeace7fd86dee52759a371cabbb55d9671fd",
+        "rev": "de6f8ae81c01534fa9ffdf0934385fd4a5ad9f9f",
         "type": "github"
       },
       "original": {
         "owner": "ACINQ",
-        "ref": "v0.7.3",
+        "ref": "v0.8.0",
         "repo": "phoenixd",
         "type": "github"
       }

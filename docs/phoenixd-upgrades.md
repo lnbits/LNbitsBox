@@ -4,7 +4,7 @@ This project packages Phoenixd from source as a JVM application instead of using
 
 That choice is intentional: on NixOS Raspberry Pi builds, the ACINQ ARM64 binary has issues LSP connectivity. Building Phoenixd from source with the JVM distribution fixed that issue.
 
-Use this guide whenever you want to upgrade Phoenixd, for example from `0.7.3` to `0.7.4`.
+Use this guide whenever you want to upgrade Phoenixd, for example from `0.7.4` to `0.8.0`.
 
 ## Overview
 
@@ -30,7 +30,7 @@ In practice, the work is:
 Edit `flake.nix` and change the Phoenixd input tag:
 
 ```nix
-phoenixd.url = "github:ACINQ/phoenixd/v0.7.4";
+phoenixd.url = "github:ACINQ/phoenixd/v0.8.0";
 ```
 
 Then update the flake lock:
@@ -46,7 +46,7 @@ This updates `flake.lock` to the new Phoenixd source revision and hash.
 In `nixos/phoenixd-package.nix`, update:
 
 ```nix
-version = "0.7.4";
+version = "0.8.0";
 ```
 
 This version string is used when installing the generated `jvmDistZip` artifact.

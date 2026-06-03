@@ -14,7 +14,7 @@
     lnbits.url = "github:blackcoffeexbt/lnbits/feat/arkade-funding-source";
 
     # Phoenixd source - build the JVM distribution from source on NixOS/aarch64.
-    phoenixd.url = "github:ACINQ/phoenixd/v0.7.3";
+    phoenixd.url = "github:ACINQ/phoenixd/v0.8.0";
     phoenixd.flake = false;
 
     # Spark sidecar for L2 Lightning integration
