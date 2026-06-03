@@ -8,7 +8,7 @@ pkgs.buildNpmPackage {
   version = "0.1.0";
 
   src = arkade-sidecar;
-  npmDepsHash = "sha256-MUMCMmydH/UFJgKNuiYGVK2Z1EZGeK4azMnFm600iKI=";
+  npmDepsHash = "sha256-c6AzbZndDB/GQCg+FwJRnEANFHtRZXUekmJMKof4KRQ=";
   inherit nodejs;
 
   dontNpmBuild = true;
