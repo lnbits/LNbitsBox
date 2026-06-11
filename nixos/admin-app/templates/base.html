@@ -7,9 +7,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}LNbitsBox{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block head %}{% endblock %}
 </head>
 <body class="bg-ln-surface text-ln-text min-h-screen noise-bg grid-bg">
