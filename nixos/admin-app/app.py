@@ -105,6 +105,10 @@ SPARK_URL = os.environ.get("SPARK_URL", "http://127.0.0.1:8765")
 ARKADE_URL = os.environ.get("ARKADE_URL", "http://127.0.0.1:8765")
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 PHOENIXD_URL = os.environ.get("PHOENIXD_URL", "http://127.0.0.1:9740")
+INTERNET_CONNECTIVITY_CHECK_IP = os.environ.get("LNBITSBOX_CONNECTIVITY_CHECK_IP", "1.1.1.1")
+DEV_WIFI_IP = "192.0.2.10"
+DEV_ETHERNET_IP = "198.51.100.10"
+DEV_WIFI_CONNECT_IP = "203.0.113.42"
 FUNDING_SOURCE_STATE_FILE = _state_path("lnbitsbox", "funding-source")
 FUNDING_SOURCES = {
     "spark": {
@@ -1368,15 +1372,15 @@ def get_network_info():
     if DEV_MODE:
         return {
             "internet": True,
-            "wifi": {"ssid": "HomeNetwork", "ip": "192.168.1.100", "interface": "wlan0"},
-            "ethernet": {"interface": "eth0", "ip": "192.168.1.50"},
+            "wifi": {"ssid": "HomeNetwork", "ip": DEV_WIFI_IP, "interface": "wlan0"},
+            "ethernet": {"interface": "eth0", "ip": DEV_ETHERNET_IP},
         }
     info = {"internet": False, "wifi": None, "ethernet": None}
 
-    # Internet check — ping 1.1.1.1
+    # Internet check — ping the configured connectivity target.
     try:
         result = subprocess.run(
-            ["ping", "-c", "1", "-W", "2", "1.1.1.1"],
+            ["ping", "-c", "1", "-W", "2", INTERNET_CONNECTIVITY_CHECK_IP],
             capture_output=True, timeout=5,
         )
         info["internet"] = result.returncode == 0
@@ -2481,7 +2485,7 @@ def api_wifi_connect():
         def mock_connect():
             time.sleep(4)
             with wifi_connect_lock:
-                wifi_connect_status.update({"status": "success", "message": f"Connected to {ssid}", "ip": "192.168.1.42"})
+                wifi_connect_status.update({"status": "success", "message": f"Connected to {ssid}", "ip": DEV_WIFI_CONNECT_IP})
         threading.Thread(target=mock_connect, daemon=True).start()
         return _json_response(status="connecting", data={"status": "connecting"})
 
