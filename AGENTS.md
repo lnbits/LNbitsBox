@@ -44,7 +44,11 @@ export DEV_MODE=true
 python3 app.py
 ```
 
-`DEV_MODE=true` redirects all file paths to `/tmp/lnbitspi-test/` instead of `/var/lib/`.
+`DEV_MODE=true` redirects state paths to a private per-user data directory
+(`$XDG_STATE_HOME/lnbitsbox-dev` or `~/.local/state/lnbitsbox-dev`) and
+configuration paths to its `etc/` subdirectory instead of `/var/lib/` and
+`/etc/`. Set `LNBITSBOX_DEV_DATA_DIR=/path/to/state` to override the local
+development state root.
 
 **Marketing site (`gh-pages/`):**
 ```bash

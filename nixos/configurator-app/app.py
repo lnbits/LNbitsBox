@@ -21,29 +21,55 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 csrf = CSRFProtect(app)
 
-# Development mode - use /tmp paths instead of system paths
+# Development mode - use private per-user paths instead of system paths
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
+DEV_DATA_DIR_ENV = "LNBITSBOX_DEV_DATA_DIR"
+
+
+def _dev_data_dir() -> Path:
+    configured = os.environ.get(DEV_DATA_DIR_ENV)
+    path = (
+        Path(configured).expanduser()
+        if configured
+        else Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+        / "lnbitsbox-dev"
+    )
+    if path.exists() and path.is_symlink():
+        raise RuntimeError(f"{DEV_DATA_DIR_ENV} must not point to a symlink")
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(path, 0o700)
+    return path
+
+
+DEV_DATA_DIR = _dev_data_dir() if DEV_MODE else None
+
+
+def _state_path(*parts: str) -> Path:
+    if DEV_MODE:
+        assert DEV_DATA_DIR is not None
+        return DEV_DATA_DIR.joinpath(*parts)
+    return Path("/var/lib", *parts)
+
+
+def _etc_path(*parts: str) -> Path:
+    if DEV_MODE:
+        assert DEV_DATA_DIR is not None
+        return DEV_DATA_DIR.joinpath("etc", *parts)
+    return Path("/etc", *parts)
 
 if DEV_MODE:
-    MARKER_FILE = Path("/tmp/lnbitspi-test/lnbits/.configured")
-    SPARK_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
-    ARKADE_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/arkade-sidecar/mnemonic")
-    PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix")
-    ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")
-    SPARK_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")
-    ARKADE_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/arkade-sidecar/api-key.env")
-    FUNDING_SOURCE_FILE = Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
     SSH_USER = os.environ.get("USER")  # Use current user instead of lnbitsadmin
 else:
-    MARKER_FILE = Path("/var/lib/lnbits/.configured")
-    SPARK_MNEMONIC_FILE = Path("/var/lib/spark-sidecar/mnemonic")
-    ARKADE_MNEMONIC_FILE = Path("/var/lib/arkade-sidecar/mnemonic")
-    PHOENIXD_STATE_DIR = Path("/var/lib/phoenixd/.phoenix")
-    ENV_FILE = Path("/etc/lnbits/lnbits.env")
-    SPARK_SIDECAR_ENV_FILE = Path("/var/lib/spark-sidecar/api-key.env")
-    ARKADE_SIDECAR_ENV_FILE = Path("/var/lib/arkade-sidecar/api-key.env")
-    FUNDING_SOURCE_FILE = Path("/var/lib/lnbitsbox/funding-source")
     SSH_USER = "lnbitsadmin"
+
+MARKER_FILE = _state_path("lnbits", ".configured")
+SPARK_MNEMONIC_FILE = _state_path("spark-sidecar", "mnemonic")
+ARKADE_MNEMONIC_FILE = _state_path("arkade-sidecar", "mnemonic")
+PHOENIXD_STATE_DIR = _state_path("phoenixd", ".phoenix")
+ENV_FILE = _etc_path("lnbits", "lnbits.env")
+SPARK_SIDECAR_ENV_FILE = _state_path("spark-sidecar", "api-key.env")
+ARKADE_SIDECAR_ENV_FILE = _state_path("arkade-sidecar", "api-key.env")
+FUNDING_SOURCE_FILE = _state_path("lnbitsbox", "funding-source")
 
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
 PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"

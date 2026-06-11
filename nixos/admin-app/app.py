@@ -65,15 +65,47 @@ csrf = CSRFProtect(app)
 
 # Configuration
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
+DEV_DATA_DIR_ENV = "LNBITSBOX_DEV_DATA_DIR"
+
+
+def _dev_data_dir() -> Path:
+    configured = os.environ.get(DEV_DATA_DIR_ENV)
+    path = (
+        Path(configured).expanduser()
+        if configured
+        else Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+        / "lnbitsbox-dev"
+    )
+    if path.exists() and path.is_symlink():
+        raise RuntimeError(f"{DEV_DATA_DIR_ENV} must not point to a symlink")
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(path, 0o700)
+    return path
+
+
+DEV_DATA_DIR = _dev_data_dir() if DEV_MODE else None
+
+
+def _state_path(*parts: str) -> Path:
+    if DEV_MODE:
+        assert DEV_DATA_DIR is not None
+        return DEV_DATA_DIR.joinpath(*parts)
+    return Path("/var/lib", *parts)
+
+
+def _etc_path(*parts: str) -> Path:
+    if DEV_MODE:
+        assert DEV_DATA_DIR is not None
+        return DEV_DATA_DIR.joinpath("etc", *parts)
+    return Path("/etc", *parts)
+
+
 SSH_USER = "lnbitsadmin"
 SPARK_URL = os.environ.get("SPARK_URL", "http://127.0.0.1:8765")
 ARKADE_URL = os.environ.get("ARKADE_URL", "http://127.0.0.1:8765")
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 PHOENIXD_URL = os.environ.get("PHOENIXD_URL", "http://127.0.0.1:9740")
-FUNDING_SOURCE_STATE_FILE = (
-    Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
-    if DEV_MODE else Path("/var/lib/lnbitsbox/funding-source")
-)
+FUNDING_SOURCE_STATE_FILE = _state_path("lnbitsbox", "funding-source")
 FUNDING_SOURCES = {
     "spark": {
         "label": "Spark",
@@ -101,24 +133,15 @@ LNBITS_DEFAULT_ENV = [
     "LNBITS_RESERVE_FEE_PERCENT=1.0",
     "LNBITS_FUNDING_SOURCE_PAY_INVOICE_WAIT_SECONDS=20",
 ]
-LNBITS_STATE_DIR = Path("/tmp/lnbitspi-test/lnbits") if DEV_MODE else Path("/var/lib/lnbits")
+LNBITS_STATE_DIR = _state_path("lnbits")
 LNBITS_DB_PATH = LNBITS_STATE_DIR / "database.sqlite3"
-LNBITS_EXTENSIONS_DIR = (
-    Path("/tmp/lnbitspi-test/lnbits-extensions")
-    if DEV_MODE else Path("/var/lib/lnbits-extensions")
-)
+LNBITS_EXTENSIONS_DIR = _state_path("lnbits-extensions")
 LNBITS_CONFIGURED_MARKER = LNBITS_STATE_DIR / ".configured"
-SPARK_STATE_DIR = (
-    Path("/tmp/lnbitspi-test/spark-sidecar")
-    if DEV_MODE else Path("/var/lib/spark-sidecar")
-)
+SPARK_STATE_DIR = _state_path("spark-sidecar")
 SPARK_MNEMONIC_FILE = (
     SPARK_STATE_DIR / "mnemonic"
 )
-ARKADE_STATE_DIR = (
-    Path("/tmp/lnbitspi-test/arkade-sidecar")
-    if DEV_MODE else Path("/var/lib/arkade-sidecar")
-)
+ARKADE_STATE_DIR = _state_path("arkade-sidecar")
 ARKADE_MNEMONIC_FILE = (
     ARKADE_STATE_DIR / "mnemonic"
 )
@@ -128,11 +151,11 @@ SPARK_API_KEY_FILE = (
 ARKADE_API_KEY_FILE = (
     ARKADE_STATE_DIR / "api-key.env"
 )
-PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix") if DEV_MODE else Path("/var/lib/phoenixd/.phoenix")
+PHOENIXD_STATE_DIR = _state_path("phoenixd", ".phoenix")
 PHOENIXD_HOME_DIR = PHOENIXD_STATE_DIR.parent
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
 PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"
-LNBITS_ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env") if DEV_MODE else Path("/etc/lnbits/lnbits.env")
+LNBITS_ENV_FILE = _etc_path("lnbits", "lnbits.env")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
 GITHUB_RELEASES_URL = "https://api.github.com/repos/lnbits/LNbitsBox/releases/latest"
@@ -145,18 +168,14 @@ TUNNEL_PUBLIC_ID = os.environ.get("LNBITSBOX_TUNNEL_PUBLIC_ID", "aE4CBGPeRqcJufp
 TUNNEL_SSH_USER_FALLBACK = os.environ.get("LNBITSBOX_TUNNEL_SSH_USER", "ubuntu")
 TUNNEL_SSH_HOST_FALLBACK = os.environ.get("LNBITSBOX_TUNNEL_SSH_HOST", "lnpro.xyz")
 TUNNEL_LOCAL_PORT = int(os.environ.get("LNBITSBOX_TUNNEL_LOCAL_PORT", "5000"))
-TUNNEL_STATE_DIR = (
-    Path("/tmp/lnbitspi-test/tunnel") if DEV_MODE else Path("/var/lib/lnbitsbox-tunnel")
-)
+TUNNEL_STATE_DIR = DEV_DATA_DIR / "tunnel" if DEV_MODE else Path("/var/lib/lnbitsbox-tunnel")
 TUNNEL_STATE_FILE = TUNNEL_STATE_DIR / "state.json"
 TUNNEL_KEY_FILE = TUNNEL_STATE_DIR / "reverse-proxy-key"
 TUNNEL_RUNTIME_ENV = TUNNEL_STATE_DIR / "runtime.env"
-LNBITSBOX_STATE_DIR = (
-    Path("/tmp/lnbitspi-test/lnbitsbox") if DEV_MODE else Path("/var/lib/lnbitsbox")
-)
+LNBITSBOX_STATE_DIR = _state_path("lnbitsbox")
 WPA_SUPPLICANT_CONF = Path("/etc/wpa_supplicant.conf")
 TOR_HOSTNAME_FILE = Path("/var/lib/tor/onion/lnbits/hostname")
-RECOVERY_STATE_DIR = Path("/tmp/lnbitspi-test/recovery") if DEV_MODE else Path("/var/lib/lnbitsbox-recovery")
+RECOVERY_STATE_DIR = DEV_DATA_DIR / "recovery" if DEV_MODE else Path("/var/lib/lnbitsbox-recovery")
 RECOVERY_BACKUP_DIR = RECOVERY_STATE_DIR / "backups"
 RECOVERY_STATE_FILE = RECOVERY_STATE_DIR / "state.json"
 RECOVERY_SCHEDULE_FILE = RECOVERY_STATE_DIR / "schedule.json"
@@ -882,7 +901,7 @@ def _recovery_component_sources() -> dict[str, list[tuple[str, Path]]]:
             ("database/database.sqlite3", LNBITS_DB_PATH),
         ],
         "config": [
-            ("config/lnbits.env", Path("/etc/lnbits/lnbits.env") if not DEV_MODE else Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")),
+            ("config/lnbits.env", LNBITS_ENV_FILE),
             ("config/version.txt", VERSION_FILE),
         ],
         "tunnel": [
