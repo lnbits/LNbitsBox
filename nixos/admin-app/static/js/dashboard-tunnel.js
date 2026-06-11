@@ -353,7 +353,7 @@
     D.openTunnelInvoiceFlow = async function () {
         const daysInput = D.el('tunnel-days-input');
         if (!daysInput) return;
-        const days = parseInt(daysInput.value || '0', 10);
+        const days = Number.parseInt(daysInput.value || '0', 10);
         if (!days || days <= 0) {
             D.showNotice('Days must be greater than zero', 'Validation');
             return;

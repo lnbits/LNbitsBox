@@ -7,6 +7,7 @@ Handles funding source selection, mnemonic generation/import, and SSH password s
 import os
 import sys
 import secrets
+import shlex
 import subprocess
 import grp
 import pwd
@@ -112,6 +113,28 @@ wizard_state = {}
 def is_configured():
     """Check if system has been configured"""
     return MARKER_FILE.exists()
+
+
+def reset_instructions() -> dict[str, str]:
+    if DEV_MODE:
+        assert DEV_DATA_DIR is not None
+        quoted_dir = shlex.quote(str(DEV_DATA_DIR))
+        return {
+            "label": "To reconfigure in local dev, remove the dev state directory and restart the app:",
+            "command": f"rm -rf {quoted_dir}",
+        }
+    return {
+        "label": "To reconfigure, run via SSH:",
+        "command": "sudo lnbitspi-reset",
+    }
+
+
+@app.context_processor
+def inject_reset_instructions():
+    return {
+        "reset_label": reset_instructions()["label"],
+        "reset_command": reset_instructions()["command"],
+    }
 
 
 def selected_funding_source():

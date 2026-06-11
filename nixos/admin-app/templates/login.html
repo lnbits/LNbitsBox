@@ -29,14 +29,15 @@
             <form method="POST" action="{{ url_for('login') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-4">
-                    <label class="block text-sm font-mono text-ln-muted mb-2 uppercase tracking-wider">User</label>
-                    <input type="text"
+                    <label for="login-user" class="block text-sm font-mono text-ln-muted mb-2 uppercase tracking-wider">User</label>
+                    <input type="text" id="login-user"
                             value="lnbitsadmin"
+                            readonly
                             class="w-full bg-ln-surface border border-ln-border rounded-lg px-4 py-3 text-ln-muted font-mono text-sm">
                 </div>
                 <div class="mb-6">
-                    <label class="block text-sm font-mono text-ln-muted mb-2 uppercase tracking-wider">Password</label>
-                    <input type="password" name="password" required autofocus
+                    <label for="login-password" class="block text-sm font-mono text-ln-muted mb-2 uppercase tracking-wider">Password</label>
+                    <input type="password" id="login-password" name="password" required autofocus
                             class="w-full bg-ln-surface border border-ln-border rounded-lg px-4 py-3 text-ln-text font-mono text-sm outline-none transition-all">
                 </div>
                 <button type="submit"
