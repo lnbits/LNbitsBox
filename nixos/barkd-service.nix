@@ -98,22 +98,22 @@ in
       trap cleanup EXIT
 
       for _ in $(seq 1 30); do
+        # This endpoint is available before the wallet has been created.
         if test -s ${stateDir}/auth_token && curl --fail --silent --output /dev/null \
-          -H "Authorization: Bearer $(cat ${stateDir}/auth_token)" \
-          http://127.0.0.1:3000/api/v1/wallet/connected; then
+          http://127.0.0.1:3000/api-docs/openapi.json; then
           break
         fi
         sleep 1
       done
 
       test -s ${stateDir}/auth_token
-      wallet_request=$(jq -n \
+      jq -n \
         --rawfile mnemonic ${initMnemonicFile} \
-        '{ark_server: "ark.second.tech", chain_source: {esplora: {url: "https://mempool.second.tech/api"}}, network: "mainnet", mnemonic: $mnemonic}')
+        '{ark_server: "ark.second.tech", chain_source: {esplora: {url: "https://mempool.second.tech/api"}}, network: "mainnet", mnemonic: $mnemonic}' | \
       curl --fail --silent --show-error \
         -H "Authorization: Bearer $(cat ${stateDir}/auth_token)" \
         -H "Content-Type: application/json" \
-        --data "$wallet_request" \
+        --data-binary @- \
         http://127.0.0.1:3000/api/v1/wallet >/dev/null
       test -s ${stateDir}/db.sqlite
       rm -f ${initMnemonicFile}
