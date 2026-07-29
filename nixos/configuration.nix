@@ -156,7 +156,7 @@
       https://<this-device-ip>/
 
     Not configured yet? The setup wizard will guide you through:
-      • Choosing Spark, Phoenixd, or Ark as the funding source
+      • Choosing Spark, Phoenixd, Ark, or Bark as the funding source
       • Generating/importing your wallet seed phrase
       • Setting your SSH password
       • Launching LNbits
@@ -183,6 +183,7 @@
     ./spark-sidecar-service.nix
     ./phoenixd-service.nix
     ./arkade-sidecar-service.nix
+    ./barkd-service.nix
     ./configurator-service.nix
     ./caddy-proxy.nix
     ./admin-service.nix

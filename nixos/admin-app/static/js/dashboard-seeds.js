@@ -20,4 +20,5 @@
     bindSeedToggle('spark-seed-value', 'spark-seed-toggle-btn');
     bindSeedToggle('arkade-seed-value', 'arkade-seed-toggle-btn');
     bindSeedToggle('phoenixd-seed-value', 'phoenixd-seed-toggle-btn');
+    bindSeedToggle('bark-seed-value', 'bark-seed-toggle-btn');
 })();

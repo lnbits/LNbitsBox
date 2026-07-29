@@ -70,6 +70,7 @@ SPARK_URL = os.environ.get("SPARK_URL", "http://127.0.0.1:8765")
 ARKADE_URL = os.environ.get("ARKADE_URL", "http://127.0.0.1:8765")
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 PHOENIXD_URL = os.environ.get("PHOENIXD_URL", "http://127.0.0.1:9740")
+BARKD_URL = os.environ.get("BARKD_URL", "http://127.0.0.1:3000")
 FUNDING_SOURCE_STATE_FILE = (
     Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
     if DEV_MODE else Path("/var/lib/lnbitsbox/funding-source")
@@ -90,9 +91,14 @@ FUNDING_SOURCES = {
         "service": "phoenixd",
         "wallet_class": "PhoenixdWallet",
     },
+    "bark": {
+        "label": "Bark",
+        "service": "barkd",
+        "wallet_class": "BarkWallet",
+    },
 }
 FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values() if source.get("service")]
-ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor"]
+ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "barkd", "tor"]
 LNBITS_DEFAULT_ENV = [
     "LNBITS_ADMIN_UI=true",
     "LNBITS_HOST=127.0.0.1",
@@ -132,6 +138,9 @@ PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix") if DEV_MODE el
 PHOENIXD_HOME_DIR = PHOENIXD_STATE_DIR.parent
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
 PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"
+BARKD_STATE_DIR = Path("/tmp/lnbitspi-test/barkd") if DEV_MODE else Path("/var/lib/barkd")
+BARKD_MNEMONIC_FILE = BARKD_STATE_DIR / "mnemonic"
+BARKD_AUTH_TOKEN_FILE = BARKD_STATE_DIR / "auth_token"
 LNBITS_ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env") if DEV_MODE else Path("/etc/lnbits/lnbits.env")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
@@ -195,6 +204,7 @@ RECOVERY_COMPONENT_LABELS = {
     "spark": "Spark wallet state",
     "ark": "Ark wallet state",
     "phoenixd": "Phoenixd wallet state",
+    "bark": "Bark wallet state",
     "config": "Device config",
     "tunnel": "Tunnel config",
     "wifi": "Wi-Fi config",
@@ -207,12 +217,13 @@ LOG_SERVICE_OPTIONS = [
     {"key": "phoenixd", "label": "Phoenixd", "unit": "phoenixd.service"},
     {"key": "spark", "label": "Spark", "unit": "spark-sidecar.service"},
     {"key": "ark", "label": "Ark", "unit": "arkade-sidecar.service"},
+    {"key": "bark", "label": "Bark", "unit": "barkd.service"},
     {"key": "caddy", "label": "Caddy", "unit": "caddy.service"},
     {"key": "tunnel", "label": "Tunnel", "unit": f"{TUNNEL_SERVICE_NAME}.service"},
     {"key": "tor", "label": "Tor", "unit": "tor.service"},
 ]
 LOG_SERVICE_BY_KEY = {entry["key"]: entry for entry in LOG_SERVICE_OPTIONS}
-FUNDING_LOG_KEYS = {"spark", "ark", "phoenixd"}
+FUNDING_LOG_KEYS = {"spark", "ark", "phoenixd", "bark"}
 
 
 def _read_key_value_file(path: Path) -> dict[str, str]:
@@ -278,6 +289,8 @@ def _update_lnbits_funding_source_env(source: str):
         "ARKADE_EXTERNAL_API_KEY",
         "PHOENIXD_API_ENDPOINT",
         "PHOENIXD_API_PASSWORD",
+        "BARK_API_ENDPOINT",
+        "BARK_API_TOKEN",
     }
     kept = [
         line for line in existing
@@ -331,6 +344,16 @@ def _update_lnbits_funding_source_env(source: str):
             "PHOENIXD_API_ENDPOINT=http://127.0.0.1:9740/",
             f"PHOENIXD_API_PASSWORD={password}",
         ]
+    elif source == "bark":
+        token = _read_bark_api_token()
+        if not token:
+            raise RuntimeError("Bark API token is not available yet. Complete Bark setup first.")
+        funding_config = [
+            "# Funding Source Configuration",
+            "LNBITS_BACKEND_WALLET_CLASS=BarkWallet",
+            "BARK_API_ENDPOINT=http://127.0.0.1:3000",
+            f"BARK_API_TOKEN={token}",
+        ]
     else:
         raise ValueError("Invalid funding source")
 
@@ -379,6 +402,15 @@ def _funding_sources_payload() -> dict[str, Any]:
                 "channel_count": 0,
             }
         ),
+        "bark": (
+            get_bark_status()
+            if selected == "bark"
+            else {
+                "seed_present": bool(_read_bark_mnemonic()),
+                "connected": None,
+                "balance": None,
+            }
+        ),
     }
 
 
@@ -397,6 +429,8 @@ def _default_log_service_key() -> str:
         return "phoenixd"
     if selected == "ark":
         return "ark"
+    if selected == "bark":
+        return "bark"
     return "lnbits"
 
 
@@ -669,6 +703,21 @@ def _read_arkade_mnemonic() -> str | None:
         return None
 
 
+def _read_bark_mnemonic() -> str | None:
+    try:
+        mnemonic = _normalize_mnemonic(BARKD_MNEMONIC_FILE.read_text())
+        return mnemonic or None
+    except Exception:
+        return None
+
+
+def _read_bark_api_token() -> str:
+    try:
+        return BARKD_AUTH_TOKEN_FILE.read_text().strip()
+    except Exception:
+        return ""
+
+
 def _normalize_mnemonic(value: str) -> str:
     return " ".join(value.strip().lower().split())
 
@@ -908,6 +957,7 @@ def _recovery_component_tree_roots() -> dict[str, tuple[str, Path]]:
         "spark": ("spark", SPARK_STATE_DIR),
         "ark": ("ark", ARKADE_STATE_DIR),
         "phoenixd": ("phoenixd", PHOENIXD_STATE_DIR),
+        "bark": ("bark", BARKD_STATE_DIR),
         "tunnel": ("tunnel", TUNNEL_STATE_DIR),
     }
 
@@ -978,14 +1028,14 @@ def _recovery_manifest(encrypted: bool, payloads: dict[str, list[dict[str, Any]]
         current_version=get_current_version(),
         encrypted=encrypted,
         components=payloads,
-        spark_seed_present=bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed()),
+        spark_seed_present=bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed() or _read_bark_mnemonic()),
         tunnel_configured=bool((_load_tunnel_state().get("current_tunnel") or {}).get("tunnel_id")),
         created_by="manual",
     )
 
 
 def _create_recovery_backup_bytes(passphrase: str | None = None, *, created_by: str = "manual") -> tuple[bytes, dict[str, Any]]:
-    services = _services_for_restore(["database", "spark", "ark", "phoenixd", "tunnel"])
+    services = _services_for_restore(["database", "spark", "ark", "phoenixd", "bark", "tunnel"])
     try:
         _stop_services(services)
         payloads = _backup_component_payloads()
@@ -1106,6 +1156,8 @@ def _services_for_restore(components: list[str]) -> list[str]:
         services.add("arkade-sidecar.service")
     if "phoenixd" in components:
         services.add("phoenixd.service")
+    if "bark" in components:
+        services.add("barkd.service")
     if "tunnel" in components:
         services.add(f"{TUNNEL_SERVICE_NAME}.service")
     return sorted(services)
@@ -1137,6 +1189,8 @@ def _restore_component_ownership(component: str, destination_path: Path):
             shutil.chown(destination_path, user="arkade-sidecar", group="arkade-sidecar")
     elif component == "phoenixd":
         shutil.chown(destination_path, user="phoenixd", group="phoenixd")
+    elif component == "bark":
+        shutil.chown(destination_path, user="barkd", group="barkd")
     elif component == "tunnel":
         shutil.chown(destination_path, user="root", group="root")
 
@@ -1182,6 +1236,7 @@ def _post_restore_report(selected_components: list[str], manifest: dict[str, Any
             "spark-sidecar": get_service_status("spark-sidecar"),
             "arkade-sidecar": get_service_status("arkade-sidecar"),
             "phoenixd": get_service_status("phoenixd"),
+            "barkd": get_service_status("barkd"),
             TUNNEL_SERVICE_NAME: _tunnel_service_status(),
         },
     }
@@ -1193,8 +1248,9 @@ def _recovery_status_payload() -> dict[str, Any]:
     schedule = _recovery_schedule()
     schedule["passphrase"] = "configured" if schedule.get("passphrase") else ""
     return {
-        "spark_seed_present": bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed()),
+        "spark_seed_present": bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed() or _read_bark_mnemonic()),
         "ark_seed_present": bool(_read_arkade_mnemonic()),
+        "bark_seed_present": bool(_read_bark_mnemonic()),
         "tunnel_ready": TUNNEL_KEY_FILE.exists(),
         "last_backup": state.get("last_backup"),
         "last_validation": state.get("last_validation"),
@@ -1633,6 +1689,41 @@ def get_arkade_status():
     }
 
 
+def _bark_request(path: str):
+    try:
+        import requests
+        token = _read_bark_api_token()
+        if not token:
+            return None
+        resp = requests.get(
+            f"{BARKD_URL.rstrip('/')}/api/v1/{path.lstrip('/')}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5,
+        )
+        if resp.ok:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
+
+def get_bark_status():
+    connected_data = _bark_request("wallet/connected")
+    balance_data = _bark_request("wallet/balance")
+    balance = None
+    if isinstance(balance_data, dict):
+        value = balance_data.get("spendable_sat")
+        try:
+            balance = int(value) if value is not None else None
+        except (TypeError, ValueError):
+            balance = None
+    return {
+        "seed_present": bool(_read_bark_mnemonic()),
+        "connected": connected_data.get("connected") if isinstance(connected_data, dict) else None,
+        "balance": {"balance": balance, "raw": balance_data} if balance_data is not None else None,
+    }
+
+
 def get_cpu_percent():
     try:
         import psutil
@@ -1695,6 +1786,7 @@ def collect_stats():
         "spark_balance": funding_sources.get("spark", {}).get("balance"),
         "arkade_status": funding_sources.get("arkade", {}),
         "phoenixd_status": funding_sources.get("phoenixd", {}),
+        "bark_status": funding_sources.get("bark", {}),
         "tor_onion": get_onion_address(),
         "network": get_network_info(),
     }
@@ -1793,6 +1885,7 @@ def funding_sources_page():
         spark_mnemonic=_read_spark_mnemonic(),
         arkade_mnemonic=_read_arkade_mnemonic(),
         phoenixd_seed=_read_phoenixd_seed(),
+        bark_mnemonic=_read_bark_mnemonic(),
     )
 
 

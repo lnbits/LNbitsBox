@@ -32,6 +32,7 @@
     function sourceSummary(source) {
         if (source === 'phoenixd') return 'Phoenixd is selected. LNbits uses the local Phoenixd API on port 9740.';
         if (source === 'ark') return 'Ark is selected. LNbits uses the local Arkade sidecar API on port 8765.';
+        if (source === 'bark') return 'Bark is selected. LNbits uses the local barkd API on port 3000.';
         return 'Spark is selected. LNbits uses the local Spark sidecar API on port 8765.';
     }
 
@@ -45,6 +46,9 @@
         D.setText('funding-spark-state', selected === 'spark' ? 'Selected' : D.serviceStatusLabel(payload.sources.spark?.service_status));
         D.setText('funding-arkade-state', selected === 'ark' ? 'Selected' : D.serviceStatusLabel(payload.sources.ark?.service_status));
         D.setText('funding-phoenixd-state', selected === 'phoenixd' ? 'Selected' : D.serviceStatusLabel(payload.sources.phoenixd?.service_status));
+        const bark = payload.bark || {};
+        D.setText('funding-bark-state', bark.connected === true ? 'Connected' : bark.connected === false ? 'Disconnected' : D.serviceStatusLabel(payload.sources.bark?.service_status));
+        D.setText('bark-balance', fmt(bark.balance?.balance));
 
         const spark = payload.spark || {};
         const sparkBalance = spark.balance || {};

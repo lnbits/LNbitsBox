@@ -38,6 +38,7 @@ let
     systemctl stop spark-sidecar.service || true
     systemctl stop phoenixd.service || true
     systemctl stop arkade-sidecar.service || true
+    systemctl stop barkd.service || true
 
     echo "Removing configuration marker..."
     if [ -e /var/lib/lnbits/.configured ]; then
@@ -60,29 +61,41 @@ let
     echo "─────────────────────────────────────────────────────"
     echo "Seed Phrase Management"
     echo "─────────────────────────────────────────────────────"
-    if [ -f /var/lib/spark-sidecar/mnemonic ] || [ -f /var/lib/arkade-sidecar/mnemonic ] || [ -f /var/lib/phoenixd/.phoenix/seed.dat ]; then
+    if [ -f /var/lib/spark-sidecar/mnemonic ] || [ -f /var/lib/arkade-sidecar/mnemonic ] || [ -f /var/lib/phoenixd/.phoenix/seed.dat ] || [ -d /var/lib/barkd ]; then
       if [ -f /var/lib/spark-sidecar/mnemonic ]; then
         seed_file="/var/lib/spark-sidecar/mnemonic"
         seed_name="Spark"
       elif [ -f /var/lib/arkade-sidecar/mnemonic ]; then
         seed_file="/var/lib/arkade-sidecar/mnemonic"
         seed_name="Ark"
-      else
+      elif [ -f /var/lib/phoenixd/.phoenix/seed.dat ]; then
         seed_file="/var/lib/phoenixd/.phoenix/seed.dat"
         seed_name="Phoenixd"
+      else
+        seed_file="/var/lib/barkd"
+        seed_name="Bark"
       fi
-      echo "A $seed_name seed file exists at:"
+      echo "A $seed_name wallet state exists at:"
       echo "  $seed_file"
       echo ""
-      echo "If you delete it, you will need to generate or import"
-      echo "a new seed phrase. Make sure you have it backed up!"
+      if [ "$seed_name" = "Bark" ]; then
+        echo "Bark recovery needs both its mnemonic and database. Deleting this"
+        echo "directory removes the complete Bark wallet state. Make sure it is backed up!"
+      else
+        echo "If you delete it, you will need to generate or import"
+        echo "a new seed phrase. Make sure you have it backed up!"
+      fi
       echo ""
-      read -p "Delete the seed file? [y/N] " -n 1 -r
+      read -p "Delete this wallet state? [y/N] " -n 1 -r
       echo
       if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "Deleting seed file..."
-        rm -f "$seed_file"
-        echo "Seed file deleted."
+        echo "Deleting wallet state..."
+        if [ "$seed_name" = "Bark" ]; then
+          rm -rf "$seed_file"
+        else
+          rm -f "$seed_file"
+        fi
+        echo "Wallet state deleted."
       else
         echo "Keeping seed file (you can import it in the wizard)."
       fi
@@ -184,6 +197,7 @@ let
     "$SYSTEMCTL" stop spark-sidecar.service || true
     "$SYSTEMCTL" stop phoenixd.service || true
     "$SYSTEMCTL" stop arkade-sidecar.service || true
+    "$SYSTEMCTL" stop barkd.service || true
     "$SYSTEMCTL" stop lnbitsbox-reverse-tunnel.service || true
 
     echo "Removing LNbits and wallet state..."
@@ -192,6 +206,7 @@ let
     remove_path /var/lib/spark-sidecar
     remove_path /var/lib/arkade-sidecar
     remove_path /var/lib/phoenixd/.phoenix
+    remove_path /var/lib/barkd
     remove_path /var/lib/lnbitsbox
     remove_path /var/lib/lnbitsbox-tunnel
     remove_path /var/lib/lnbitsbox-recovery
