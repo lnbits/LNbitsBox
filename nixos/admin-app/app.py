@@ -1195,6 +1195,20 @@ def _restore_component_ownership(component: str, destination_path: Path):
         shutil.chown(destination_path, user="root", group="root")
 
 
+def _restore_bark_state_directory_ownership():
+    """Bark refuses to start with a state directory it cannot harden itself."""
+    if not BARKD_STATE_DIR.exists():
+        return
+    directories = [BARKD_STATE_DIR]
+    directories.extend(path for path in BARKD_STATE_DIR.rglob("*") if path.is_dir())
+    for directory in directories:
+        try:
+            shutil.chown(directory, user="barkd", group="barkd")
+            os.chmod(directory, 0o700)
+        except Exception:
+            pass
+
+
 def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any], selected_components: list[str]) -> dict[str, Any]:
     restored_files = []
     for file_info in manifest.get("files", []):
@@ -1215,6 +1229,8 @@ def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any
             _restore_component_ownership(component, destination_path)
         except Exception:
             pass
+    if "bark" in selected_components:
+        _restore_bark_state_directory_ownership()
     return {"restored_files": restored_files}
 
 

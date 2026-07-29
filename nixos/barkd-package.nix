@@ -20,7 +20,11 @@ rustPlatform.buildRustPackage {
   version = "0.4.0";
   src = bark;
 
-  cargoHash = pkgs.lib.fakeHash;
+  # Bark's lockfile has only registry dependencies, so Nix can fetch each
+  # locked crate directly. This avoids a manually maintained vendor hash.
+  cargoLock = {
+    lockFile = "${bark}/Cargo.lock";
+  };
 
   nativeBuildInputs = [ pkgs.pkg-config pkgs.protobuf ];
   buildInputs = [ pkgs.openssl pkgs.sqlite ];
