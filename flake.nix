@@ -27,7 +27,7 @@
 
     # Bark wallet daemon. Its flake only exposes development shells, so the
     # image packages bark and barkd from this pinned source directly.
-    bark.url = "gitlab:ark-bitcoin/bark/bark-0.4.0";
+    bark.url = "gitlab:ark-bitcoin/bark/bark-0.6.2";
     bark.flake = false;
 
     # Bark 0.4.0 requires Rust 1.90 while nixpkgs 24.11 provides Rust 1.82.

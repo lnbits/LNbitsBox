@@ -3,6 +3,7 @@
 let
   barkPkg = pkgs.callPackage ./barkd-package.nix { inherit bark fenix; };
   stateDir = "/var/lib/barkd";
+  barkDataDir = "${stateDir}/data";
   initDir = "/run/lnbitsbox-bark-init";
   initMnemonicFile = "${initDir}/mnemonic";
   selectedFundingSourceFile = "/var/lib/lnbitsbox/funding-source";
@@ -38,7 +39,7 @@ in
       StateDirectoryMode = "0700";
       ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || ${pkgs.gnugrep}/bin/grep -qx bark ${selectedFundingSourceFile}'";
       Environment = [
-        "BARKD_DATADIR=${stateDir}"
+        "BARKD_DATADIR=${barkDataDir}"
         "BARKD_BIND_HOST=127.0.0.1"
         "BARKD_BIND_PORT=3000"
         "BARKD_EXPOSE_MNEMONIC=false"
@@ -73,9 +74,14 @@ in
       TimeoutStartSec = "90s";
       StateDirectory = "barkd";
       StateDirectoryMode = "0700";
+      Environment = [ "RUST_LOG=debug" ];
       NoNewPrivileges = true;
       PrivateTmp = true;
-      ProtectSystem = "strict";
+      # barkd may remove and recreate its datadir when wallet creation fails.
+      # `strict` can make that cleanup fail with EROFS even when stateDir is
+      # listed in ReadWritePaths. This daemon is short-lived; the long-running
+      # barkd service remains strictly sandboxed below.
+      ProtectSystem = "full";
       ProtectHome = true;
       ReadWritePaths = [ stateDir initDir ];
       LockPersonality = true;
@@ -85,9 +91,9 @@ in
       set -euo pipefail
 
       test -s ${initMnemonicFile}
-      test ! -e ${stateDir}/db.sqlite
+      test ! -e ${barkDataDir}/db.sqlite
 
-      BARKD_DATADIR=${stateDir} \
+      BARKD_DATADIR=${barkDataDir} \
         BARKD_BIND_HOST=127.0.0.1 \
         BARKD_BIND_PORT=3000 \
         BARKD_EXPOSE_MNEMONIC=false \
@@ -101,23 +107,29 @@ in
 
       for _ in $(seq 1 30); do
         # This endpoint is available before the wallet has been created.
-        if test -s ${stateDir}/auth_token && curl --fail --silent --output /dev/null \
+        if test -s ${barkDataDir}/auth_token && curl --fail --silent --output /dev/null \
           http://127.0.0.1:3000/api-docs/openapi.json; then
           break
         fi
         sleep 1
       done
 
-      test -s ${stateDir}/auth_token
+      test -s ${barkDataDir}/auth_token
       jq -n \
         --rawfile mnemonic ${initMnemonicFile} \
         '{ark_server: "ark.second.tech", chain_source: {esplora: {url: "https://mempool.second.tech/api"}}, network: "mainnet", mnemonic: $mnemonic}' | \
       curl --fail-with-body --silent --show-error \
-        -H "Authorization: Bearer $(cat ${stateDir}/auth_token)" \
+        -H "Authorization: Bearer $(cat ${barkDataDir}/auth_token)" \
         -H "Content-Type: application/json" \
         --data-binary @- \
-        http://127.0.0.1:3000/api/v1/wallet >/dev/null
-      test -s ${stateDir}/db.sqlite
+        --output ${stateDir}/wallet-response.json \
+        http://127.0.0.1:3000/api/v1/wallet || {
+          echo "Bark wallet creation failed; server response:" >&2
+          cat ${stateDir}/wallet-response.json >&2 || true
+          exit 1
+        }
+      rm -f ${stateDir}/wallet-response.json
+      test -s ${barkDataDir}/db.sqlite
       rm -f ${initMnemonicFile}
     '';
   };

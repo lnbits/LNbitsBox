@@ -19,16 +19,16 @@
     "bark": {
       "flake": false,
       "locked": {
-        "lastModified": 1784552141,
-        "narHash": "sha256-6T05T1wYR+ugNtEHBIflboP6v7GEcAwpfU+wZRzx1CY=",
+        "lastModified": 1787667103,
+        "narHash": "sha256-IgLl7a69s9dedE7qqGncvRtV00LCpIC++f0Vruo2TLM=",
         "owner": "ark-bitcoin",
         "repo": "bark",
-        "rev": "1538235d2e1fa166c7fc3c5d2d5531b9e09ba9de",
+        "rev": "09e5b81d220d16f1e876df4aa772185640301528",
         "type": "gitlab"
       },
       "original": {
         "owner": "ark-bitcoin",
-        "ref": "bark-0.4.0",
+        "ref": "bark-0.6.2",
         "repo": "bark",
         "type": "gitlab"
       }
