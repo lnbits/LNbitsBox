@@ -15,7 +15,7 @@ in
   users.groups.barkd = {};
 
   systemd.tmpfiles.rules = [
-    "d ${stateDir} 0750 barkd barkd - -"
+    "d ${stateDir} 0700 barkd barkd - -"
     "d ${initDir} 0750 root barkd - -"
   ];
 
@@ -35,7 +35,7 @@ in
       User = "barkd";
       Group = "barkd";
       StateDirectory = "barkd";
-      StateDirectoryMode = "0750";
+      StateDirectoryMode = "0700";
       ExecCondition = "${pkgs.bash}/bin/bash -c 'test ! -f ${selectedFundingSourceFile} || ${pkgs.gnugrep}/bin/grep -qx bark ${selectedFundingSourceFile}'";
       Environment = [
         "BARKD_DATADIR=${stateDir}"
@@ -71,6 +71,8 @@ in
       Group = "barkd";
       UMask = "0077";
       TimeoutStartSec = "90s";
+      StateDirectory = "barkd";
+      StateDirectoryMode = "0700";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
@@ -110,7 +112,7 @@ in
       jq -n \
         --rawfile mnemonic ${initMnemonicFile} \
         '{ark_server: "ark.second.tech", chain_source: {esplora: {url: "https://mempool.second.tech/api"}}, network: "mainnet", mnemonic: $mnemonic}' | \
-      curl --fail --silent --show-error \
+      curl --fail-with-body --silent --show-error \
         -H "Authorization: Bearer $(cat ${stateDir}/auth_token)" \
         -H "Content-Type: application/json" \
         --data-binary @- \

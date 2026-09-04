@@ -391,25 +391,25 @@
    "jar": "sha256-SksK/7IqlXJAnTpr3pnOPyBFxVHK3Byn/glpCJLFJsM=",
    "pom": "sha256-/zJV7sDsi9XwZTc47BtINCpqkOPU6selb5BMauLhLtU="
   },
-  "fr/acinq/bitcoin#bitcoin-kmp-jvm/0.30.0": {
-   "jar": "sha256-Voteo7uVh89Q8p+1xWgazj6SxHKrhNXk1WxpCxHJC6o=",
-   "module": "sha256-cAWZakmokgWp4ZkUm7NIdf1xP8ewKmyQPKdnRfJR7JM=",
-   "pom": "sha256-6Rw3XOBO1EiyWy8F567BMfVvxcLYZdDL8DU3I97p8u0="
+  "fr/acinq/bitcoin#bitcoin-kmp-jvm/0.31.0": {
+   "jar": "sha256-bjtStkO6pPI6z4bP6YNjyQK3I9YrMCComOLU5Aqm3+g=",
+   "module": "sha256-QRPuPIpbi+yyWrrcGvYME/51/B8XPuDCwj5ZbPX0pFU=",
+   "pom": "sha256-Xg3mdhk2h7dSOJvGX46yOWaaE7HouwfILrEDpqTaFpc="
   },
-  "fr/acinq/bitcoin#bitcoin-kmp/0.30.0": {
-   "jar": "sha256-3oXiduz1pLthR4yIMc94P03BRRAgWvG4MToMfDScWJI=",
-   "module": "sha256-wJ7UqSpaUII4NzFGQqQy+tfPcb40nt7Lh0mP2yNXnjA=",
-   "pom": "sha256-wmX+fedQH12a8L6mtJRC2aIjEVr68I0KzpG7MrnhjN0="
+  "fr/acinq/bitcoin#bitcoin-kmp/0.31.0": {
+   "jar": "sha256-WsrTBpv2dAbEtem+EyRbtX+6AZeV/SN38sqUUUtPOrk=",
+   "module": "sha256-3CWhPYfzjics7v2JFrgMelkUFJp5Gwlr2MYMzMwBTbY=",
+   "pom": "sha256-QZPqo1zyPIc5p/yylbTnolHq6KcgP9Z1+ajqOe7KlcQ="
   },
-  "fr/acinq/lightning#lightning-kmp-core-jvm/1.12.0": {
-   "jar": "sha256-AIPnwGtrBq/fw1C2/0bsMytbY65P/omSFLJG2UPqLIg=",
-   "module": "sha256-geRSC/Bez3xktaYfvofNRrZw7j0FrFSDsZmTC+tMwG4=",
-   "pom": "sha256-fFuQoVFy3/vUX2LrUhXRT1pwNXAoccDmaf8Uf+KiKUs="
+  "fr/acinq/lightning#lightning-kmp-core-jvm/1.13.0": {
+   "jar": "sha256-HjtDCsk9fz4PntdQFSmzS5diB2TNp9r2arDZw5vTjMw=",
+   "module": "sha256-dJl7NrVtCLqbTRPe99uIciEJ+pPYMvNLSNItty8a8kA=",
+   "pom": "sha256-D7wzdMHUgmV1NJelD1bWIPYzCJf0XczG3GM+hX8wSZ0="
   },
-  "fr/acinq/lightning#lightning-kmp-core/1.12.0": {
-   "jar": "sha256-2du2rQ1jJ0kt23YmCIbkS5jZ8OnuVZKGuhBC2U3dO8s=",
-   "module": "sha256-MVn6Si2MbDXo8e3BZVub9fZjs6AE6nGOLAvMHwnxiFw=",
-   "pom": "sha256-pwYoAU4fE46WB2d17Kcj2qBRBxgBPl9oe2HjVhb8oww="
+  "fr/acinq/lightning#lightning-kmp-core/1.13.0": {
+   "jar": "sha256-QN/rhnzLr+4YWlMiQIrwpVYtYx3bkijGPfua8Qsr18g=",
+   "module": "sha256-hPq9y/yCGZE+46In8Oow94TuePJ0q53xX5iTBwTmA0g=",
+   "pom": "sha256-9qGeALd/IpH24GzysjriOQiiPh+EQyIA1WeC9+NW8Ck="
   },
   "fr/acinq/secp256k1#secp256k1-kmp-jni-common/0.23.0": {
    "jar": "sha256-mC3/SNWn7rhVN/eXBgnxoByG2go7wnkEzUywv4U3W8c=",
@@ -497,11 +497,6 @@
    "jar": "sha256-j8Zucfr1HjpVI6C8XNgH+conVWaK9awQcVHBg+s7484=",
    "module": "sha256-cqsmzxdzspPdm2re01DxDZIV/hjy0TTc19w+FAilXow=",
    "pom": "sha256-4VC5Uj2Ud1a/7q6dCLLX6qO604HK/mHtRoG99ch7Zrg="
-  },
-  "io/ktor#ktor-client-ios/3.4.1": {
-   "jar": "sha256-2mlNvcAQ8EvDgJwDTDfetnshU9ymn5JYbY1FteJ778I=",
-   "module": "sha256-rUcuSnJyTY9LM2qLNor03wFN1cRO30xTKeiY0zU8lSM=",
-   "pom": "sha256-IlSUGUYCJ/tS3Vs96t+GUE7J/gwVlVHC7UgSIMoF5Rs="
   },
   "io/ktor#ktor-client-json-jvm/3.4.1": {
    "jar": "sha256-95w9yh/g5UaX64y9BKQ5hVmLHaNXP7zXC4GkShAuOgU=",

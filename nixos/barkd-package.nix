@@ -18,6 +18,18 @@ let
       badTargetPlatforms = [];
     };
   };
+  cargoDepsBase = rustPlatform.importCargoLock {
+    lockFile = "${bark}/Cargo.lock";
+    extraRegistries = {
+      "https://github.com/rust-lang/crates.io-index" = "https://static.crates.io/crates";
+    };
+  };
+  cargoDeps = pkgs.runCommand "barkd-cargo-deps" { } ''
+    cp -r ${cargoDepsBase} $out
+    chmod -R u+w $out
+    sed -i '\#^\[source\."https://github.com/rust-lang/crates.io-index"\]$#,+3d' $out/.cargo/config.toml
+    sed -i 's#directory = "cargo-vendor-dir"#directory = "barkd-cargo-deps"#' $out/.cargo/config.toml
+  '';
 in
 rustPlatform.buildRustPackage {
   pname = "barkd";
@@ -26,9 +38,8 @@ rustPlatform.buildRustPackage {
 
   # Bark's lockfile has only registry dependencies, so Nix can fetch each
   # locked crate directly. This avoids a manually maintained vendor hash.
-  cargoLock = {
-    lockFile = "${bark}/Cargo.lock";
-  };
+  cargoDeps = cargoDeps;
+  doCheck = false;
 
   nativeBuildInputs = [ pkgs.pkg-config pkgs.protobuf pkgs.curl ];
   buildInputs = [ pkgs.openssl pkgs.sqlite ];
