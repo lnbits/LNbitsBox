@@ -30,7 +30,7 @@
     bark.url = "gitlab:ark-bitcoin/bark/bark-0.6.2";
     bark.flake = false;
 
-    # Bark 0.4.0 requires Rust 1.90 while nixpkgs 24.11 provides Rust 1.82.
+    # Bark 0.6.2 requires Rust 1.90 while nixpkgs 24.11 provides Rust 1.82.
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
   };
