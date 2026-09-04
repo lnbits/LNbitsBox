@@ -1,21 +1,6 @@
-{ config, pkgs, lnbits, ... }:
+{ config, pkgs, lnbitsPkg, ... }:
 
 let
-  wasmtimeAarch64Wheel = pkgs.fetchurl {
-    url = "https://files.pythonhosted.org/packages/42/56/ed5f492bd553a31c8e28d621f8256f2c7b1a133b28f73525d96ca355891a/wasmtime-45.0.0-py3-none-manylinux2014_aarch64.whl";
-    hash = "sha256-pJn2qw7rtw3Kg9akkEt0PNEi8yKvOr6GrwitdTUz2UY=";
-  };
-  lnbitsPkg = lnbits.packages.${pkgs.system}.default.overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.unzip ];
-    postInstall = (old.postInstall or "") + ''
-      wheelRoot=$(mktemp -d)
-      unzip -q ${wasmtimeAarch64Wheel} -d "$wheelRoot"
-      wasmtimeDir=$(find "$out/lib" -type d -path '*/site-packages/wasmtime' -print -quit)
-      test -n "$wasmtimeDir"
-      cp -R "$wheelRoot/wasmtime/linux-aarch64" "$wasmtimeDir/"
-      rm -rf "$wheelRoot"
-    '';
-  });
   dataDir = "/var/lib/lnbits";
   extensionsDir = "/var/lib/lnbits-extensions";
   envFile = "/etc/lnbits/lnbits.env";
@@ -65,8 +50,8 @@ EOF
 
   systemd.services.lnbits = {
     description = "LNbits server";
-    after = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "arkade-sidecar.service" "barkd.service" ];
-    wants = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "arkade-sidecar.service" "barkd.service" ];
+    after = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "barkd.service" ];
+    wants = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "barkd.service" ];
     wantedBy = [ "multi-user.target" ];
 
     # Only start if the system has been configured

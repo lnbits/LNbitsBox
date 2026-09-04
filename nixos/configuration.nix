@@ -182,7 +182,6 @@
     ./lnbits-service.nix
     ./spark-sidecar-service.nix
     ./phoenixd-service.nix
-    ./arkade-sidecar-service.nix
     ./barkd-service.nix
     ./configurator-service.nix
     ./caddy-proxy.nix

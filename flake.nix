@@ -21,10 +21,6 @@
     spark-sidecar.url = "github:lnbits/spark_sidecar";
     spark-sidecar.flake = false;  # Not a flake, just source
 
-    # Arkade sidecar for Ark funding-source integration
-    arkade-sidecar.url = "github:lnbits/arkade_sidecar";
-    arkade-sidecar.flake = false;
-
     # Bark wallet daemon. Its flake only exposes development shells, so the
     # image packages bark and barkd from this pinned source directly.
     bark.url = "gitlab:ark-bitcoin/bark/bark-0.6.2";
@@ -35,7 +31,7 @@
     fenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, arkade-sidecar, bark, fenix, ... }:
+  outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, bark, fenix, ... }:
   let
     version = "0.9.14";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
@@ -51,12 +47,18 @@
         pkgs = import nixpkgs { inherit system; };
       in
       pkgs.callPackage ./nixos/barkd-package.nix { inherit bark fenix; };
+    mkLnbitsPackage =
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in
+      pkgs.callPackage ./nixos/lnbits-package.nix { inherit lnbits; };
   in
   {
     # Compressed SD image (default, for releases)
     nixosConfigurations.pi4 = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits phoenixd spark-sidecar arkade-sidecar bark fenix version; };
+        specialArgs = { lnbitsPkg = mkLnbitsPackage system; inherit lnbits phoenixd spark-sidecar bark fenix version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image
@@ -67,7 +69,7 @@
     # Uncompressed SD image (for faster local testing)
     nixosConfigurations.pi4-uncompressed = nixpkgs.lib.nixosSystem {
       inherit system;
-      specialArgs = { inherit lnbits phoenixd spark-sidecar arkade-sidecar bark fenix version; };
+        specialArgs = { lnbitsPkg = mkLnbitsPackage system; inherit lnbits phoenixd spark-sidecar bark fenix version; };
       modules = [
         raspberry-pi-nix.nixosModules.raspberry-pi
         raspberry-pi-nix.nixosModules.sd-image

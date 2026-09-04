@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "arkade-sidecar": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1780479171,
-        "narHash": "sha256-kuPETobfRsMiBtVZlOKyVKLhi6BfhY5mO0YtwfaZ8Ks=",
-        "owner": "lnbits",
-        "repo": "arkade_sidecar",
-        "rev": "39519fe0d8a870dbf4d310f562c12ef9fb82d1f9",
-        "type": "github"
-      },
-      "original": {
-        "owner": "lnbits",
-        "repo": "arkade_sidecar",
-        "type": "github"
-      }
-    },
     "bark": {
       "flake": false,
       "locked": {
@@ -256,7 +240,6 @@
     },
     "root": {
       "inputs": {
-        "arkade-sidecar": "arkade-sidecar",
         "bark": "bark",
         "fenix": "fenix",
         "lnbits": "lnbits",
