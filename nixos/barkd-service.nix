@@ -130,7 +130,6 @@ in
         }
       rm -f ${stateDir}/wallet-response.json
       test -s ${barkDataDir}/db.sqlite
-      rm -f ${initMnemonicFile}
     '';
   };
 }
