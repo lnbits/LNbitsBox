@@ -30,17 +30,17 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <label class="block cursor-pointer">
-        <input type="radio" name="funding_source" value="spark" class="sr-only peer" {% if selected == "spark" %}checked{% endif %}>
+        <input type="radio" name="funding_source" value="bark" class="sr-only peer" {% if selected == "bark" %}checked{% endif %}>
         <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="flex items-center gap-3">
                         <span class="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                            <img src="{{ url_for('static', filename='spark.svg') }}" alt="" class="w-7 h-7 object-contain">
+                            <img src="{{ url_for('static', filename='bark.jpg') }}" alt="" class="w-7 h-7 rounded object-cover">
                         </span>
-                        <p class="text-ln-text font-semibold text-2xl">Spark</p>
+                        <p class="text-ln-text font-semibold text-2xl">Bark</p>
                     </div>
-                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Spark for fast, low-cost self-custodial payments with Lightning compatibility and support for bitcoin-native assets.</p>
+                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Bark for self-custodial Ark, Lightning, and on-chain bitcoin payments.</p>
                 </div>
             </div>
         </div>
@@ -70,18 +70,19 @@
             before receiving funds.
         </p>
     </div>
+
     <label class="block cursor-pointer">
-        <input type="radio" name="funding_source" value="bark" class="sr-only peer" {% if selected == "bark" %}checked{% endif %}>
+        <input type="radio" name="funding_source" value="spark" class="sr-only peer" {% if selected == "spark" %}checked{% endif %}>
         <div class="bg-ln-surface border border-ln-border peer-checked:border-ln-pink/70 peer-checked:bg-ln-pink/5 rounded-xl p-4 transition-colors">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="flex items-center gap-3">
                         <span class="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                            <img src="{{ url_for('static', filename='bark.jpg') }}" alt="" class="w-7 h-7 rounded object-cover">
+                            <img src="{{ url_for('static', filename='spark.svg') }}" alt="" class="w-7 h-7 object-contain">
                         </span>
-                        <p class="text-ln-text font-semibold text-2xl">Bark</p>
+                        <p class="text-ln-text font-semibold text-2xl">Spark</p>
                     </div>
-                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Bark for self-custodial Ark, Lightning, and on-chain bitcoin payments.</p>
+                    <p class="text-ln-muted text-xs mt-1 leading-relaxed">Use Spark for fast, low-cost self-custodial payments with Lightning compatibility and support for bitcoin-native assets.</p>
                 </div>
             </div>
         </div>
