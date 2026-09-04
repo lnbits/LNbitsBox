@@ -27,11 +27,9 @@ DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
 if DEV_MODE:
     MARKER_FILE = Path("/tmp/lnbitspi-test/lnbits/.configured")
     SPARK_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
-    ARKADE_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/arkade-sidecar/mnemonic")
     PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix")
     ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")
-    ARKADE_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/arkade-sidecar/api-key.env")
     BARKD_STATE_DIR = Path("/tmp/lnbitspi-test/barkd")
     BARKD_INIT_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/barkd-init/mnemonic")
     FUNDING_SOURCE_FILE = Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
@@ -39,11 +37,9 @@ if DEV_MODE:
 else:
     MARKER_FILE = Path("/var/lib/lnbits/.configured")
     SPARK_MNEMONIC_FILE = Path("/var/lib/spark-sidecar/mnemonic")
-    ARKADE_MNEMONIC_FILE = Path("/var/lib/arkade-sidecar/mnemonic")
     PHOENIXD_STATE_DIR = Path("/var/lib/phoenixd/.phoenix")
     ENV_FILE = Path("/etc/lnbits/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/var/lib/spark-sidecar/api-key.env")
-    ARKADE_SIDECAR_ENV_FILE = Path("/var/lib/arkade-sidecar/api-key.env")
     BARKD_STATE_DIR = Path("/var/lib/barkd/data")
     BARKD_INIT_MNEMONIC_FILE = Path("/run/lnbitsbox-bark-init/mnemonic")
     FUNDING_SOURCE_FILE = Path("/var/lib/lnbitsbox/funding-source")
@@ -61,13 +57,6 @@ FUNDING_SOURCES = {
         "secret_owner": "spark-sidecar",
         "seed_file": SPARK_MNEMONIC_FILE,
         "service": "spark-sidecar.service",
-    },
-    "ark": {
-        "label": "Ark",
-        "seed_label": "Ark Wallet Seed",
-        "secret_owner": "arkade-sidecar",
-        "seed_file": ARKADE_MNEMONIC_FILE,
-        "service": "arkade-sidecar.service",
     },
     "phoenixd": {
         "label": "Phoenixd",
@@ -426,7 +415,6 @@ def complete():
             else:
                 subprocess.run(["systemctl", "stop", "spark-sidecar.service"], check=False)
                 subprocess.run(["systemctl", "stop", "phoenixd.service"], check=False)
-                subprocess.run(["systemctl", "stop", "arkade-sidecar.service"], check=False)
                 subprocess.run(["systemctl", "stop", "barkd.service"], check=False)
                 subprocess.run(["systemctl", "start", service_name], check=False)
                 subprocess.run(["systemctl", "start", "lnbits.service"], check=False)
@@ -449,13 +437,6 @@ def update_lnbits_env(source: str):
         "LNBITS_BACKEND_WALLET_CLASS",
         "SPARK_L2_EXTERNAL_ENDPOINT",
         "SPARK_L2_EXTERNAL_API_KEY",
-        "ARKADE_SIDECAR_URL",
-        "ARKADE_SIDECAR_API_KEY",
-        "ARKADE_MNEMONIC",
-        "ARKADE_ARK_SERVER_URL",
-        "ARKADE_BOLTZ_SERVER_URL",
-        "ARKADE_EXTERNAL_ENDPOINT",
-        "ARKADE_EXTERNAL_API_KEY",
         "PHOENIXD_API_ENDPOINT",
         "PHOENIXD_API_PASSWORD",
         "PHOENIXD_DATA_DIR",
@@ -490,24 +471,6 @@ def update_lnbits_env(source: str):
         SPARK_SIDECAR_ENV_FILE.write_text(f"SPARK_SIDECAR_API_KEY={api_token}\n")
         SPARK_SIDECAR_ENV_FILE.chmod(0o640)
         chgrp_if_group_exists(SPARK_SIDECAR_ENV_FILE, "spark-sidecar")
-    elif source == "ark":
-        api_token = secrets.token_hex(32)
-        funding_config = [
-            "# Funding Source Configuration",
-            "LNBITS_BACKEND_WALLET_CLASS=ArkadeWallet",
-            "ARKADE_SIDECAR_URL=http://127.0.0.1:8765",
-            f"ARKADE_SIDECAR_API_KEY={api_token}",
-            "ARKADE_MNEMONIC=",
-            "ARKADE_ARK_SERVER_URL=https://arkade.computer",
-            "ARKADE_BOLTZ_SERVER_URL=https://api.ark.boltz.exchange",
-            "ARKADE_EXTERNAL_ENDPOINT=http://127.0.0.1:8765",
-            f"ARKADE_EXTERNAL_API_KEY={api_token}",
-        ]
-
-        ARKADE_SIDECAR_ENV_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
-        ARKADE_SIDECAR_ENV_FILE.write_text(f"ARKADE_SIDECAR_API_KEY={api_token}\n")
-        ARKADE_SIDECAR_ENV_FILE.chmod(0o640)
-        chgrp_if_group_exists(ARKADE_SIDECAR_ENV_FILE, "arkade-sidecar")
     elif source == "phoenixd":
         ensure_phoenixd_config()
         phoenixd_password = read_key_value_file(PHOENIXD_CONF_FILE).get("http-password", "")
