@@ -44,7 +44,7 @@ else:
     ENV_FILE = Path("/etc/lnbits/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/var/lib/spark-sidecar/api-key.env")
     ARKADE_SIDECAR_ENV_FILE = Path("/var/lib/arkade-sidecar/api-key.env")
-    BARKD_STATE_DIR = Path("/var/lib/barkd")
+    BARKD_STATE_DIR = Path("/var/lib/barkd/data")
     BARKD_INIT_MNEMONIC_FILE = Path("/run/lnbitsbox-bark-init/mnemonic")
     FUNDING_SOURCE_FILE = Path("/var/lib/lnbitsbox/funding-source")
     SSH_USER = "lnbitsadmin"

@@ -9,9 +9,9 @@
     raspberry-pi-nix.url = "github:nix-community/raspberry-pi-nix";
     raspberry-pi-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    # LNbits dev
+    # LNbits release
     # To update: nix flake lock --update-input lnbits
-    lnbits.url = "github:lnbits/lnbits/dev";
+    lnbits.url = "github:lnbits/lnbits/v1.6.0";
 
     # Phoenixd source - build the JVM distribution from source on NixOS/aarch64.
     phoenixd.url = "github:ACINQ/phoenixd/v0.9.0";

@@ -1,7 +1,21 @@
 { config, pkgs, lnbits, ... }:
 
 let
-  lnbitsPkg = lnbits.packages.${pkgs.system}.default;
+  wasmtimeAarch64Wheel = pkgs.fetchurl {
+    url = "https://files.pythonhosted.org/packages/42/56/ed5f492bd553a31c8e28d621f8256f2c7b1a133b28f73525d96ca355891a/wasmtime-45.0.0-py3-none-manylinux2014_aarch64.whl";
+    hash = "sha256-pJn2qw7rtw3Kg9akkEt0PNEi8yKvOr6GrwitdTUz2UY=";
+  };
+  lnbitsPkg = lnbits.packages.${pkgs.system}.default.overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or []) ++ [ pkgs.unzip ];
+    postInstall = (old.postInstall or "") + ''
+      wheelRoot=$(mktemp -d)
+      unzip -q ${wasmtimeAarch64Wheel} -d "$wheelRoot"
+      wasmtimeDir=$(find "$out/lib" -type d -path '*/site-packages/wasmtime' -print -quit)
+      test -n "$wasmtimeDir"
+      cp -R "$wheelRoot/wasmtime/linux-aarch64" "$wasmtimeDir/"
+      rm -rf "$wheelRoot"
+    '';
+  });
   dataDir = "/var/lib/lnbits";
   extensionsDir = "/var/lib/lnbits-extensions";
   envFile = "/etc/lnbits/lnbits.env";
