@@ -167,3 +167,6 @@ A private LNbits extension for paid SSH tunnel / reverse proxy management. Used 
 ## CI/CD
 
 GitHub Actions (`.github/workflows/build-image.yml`) triggers on version tags (`v*`) and `workflow_dispatch`. It builds on `ubuntu-latest` using QEMU for aarch64 cross-compilation, pushes the system closure to Cachix, and creates a GitHub release with the image, SHA256SUMS, and manifest.
+
+## Nix build notes
+The primary development machine is a Apple Silicon Mac. This means that the Nix build is done on an aarch64 architecture. The resulting image is compatible with Raspberry Pi 4 (also aarch64). When you are running on an Apple Silicon Mac do not try and build as it will fail. Instead prompt the user to use a Linux machine or a Raspberry Pi 4 to build the image. The build will fail on x86_64 architecture because the image is built for aarch64 architecture.

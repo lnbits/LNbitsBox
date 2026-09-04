@@ -67,9 +67,9 @@ csrf = CSRFProtect(app)
 DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
 SSH_USER = "lnbitsadmin"
 SPARK_URL = os.environ.get("SPARK_URL", "http://127.0.0.1:8765")
-ARKADE_URL = os.environ.get("ARKADE_URL", "http://127.0.0.1:8765")
 LNBITS_URL = os.environ.get("LNBITS_URL", "http://127.0.0.1:5000")
 PHOENIXD_URL = os.environ.get("PHOENIXD_URL", "http://127.0.0.1:9740")
+BARKD_URL = os.environ.get("BARKD_URL", "http://127.0.0.1:3000")
 FUNDING_SOURCE_STATE_FILE = (
     Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
     if DEV_MODE else Path("/var/lib/lnbitsbox/funding-source")
@@ -80,19 +80,19 @@ FUNDING_SOURCES = {
         "service": "spark-sidecar",
         "wallet_class": "SparkL2Wallet",
     },
-    "ark": {
-        "label": "Ark",
-        "service": "arkade-sidecar",
-        "wallet_class": "ArkadeWallet",
-    },
     "phoenixd": {
         "label": "Phoenixd",
         "service": "phoenixd",
         "wallet_class": "PhoenixdWallet",
     },
+    "bark": {
+        "label": "Bark",
+        "service": "barkd",
+        "wallet_class": "BarkWallet",
+    },
 }
 FUNDING_SOURCE_SERVICES = [source["service"] for source in FUNDING_SOURCES.values() if source.get("service")]
-ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "arkade-sidecar", "phoenixd", "tor"]
+ALLOWED_SERVICES = ["lnbits", "spark-sidecar", "phoenixd", "barkd", "tor"]
 LNBITS_DEFAULT_ENV = [
     "LNBITS_ADMIN_UI=true",
     "LNBITS_HOST=127.0.0.1",
@@ -115,23 +115,16 @@ SPARK_STATE_DIR = (
 SPARK_MNEMONIC_FILE = (
     SPARK_STATE_DIR / "mnemonic"
 )
-ARKADE_STATE_DIR = (
-    Path("/tmp/lnbitspi-test/arkade-sidecar")
-    if DEV_MODE else Path("/var/lib/arkade-sidecar")
-)
-ARKADE_MNEMONIC_FILE = (
-    ARKADE_STATE_DIR / "mnemonic"
-)
 SPARK_API_KEY_FILE = (
     SPARK_STATE_DIR / "api-key.env"
-)
-ARKADE_API_KEY_FILE = (
-    ARKADE_STATE_DIR / "api-key.env"
 )
 PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix") if DEV_MODE else Path("/var/lib/phoenixd/.phoenix")
 PHOENIXD_HOME_DIR = PHOENIXD_STATE_DIR.parent
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
 PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"
+BARKD_STATE_DIR = Path("/tmp/lnbitspi-test/barkd") if DEV_MODE else Path("/var/lib/barkd/data")
+BARKD_MNEMONIC_FILE = BARKD_STATE_DIR / "mnemonic"
+BARKD_AUTH_TOKEN_FILE = BARKD_STATE_DIR / "auth_token"
 LNBITS_ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env") if DEV_MODE else Path("/etc/lnbits/lnbits.env")
 UPDATE_STATE_DIR = Path("/var/lib/lnbitsbox-update")
 VERSION_FILE = Path("/etc/lnbitsbox-version")
@@ -193,8 +186,8 @@ _tunnel_remote_sync = {
 RECOVERY_COMPONENT_LABELS = {
     "database": "LNbits database",
     "spark": "Spark wallet state",
-    "ark": "Ark wallet state",
     "phoenixd": "Phoenixd wallet state",
+    "bark": "Bark wallet state",
     "config": "Device config",
     "tunnel": "Tunnel config",
     "wifi": "Wi-Fi config",
@@ -206,13 +199,13 @@ LOG_SERVICE_OPTIONS = [
     {"key": "lnbits", "label": "LNbits", "unit": "lnbits.service"},
     {"key": "phoenixd", "label": "Phoenixd", "unit": "phoenixd.service"},
     {"key": "spark", "label": "Spark", "unit": "spark-sidecar.service"},
-    {"key": "ark", "label": "Ark", "unit": "arkade-sidecar.service"},
+    {"key": "bark", "label": "Bark", "unit": "barkd.service"},
     {"key": "caddy", "label": "Caddy", "unit": "caddy.service"},
     {"key": "tunnel", "label": "Tunnel", "unit": f"{TUNNEL_SERVICE_NAME}.service"},
     {"key": "tor", "label": "Tor", "unit": "tor.service"},
 ]
 LOG_SERVICE_BY_KEY = {entry["key"]: entry for entry in LOG_SERVICE_OPTIONS}
-FUNDING_LOG_KEYS = {"spark", "ark", "phoenixd"}
+FUNDING_LOG_KEYS = {"spark", "phoenixd", "bark"}
 
 
 def _read_key_value_file(path: Path) -> dict[str, str]:
@@ -269,15 +262,10 @@ def _update_lnbits_funding_source_env(source: str):
         "LNBITS_BACKEND_WALLET_CLASS",
         "SPARK_L2_EXTERNAL_ENDPOINT",
         "SPARK_L2_EXTERNAL_API_KEY",
-        "ARKADE_SIDECAR_URL",
-        "ARKADE_SIDECAR_API_KEY",
-        "ARKADE_MNEMONIC",
-        "ARKADE_ARK_SERVER_URL",
-        "ARKADE_BOLTZ_SERVER_URL",
-        "ARKADE_EXTERNAL_ENDPOINT",
-        "ARKADE_EXTERNAL_API_KEY",
         "PHOENIXD_API_ENDPOINT",
         "PHOENIXD_API_PASSWORD",
+        "BARK_API_ENDPOINT",
+        "BARK_API_TOKEN",
     }
     kept = [
         line for line in existing
@@ -305,22 +293,6 @@ def _update_lnbits_funding_source_env(source: str):
             "SPARK_L2_EXTERNAL_ENDPOINT=http://127.0.0.1:8765",
             f"SPARK_L2_EXTERNAL_API_KEY={api_key}",
         ]
-    elif source == "ark":
-        api_key = _read_sidecar_api_key(ARKADE_API_KEY_FILE, "ARKADE_SIDECAR_API_KEY")
-        if not api_key:
-            api_key = secrets.token_hex(32)
-            _write_sidecar_api_key(ARKADE_API_KEY_FILE, "arkade-sidecar", "ARKADE_SIDECAR_API_KEY", api_key)
-        funding_config = [
-            "# Funding Source Configuration",
-            "LNBITS_BACKEND_WALLET_CLASS=ArkadeWallet",
-            "ARKADE_SIDECAR_URL=http://127.0.0.1:8765",
-            f"ARKADE_SIDECAR_API_KEY={api_key}",
-            "ARKADE_MNEMONIC=",
-            "ARKADE_ARK_SERVER_URL=https://arkade.computer",
-            "ARKADE_BOLTZ_SERVER_URL=https://api.ark.boltz.exchange",
-            "ARKADE_EXTERNAL_ENDPOINT=http://127.0.0.1:8765",
-            f"ARKADE_EXTERNAL_API_KEY={api_key}",
-        ]
     elif source == "phoenixd":
         password = _read_phoenixd_api_password()
         if not password:
@@ -330,6 +302,16 @@ def _update_lnbits_funding_source_env(source: str):
             "LNBITS_BACKEND_WALLET_CLASS=PhoenixdWallet",
             "PHOENIXD_API_ENDPOINT=http://127.0.0.1:9740/",
             f"PHOENIXD_API_PASSWORD={password}",
+        ]
+    elif source == "bark":
+        token = _read_bark_api_token()
+        if not token:
+            raise RuntimeError("Bark API token is not available yet. Complete Bark setup first.")
+        funding_config = [
+            "# Funding Source Configuration",
+            "LNBITS_BACKEND_WALLET_CLASS=BarkWallet",
+            "BARK_API_ENDPOINT=http://127.0.0.1:3000",
+            f"BARK_API_TOKEN={token}",
         ]
     else:
         raise ValueError("Invalid funding source")
@@ -360,15 +342,6 @@ def _funding_sources_payload() -> dict[str, Any]:
             "balance": get_spark_balance() if selected == "spark" else None,
             "seed_present": bool(_read_spark_mnemonic()),
         },
-        "arkade": (
-            get_arkade_status()
-            if selected == "ark"
-            else {
-                "seed_present": bool(_read_arkade_mnemonic()),
-                "balance": None,
-                "mnemonic_missing": False,
-            }
-        ),
         "phoenixd": (
             get_phoenixd_status()
             if selected == "phoenixd"
@@ -377,6 +350,15 @@ def _funding_sources_payload() -> dict[str, Any]:
                 "balance": None,
                 "channels": [],
                 "channel_count": 0,
+            }
+        ),
+        "bark": (
+            get_bark_status()
+            if selected == "bark"
+            else {
+                "seed_present": bool(_read_bark_mnemonic()),
+                "connected": None,
+                "balance": None,
             }
         ),
     }
@@ -395,8 +377,8 @@ def _default_log_service_key() -> str:
     selected = _read_selected_funding_source()
     if selected == "phoenixd":
         return "phoenixd"
-    if selected == "ark":
-        return "ark"
+    if selected == "bark":
+        return "bark"
     return "lnbits"
 
 
@@ -473,7 +455,6 @@ def _perform_factory_reset_dev_mode():
         LNBITS_STATE_DIR,
         LNBITS_EXTENSIONS_DIR,
         SPARK_STATE_DIR,
-        ARKADE_STATE_DIR,
         PHOENIXD_HOME_DIR,
         TUNNEL_STATE_DIR,
         LNBITSBOX_STATE_DIR,
@@ -661,12 +642,19 @@ def _read_spark_mnemonic() -> str | None:
         return None
 
 
-def _read_arkade_mnemonic() -> str | None:
+def _read_bark_mnemonic() -> str | None:
     try:
-        mnemonic = ARKADE_MNEMONIC_FILE.read_text(encoding="utf-8").strip()
+        mnemonic = _normalize_mnemonic(BARKD_MNEMONIC_FILE.read_text())
         return mnemonic or None
     except Exception:
         return None
+
+
+def _read_bark_api_token() -> str:
+    try:
+        return BARKD_AUTH_TOKEN_FILE.read_text().strip()
+    except Exception:
+        return ""
 
 
 def _normalize_mnemonic(value: str) -> str:
@@ -691,32 +679,6 @@ def _write_spark_mnemonic(mnemonic: str):
         except KeyError:
             pass
         tmp_path.replace(SPARK_MNEMONIC_FILE)
-    finally:
-        if tmp_path.exists():
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
-
-
-def _write_arkade_mnemonic(mnemonic: str):
-    ARKADE_MNEMONIC_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
-    fd, tmp_path_str = tempfile.mkstemp(
-        prefix=".mnemonic.",
-        dir=str(ARKADE_MNEMONIC_FILE.parent),
-        text=True,
-    )
-    tmp_path = Path(tmp_path_str)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(mnemonic + "\n")
-        os.chmod(tmp_path, 0o640)
-        try:
-            arkade_gid = grp.getgrnam("arkade-sidecar").gr_gid
-            os.chown(tmp_path, 0, arkade_gid)
-        except KeyError:
-            pass
-        tmp_path.replace(ARKADE_MNEMONIC_FILE)
     finally:
         if tmp_path.exists():
             try:
@@ -906,8 +868,8 @@ def _recovery_component_sources() -> dict[str, list[tuple[str, Path]]]:
 def _recovery_component_tree_roots() -> dict[str, tuple[str, Path]]:
     return {
         "spark": ("spark", SPARK_STATE_DIR),
-        "ark": ("ark", ARKADE_STATE_DIR),
         "phoenixd": ("phoenixd", PHOENIXD_STATE_DIR),
+        "bark": ("bark", BARKD_STATE_DIR),
         "tunnel": ("tunnel", TUNNEL_STATE_DIR),
     }
 
@@ -978,14 +940,14 @@ def _recovery_manifest(encrypted: bool, payloads: dict[str, list[dict[str, Any]]
         current_version=get_current_version(),
         encrypted=encrypted,
         components=payloads,
-        spark_seed_present=bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed()),
+        spark_seed_present=bool(_read_spark_mnemonic() or _read_phoenixd_seed() or _read_bark_mnemonic()),
         tunnel_configured=bool((_load_tunnel_state().get("current_tunnel") or {}).get("tunnel_id")),
         created_by="manual",
     )
 
 
 def _create_recovery_backup_bytes(passphrase: str | None = None, *, created_by: str = "manual") -> tuple[bytes, dict[str, Any]]:
-    services = _services_for_restore(["database", "spark", "ark", "phoenixd", "tunnel"])
+    services = _services_for_restore(["database", "spark", "phoenixd", "bark", "tunnel"])
     try:
         _stop_services(services)
         payloads = _backup_component_payloads()
@@ -1102,10 +1064,10 @@ def _services_for_restore(components: list[str]) -> list[str]:
         services.add("lnbits.service")
     if "spark" in components:
         services.add("spark-sidecar.service")
-    if "ark" in components:
-        services.add("arkade-sidecar.service")
     if "phoenixd" in components:
         services.add("phoenixd.service")
+    if "bark" in components:
+        services.add("barkd.service")
     if "tunnel" in components:
         services.add(f"{TUNNEL_SERVICE_NAME}.service")
     return sorted(services)
@@ -1130,15 +1092,26 @@ def _restore_component_ownership(component: str, destination_path: Path):
         shutil.chown(destination_path, user="lnbits", group="lnbits")
     elif component == "spark":
         shutil.chown(destination_path, user="root", group="spark-sidecar")
-    elif component == "ark":
-        if destination_path.name in {"mnemonic", "api-key.env"}:
-            shutil.chown(destination_path, user="root", group="arkade-sidecar")
-        else:
-            shutil.chown(destination_path, user="arkade-sidecar", group="arkade-sidecar")
     elif component == "phoenixd":
         shutil.chown(destination_path, user="phoenixd", group="phoenixd")
+    elif component == "bark":
+        shutil.chown(destination_path, user="barkd", group="barkd")
     elif component == "tunnel":
         shutil.chown(destination_path, user="root", group="root")
+
+
+def _restore_bark_state_directory_ownership():
+    """Bark refuses to start with a state directory it cannot harden itself."""
+    if not BARKD_STATE_DIR.exists():
+        return
+    directories = [BARKD_STATE_DIR]
+    directories.extend(path for path in BARKD_STATE_DIR.rglob("*") if path.is_dir())
+    for directory in directories:
+        try:
+            shutil.chown(directory, user="barkd", group="barkd")
+            os.chmod(directory, 0o700)
+        except Exception:
+            pass
 
 
 def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any], selected_components: list[str]) -> dict[str, Any]:
@@ -1161,6 +1134,8 @@ def _restore_component_files(inner_zip: zipfile.ZipFile, manifest: dict[str, Any
             _restore_component_ownership(component, destination_path)
         except Exception:
             pass
+    if "bark" in selected_components:
+        _restore_bark_state_directory_ownership()
     return {"restored_files": restored_files}
 
 
@@ -1180,8 +1155,8 @@ def _post_restore_report(selected_components: list[str], manifest: dict[str, Any
         "services": {
             "lnbits": get_service_status("lnbits"),
             "spark-sidecar": get_service_status("spark-sidecar"),
-            "arkade-sidecar": get_service_status("arkade-sidecar"),
             "phoenixd": get_service_status("phoenixd"),
+            "barkd": get_service_status("barkd"),
             TUNNEL_SERVICE_NAME: _tunnel_service_status(),
         },
     }
@@ -1193,8 +1168,8 @@ def _recovery_status_payload() -> dict[str, Any]:
     schedule = _recovery_schedule()
     schedule["passphrase"] = "configured" if schedule.get("passphrase") else ""
     return {
-        "spark_seed_present": bool(_read_spark_mnemonic() or _read_arkade_mnemonic() or _read_phoenixd_seed()),
-        "ark_seed_present": bool(_read_arkade_mnemonic()),
+        "spark_seed_present": bool(_read_spark_mnemonic() or _read_phoenixd_seed() or _read_bark_mnemonic()),
+        "bark_seed_present": bool(_read_bark_mnemonic()),
         "tunnel_ready": TUNNEL_KEY_FILE.exists(),
         "last_backup": state.get("last_backup"),
         "last_validation": state.get("last_validation"),
@@ -1528,33 +1503,6 @@ def get_spark_balance():
     return None
 
 
-def get_arkade_balance():
-    """Query Arkade sidecar for wallet balance"""
-    try:
-        import requests
-        api_key = _read_sidecar_api_key(ARKADE_API_KEY_FILE, "ARKADE_SIDECAR_API_KEY")
-        headers = {"X-API-Key": api_key} if api_key else {}
-        resp = requests.post(f"{ARKADE_URL}/v1/balance", headers=headers, timeout=5)
-        if resp.ok:
-            data = resp.json()
-            balance_msat = data.get("balance_msat")
-            if balance_msat is not None:
-                return {
-                    "balance": int(balance_msat) // 1000,
-                    "status": data.get("status"),
-                }
-            balance_sats = data.get("balance_sats")
-            if balance_sats is not None:
-                return {
-                    "balance": int(balance_sats),
-                    "status": data.get("status"),
-                }
-            return {"balance": None, "status": data.get("status"), "raw": data}
-    except Exception:
-        pass
-    return None
-
-
 def _read_phoenixd_seed() -> str | None:
     try:
         seed = _normalize_mnemonic(PHOENIXD_SEED_FILE.read_text())
@@ -1623,13 +1571,38 @@ def get_phoenixd_status():
     }
 
 
-def get_arkade_status():
-    balance = get_arkade_balance()
-    status = balance.get("status") if isinstance(balance, dict) else None
+def _bark_request(path: str):
+    try:
+        import requests
+        token = _read_bark_api_token()
+        if not token:
+            return None
+        resp = requests.get(
+            f"{BARKD_URL.rstrip('/')}/api/v1/{path.lstrip('/')}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5,
+        )
+        if resp.ok:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
+
+def get_bark_status():
+    connected_data = _bark_request("wallet/connected")
+    balance_data = _bark_request("wallet/balance")
+    balance = None
+    if isinstance(balance_data, dict):
+        value = balance_data.get("spendable_sat")
+        try:
+            balance = int(value) if value is not None else None
+        except (TypeError, ValueError):
+            balance = None
     return {
-        "seed_present": bool(_read_arkade_mnemonic()),
-        "balance": balance,
-        "mnemonic_missing": status == "missing_mnemonic",
+        "seed_present": bool(_read_bark_mnemonic()),
+        "connected": connected_data.get("connected") if isinstance(connected_data, dict) else None,
+        "balance": {"balance": balance, "raw": balance_data} if balance_data is not None else None,
     }
 
 
@@ -1693,8 +1666,8 @@ def collect_stats():
         "funding_sources": funding_sources,
         "funding_source": _read_selected_funding_source(),
         "spark_balance": funding_sources.get("spark", {}).get("balance"),
-        "arkade_status": funding_sources.get("arkade", {}),
         "phoenixd_status": funding_sources.get("phoenixd", {}),
+        "bark_status": funding_sources.get("bark", {}),
         "tor_onion": get_onion_address(),
         "network": get_network_info(),
     }
@@ -1791,8 +1764,8 @@ def funding_sources_page():
         page_intro="Inspect the active LNbits funding source.",
         funding_sources=_funding_sources_payload(),
         spark_mnemonic=_read_spark_mnemonic(),
-        arkade_mnemonic=_read_arkade_mnemonic(),
         phoenixd_seed=_read_phoenixd_seed(),
+        bark_mnemonic=_read_bark_mnemonic(),
     )
 
 
@@ -2075,65 +2048,6 @@ def api_update_spark_seed():
         )
     except subprocess.CalledProcessError as e:
         return _json_error(e.stderr.decode() or "Failed to restart Spark.", 500)
-    except Exception as e:
-        return _json_error(str(e), 500)
-
-
-@app.route("/box/api/arkade/seed", methods=["POST"])
-@login_required
-def api_update_arkade_seed():
-    payload = request.get_json(silent=True) or {}
-    new_mnemonic = _normalize_mnemonic(str(payload.get("mnemonic", "")))
-
-    if not new_mnemonic:
-        return _json_error("Enter a seed phrase.", 400)
-
-    words = new_mnemonic.split()
-    if len(words) != 12:
-        return _json_error("Enter exactly 12 words.", 400)
-
-    if not Mnemonic("english").check(new_mnemonic):
-        return _json_error("Enter a valid 12-word BIP39 seed phrase.", 400)
-
-    current_mnemonic = _normalize_mnemonic(_read_arkade_mnemonic() or "")
-    if current_mnemonic and new_mnemonic == current_mnemonic:
-        return _json_error("That seed phrase is already in use.", 400)
-
-    if DEV_MODE:
-        _write_arkade_mnemonic(new_mnemonic)
-        if _is_selected_funding_service("arkade-sidecar"):
-            return _json_response(
-                status="ok",
-                message="Ark seed phrase updated successfully. Arkade is restarting now.",
-                data={"service": "arkade-sidecar", "action": "restart"},
-            )
-        return _json_response(
-            status="ok",
-            message="Ark seed phrase saved. Arkade remains stopped because it is not the active funding source.",
-            data={"service": "arkade-sidecar", "action": "none"},
-        )
-
-    try:
-        _write_arkade_mnemonic(new_mnemonic)
-        if not _is_selected_funding_service("arkade-sidecar"):
-            return _json_response(
-                status="ok",
-                message="Ark seed phrase saved. Arkade remains stopped because it is not the active funding source.",
-                data={"service": "arkade-sidecar", "action": "none"},
-            )
-        subprocess.run(
-            ["systemctl", "restart", "arkade-sidecar.service"],
-            check=True,
-            capture_output=True,
-            timeout=30,
-        )
-        return _json_response(
-            status="ok",
-            message="Ark seed phrase updated successfully. Arkade is restarting now.",
-            data={"service": "arkade-sidecar", "action": "restart"},
-        )
-    except subprocess.CalledProcessError as e:
-        return _json_error(e.stderr.decode() or "Failed to restart Arkade.", 500)
     except Exception as e:
         return _json_error(str(e), 500)
 

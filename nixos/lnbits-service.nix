@@ -1,7 +1,6 @@
-{ config, pkgs, lnbits, ... }:
+{ config, pkgs, lnbitsPkg, ... }:
 
 let
-  lnbitsPkg = lnbits.packages.${pkgs.system}.default;
   dataDir = "/var/lib/lnbits";
   extensionsDir = "/var/lib/lnbits-extensions";
   envFile = "/etc/lnbits/lnbits.env";
@@ -51,8 +50,8 @@ EOF
 
   systemd.services.lnbits = {
     description = "LNbits server";
-    after = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "arkade-sidecar.service" ];
-    wants = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "arkade-sidecar.service" ];
+    after = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "barkd.service" ];
+    wants = [ "network-online.target" "spark-sidecar.service" "phoenixd.service" "barkd.service" ];
     wantedBy = [ "multi-user.target" ];
 
     # Only start if the system has been configured

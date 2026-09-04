@@ -1,7 +1,8 @@
-{ config, pkgs, ... }:
+{ config, pkgs, bark, fenix, ... }:
 
 let
   configuratorPkg = pkgs.callPackage ./configurator-package.nix { };
+  barkPkg = pkgs.callPackage ./barkd-package.nix { inherit bark fenix; };
 in
 {
   systemd.services.lnbitspi-configurator = {
@@ -16,7 +17,7 @@ in
     };
 
     # chpasswd (shadow) and systemctl (systemd) must be in PATH
-    path = [ pkgs.shadow pkgs.systemd ];
+    path = [ pkgs.shadow pkgs.systemd barkPkg ];
 
     serviceConfig = {
       Type = "simple";

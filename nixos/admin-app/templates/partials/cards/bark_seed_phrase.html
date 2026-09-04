@@ -1,0 +1,30 @@
+<div class="bg-ln-surface border border-ln-border rounded-lg p-4 transition-all duration-500" id="bark-seed-card">
+    <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="text-ln-muted text-xs font-mono uppercase tracking-wider">Bark Wallet Seed Phrase</div>
+        <button
+            id="bark-seed-toggle-btn"
+            type="button"
+            {% if not bark_mnemonic %}disabled{% endif %}
+            class="text-ln-muted hover:text-ln-pink text-xs font-mono uppercase tracking-wider transition-colors px-3 py-1.5 border border-ln-border rounded-lg hover:border-ln-pink/30"
+        >
+            {% if bark_mnemonic %}Show Seed Phrase{% else %}Unavailable{% endif %}
+        </button>
+    </div>
+
+    <p class="text-amber-300 text-xs font-mono mb-4 leading-relaxed">
+        Keep this phrase private and back up the complete Bark wallet state. Restoring Bark requires both this phrase and its database.
+    </p>
+
+    <div
+        id="bark-seed-value"
+        class="bg-ln-surface border border-ln-border rounded-lg p-3 font-mono text-sm text-ln-text break-words select-text"
+        data-seed-phrase="{{ bark_mnemonic or '' }}"
+        data-masked="true"
+    >
+        {% if bark_mnemonic %}
+        ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• ••••• •••••
+        {% else %}
+        Seed phrase not available.
+        {% endif %}
+    </div>
+</div>

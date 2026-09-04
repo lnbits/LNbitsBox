@@ -27,26 +27,29 @@ DEV_MODE = os.environ.get("DEV_MODE", "false") == "true"
 if DEV_MODE:
     MARKER_FILE = Path("/tmp/lnbitspi-test/lnbits/.configured")
     SPARK_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/mnemonic")
-    ARKADE_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/arkade-sidecar/mnemonic")
     PHOENIXD_STATE_DIR = Path("/tmp/lnbitspi-test/phoenixd/.phoenix")
     ENV_FILE = Path("/tmp/lnbitspi-test/lnbits-config/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/spark-sidecar/api-key.env")
-    ARKADE_SIDECAR_ENV_FILE = Path("/tmp/lnbitspi-test/arkade-sidecar/api-key.env")
+    BARKD_STATE_DIR = Path("/tmp/lnbitspi-test/barkd")
+    BARKD_INIT_MNEMONIC_FILE = Path("/tmp/lnbitspi-test/barkd-init/mnemonic")
     FUNDING_SOURCE_FILE = Path("/tmp/lnbitspi-test/lnbitsbox/funding-source")
     SSH_USER = os.environ.get("USER")  # Use current user instead of lnbitsadmin
 else:
     MARKER_FILE = Path("/var/lib/lnbits/.configured")
     SPARK_MNEMONIC_FILE = Path("/var/lib/spark-sidecar/mnemonic")
-    ARKADE_MNEMONIC_FILE = Path("/var/lib/arkade-sidecar/mnemonic")
     PHOENIXD_STATE_DIR = Path("/var/lib/phoenixd/.phoenix")
     ENV_FILE = Path("/etc/lnbits/lnbits.env")
     SPARK_SIDECAR_ENV_FILE = Path("/var/lib/spark-sidecar/api-key.env")
-    ARKADE_SIDECAR_ENV_FILE = Path("/var/lib/arkade-sidecar/api-key.env")
+    BARKD_STATE_DIR = Path("/var/lib/barkd/data")
+    BARKD_INIT_MNEMONIC_FILE = Path("/run/lnbitsbox-bark-init/mnemonic")
     FUNDING_SOURCE_FILE = Path("/var/lib/lnbitsbox/funding-source")
     SSH_USER = "lnbitsadmin"
 
 PHOENIXD_SEED_FILE = PHOENIXD_STATE_DIR / "seed.dat"
 PHOENIXD_CONF_FILE = PHOENIXD_STATE_DIR / "phoenix.conf"
+BARKD_MNEMONIC_FILE = BARKD_STATE_DIR / "mnemonic"
+BARKD_DB_FILE = BARKD_STATE_DIR / "db.sqlite"
+BARKD_AUTH_TOKEN_FILE = BARKD_STATE_DIR / "auth_token"
 FUNDING_SOURCES = {
     "spark": {
         "label": "Spark",
@@ -55,19 +58,19 @@ FUNDING_SOURCES = {
         "seed_file": SPARK_MNEMONIC_FILE,
         "service": "spark-sidecar.service",
     },
-    "ark": {
-        "label": "Ark",
-        "seed_label": "Ark Wallet Seed",
-        "secret_owner": "arkade-sidecar",
-        "seed_file": ARKADE_MNEMONIC_FILE,
-        "service": "arkade-sidecar.service",
-    },
     "phoenixd": {
         "label": "Phoenixd",
         "seed_label": "Phoenixd Wallet Seed",
         "secret_owner": "phoenixd",
         "seed_file": PHOENIXD_SEED_FILE,
         "service": "phoenixd.service",
+    },
+    "bark": {
+        "label": "Bark",
+        "seed_label": "Bark Wallet Seed",
+        "secret_owner": "barkd",
+        "seed_file": BARKD_MNEMONIC_FILE,
+        "service": "barkd.service",
     },
 }
 LNBITS_DEFAULT_ENV = [
@@ -153,6 +156,68 @@ def ensure_phoenixd_config():
         PHOENIXD_CONF_FILE.chmod(0o640)
     chown_if_user_exists(PHOENIXD_CONF_FILE, "phoenixd")
     PHOENIXD_CONF_FILE.chmod(0o640)
+
+
+def read_bark_auth_token() -> str:
+    try:
+        return BARKD_AUTH_TOKEN_FILE.read_text().strip()
+    except Exception:
+        return ""
+
+
+def initialize_bark_wallet(mnemonic: str):
+    """Create or safely reuse Bark's complete wallet state directory."""
+    existing_mnemonic = normalize_mnemonic(
+        BARKD_MNEMONIC_FILE.read_text() if BARKD_MNEMONIC_FILE.exists() else ""
+    )
+
+    if BARKD_DB_FILE.exists():
+        if not existing_mnemonic:
+            raise RuntimeError("Existing Bark wallet data has no readable mnemonic.")
+        if existing_mnemonic != mnemonic:
+            raise RuntimeError(
+                "A different Bark wallet already exists. Back up or remove the existing "
+                "Bark wallet state before choosing a new seed phrase."
+            )
+        if not read_bark_auth_token():
+            raise RuntimeError("Existing Bark wallet data has no barkd authentication token.")
+        return
+
+    if BARKD_STATE_DIR.exists() and any(BARKD_STATE_DIR.iterdir()):
+        raise RuntimeError(
+            "Bark wallet state already exists but is incomplete. Restore it or remove "
+            "the directory before continuing."
+        )
+
+    if DEV_MODE:
+        BARKD_STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o750)
+        BARKD_MNEMONIC_FILE.write_text(mnemonic + "\n")
+        BARKD_MNEMONIC_FILE.chmod(0o600)
+        BARKD_AUTH_TOKEN_FILE.write_text(secrets.token_hex(32) + "\n")
+        BARKD_AUTH_TOKEN_FILE.chmod(0o600)
+        BARKD_DB_FILE.touch(mode=0o600)
+        return
+
+    BARKD_INIT_MNEMONIC_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
+    chgrp_if_group_exists(BARKD_INIT_MNEMONIC_FILE.parent, "barkd")
+    BARKD_INIT_MNEMONIC_FILE.write_text(mnemonic + "\n")
+    BARKD_INIT_MNEMONIC_FILE.chmod(0o640)
+    chgrp_if_group_exists(BARKD_INIT_MNEMONIC_FILE, "barkd")
+    try:
+        subprocess.run(
+            ["systemctl", "start", "lnbitsbox-bark-init.service"],
+            check=True,
+            capture_output=True,
+            timeout=100,
+        )
+    except subprocess.CalledProcessError as exc:
+        message = exc.stderr.decode().strip() if exc.stderr else ""
+        raise RuntimeError(message or "Failed to initialize Bark wallet.") from exc
+    finally:
+        BARKD_INIT_MNEMONIC_FILE.unlink(missing_ok=True)
+
+    if not BARKD_DB_FILE.exists() or not read_bark_auth_token():
+        raise RuntimeError("Bark initialization completed without wallet state or authentication token.")
 
 
 @app.route("/")
@@ -304,26 +369,30 @@ def complete():
         mnemonic_file = source_info["seed_file"]
         service_name = source_info["service"]
 
-        if source == "phoenixd":
+        mnemonic = normalize_mnemonic(wizard_state["mnemonic"])
+
+        if source == "bark":
+            initialize_bark_wallet(mnemonic)
+        elif source == "phoenixd":
             ensure_phoenixd_config()
 
-        # 1. Create funding source state directory if needed
-        mnemonic_file.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
-        if source == "phoenixd":
-            chown_if_user_exists(mnemonic_file.parent, "phoenixd")
-        else:
-            chgrp_if_group_exists(mnemonic_file.parent, source_info["secret_owner"])
+        if source != "bark":
+            # 1. Create funding source state directory if needed
+            mnemonic_file.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
+            if source == "phoenixd":
+                chown_if_user_exists(mnemonic_file.parent, "phoenixd")
+            else:
+                chgrp_if_group_exists(mnemonic_file.parent, source_info["secret_owner"])
 
-        # 2. Write mnemonic file with correct permissions
-        mnemonic = normalize_mnemonic(wizard_state["mnemonic"])
-        mnemonic_file.write_text(mnemonic + "\n")
-        mnemonic_file.chmod(0o640)
+            # 2. Write mnemonic file with correct permissions
+            mnemonic_file.write_text(mnemonic + "\n")
+            mnemonic_file.chmod(0o640)
 
-        # Set ownership to the selected funding source service.
-        if source == "phoenixd":
-            chown_if_user_exists(mnemonic_file, "phoenixd")
-        else:
-            chgrp_if_group_exists(mnemonic_file, source_info["secret_owner"])
+            # Set ownership to the selected funding source service.
+            if source == "phoenixd":
+                chown_if_user_exists(mnemonic_file, "phoenixd")
+            else:
+                chgrp_if_group_exists(mnemonic_file, source_info["secret_owner"])
 
         # 3. Update LNbits env file with selected funding source configuration
         FUNDING_SOURCE_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
@@ -346,7 +415,7 @@ def complete():
             else:
                 subprocess.run(["systemctl", "stop", "spark-sidecar.service"], check=False)
                 subprocess.run(["systemctl", "stop", "phoenixd.service"], check=False)
-                subprocess.run(["systemctl", "stop", "arkade-sidecar.service"], check=False)
+                subprocess.run(["systemctl", "stop", "barkd.service"], check=False)
                 subprocess.run(["systemctl", "start", service_name], check=False)
                 subprocess.run(["systemctl", "start", "lnbits.service"], check=False)
                 subprocess.run(["systemctl", "start", "lnbitspi-admin.service"], check=False)
@@ -368,16 +437,11 @@ def update_lnbits_env(source: str):
         "LNBITS_BACKEND_WALLET_CLASS",
         "SPARK_L2_EXTERNAL_ENDPOINT",
         "SPARK_L2_EXTERNAL_API_KEY",
-        "ARKADE_SIDECAR_URL",
-        "ARKADE_SIDECAR_API_KEY",
-        "ARKADE_MNEMONIC",
-        "ARKADE_ARK_SERVER_URL",
-        "ARKADE_BOLTZ_SERVER_URL",
-        "ARKADE_EXTERNAL_ENDPOINT",
-        "ARKADE_EXTERNAL_API_KEY",
         "PHOENIXD_API_ENDPOINT",
         "PHOENIXD_API_PASSWORD",
         "PHOENIXD_DATA_DIR",
+        "BARK_API_ENDPOINT",
+        "BARK_API_TOKEN",
     }
     kept = [
         line for line in existing_lines
@@ -407,24 +471,6 @@ def update_lnbits_env(source: str):
         SPARK_SIDECAR_ENV_FILE.write_text(f"SPARK_SIDECAR_API_KEY={api_token}\n")
         SPARK_SIDECAR_ENV_FILE.chmod(0o640)
         chgrp_if_group_exists(SPARK_SIDECAR_ENV_FILE, "spark-sidecar")
-    elif source == "ark":
-        api_token = secrets.token_hex(32)
-        funding_config = [
-            "# Funding Source Configuration",
-            "LNBITS_BACKEND_WALLET_CLASS=ArkadeWallet",
-            "ARKADE_SIDECAR_URL=http://127.0.0.1:8765",
-            f"ARKADE_SIDECAR_API_KEY={api_token}",
-            "ARKADE_MNEMONIC=",
-            "ARKADE_ARK_SERVER_URL=https://arkade.computer",
-            "ARKADE_BOLTZ_SERVER_URL=https://api.ark.boltz.exchange",
-            "ARKADE_EXTERNAL_ENDPOINT=http://127.0.0.1:8765",
-            f"ARKADE_EXTERNAL_API_KEY={api_token}",
-        ]
-
-        ARKADE_SIDECAR_ENV_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o750)
-        ARKADE_SIDECAR_ENV_FILE.write_text(f"ARKADE_SIDECAR_API_KEY={api_token}\n")
-        ARKADE_SIDECAR_ENV_FILE.chmod(0o640)
-        chgrp_if_group_exists(ARKADE_SIDECAR_ENV_FILE, "arkade-sidecar")
     elif source == "phoenixd":
         ensure_phoenixd_config()
         phoenixd_password = read_key_value_file(PHOENIXD_CONF_FILE).get("http-password", "")
@@ -436,6 +482,16 @@ def update_lnbits_env(source: str):
             "PHOENIXD_API_ENDPOINT=http://127.0.0.1:9740/",
             f"PHOENIXD_API_PASSWORD={phoenixd_password}",
             f'PHOENIXD_DATA_DIR="{PHOENIXD_STATE_DIR}"',
+        ]
+    elif source == "bark":
+        bark_token = read_bark_auth_token()
+        if not bark_token:
+            raise RuntimeError("Bark API token is not available.")
+        funding_config = [
+            "# Funding Source Configuration",
+            "LNBITS_BACKEND_WALLET_CLASS=BarkWallet",
+            "BARK_API_ENDPOINT=http://127.0.0.1:3000",
+            f"BARK_API_TOKEN={bark_token}",
         ]
     else:
         raise ValueError("Invalid funding source")

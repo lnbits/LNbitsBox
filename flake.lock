@@ -1,19 +1,20 @@
 {
   "nodes": {
-    "arkade-sidecar": {
+    "bark": {
       "flake": false,
       "locked": {
-        "lastModified": 1780479171,
-        "narHash": "sha256-kuPETobfRsMiBtVZlOKyVKLhi6BfhY5mO0YtwfaZ8Ks=",
-        "owner": "lnbits",
-        "repo": "arkade_sidecar",
-        "rev": "39519fe0d8a870dbf4d310f562c12ef9fb82d1f9",
-        "type": "github"
+        "lastModified": 1787667103,
+        "narHash": "sha256-IgLl7a69s9dedE7qqGncvRtV00LCpIC++f0Vruo2TLM=",
+        "owner": "ark-bitcoin",
+        "repo": "bark",
+        "rev": "09e5b81d220d16f1e876df4aa772185640301528",
+        "type": "gitlab"
       },
       "original": {
-        "owner": "lnbits",
-        "repo": "arkade_sidecar",
-        "type": "github"
+        "owner": "ark-bitcoin",
+        "ref": "bark-0.6.2",
+        "repo": "bark",
+        "type": "gitlab"
       }
     },
     "build-system-pkgs": {
@@ -39,6 +40,27 @@
       "original": {
         "owner": "pyproject-nix",
         "repo": "build-system-pkgs",
+        "type": "github"
+      }
+    },
+    "fenix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-analyzer-src": "rust-analyzer-src"
+      },
+      "locked": {
+        "lastModified": 1785314864,
+        "narHash": "sha256-imz9J5iMNersDeQ1ymenFg35N6C2R3MCaGg2i0XCIrE=",
+        "owner": "nix-community",
+        "repo": "fenix",
+        "rev": "594418b2c9ea0731bee6988236ef5bfd97e81dca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "fenix",
         "type": "github"
       }
     },
@@ -103,16 +125,16 @@
         "uv2nix": "uv2nix_2"
       },
       "locked": {
-        "lastModified": 1778143433,
-        "narHash": "sha256-UhA30SHP2awQEtaxUTcIYcOm8CyslJfaZAG2XNEdV5c=",
-        "owner": "blackcoffeexbt",
+        "lastModified": 1788369496,
+        "narHash": "sha256-XRl0/S34HDZtskDBPop/4oI+FBFtTpqo6Jcz/kKKBJc=",
+        "owner": "lnbits",
         "repo": "lnbits",
-        "rev": "bacb103267a1d2a17abe914cd70abaeef7167c85",
+        "rev": "d941f0a3f94bea94ff6dc1f34a993f8a6aa5934f",
         "type": "github"
       },
       "original": {
-        "owner": "blackcoffeexbt",
-        "ref": "feat/arkade-funding-source",
+        "owner": "lnbits",
+        "ref": "v1.6.0",
         "repo": "lnbits",
         "type": "github"
       }
@@ -152,16 +174,16 @@
     "phoenixd": {
       "flake": false,
       "locked": {
-        "lastModified": 1779278870,
-        "narHash": "sha256-eKLiizSR9BhV640OHE1FaWyk+dAnIPDrMmqE5FEpAPc=",
+        "lastModified": 1783949608,
+        "narHash": "sha256-H4gQ1gf6SkVwvq5hMC0g0IGy70QNZgif2UemE076Fug=",
         "owner": "ACINQ",
         "repo": "phoenixd",
-        "rev": "de6f8ae81c01534fa9ffdf0934385fd4a5ad9f9f",
+        "rev": "b072567db6e42e8a3b0b0390da37c78e026e4807",
         "type": "github"
       },
       "original": {
         "owner": "ACINQ",
-        "ref": "v0.8.0",
+        "ref": "v0.9.0",
         "repo": "phoenixd",
         "type": "github"
       }
@@ -218,7 +240,8 @@
     },
     "root": {
       "inputs": {
-        "arkade-sidecar": "arkade-sidecar",
+        "bark": "bark",
+        "fenix": "fenix",
         "lnbits": "lnbits",
         "nixpkgs": "nixpkgs_2",
         "phoenixd": "phoenixd",
@@ -342,6 +365,23 @@
         "owner": "raspberrypi",
         "ref": "v1.5.2",
         "repo": "rpicam-apps",
+        "type": "github"
+      }
+    },
+    "rust-analyzer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785261141,
+        "narHash": "sha256-sA+DHPejWD68mLA7gtTiHGd5T41F6W+NKf0g+ibFCW4=",
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "bec66814323579659ffd77c909b3d963af118ece",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rust-lang",
+        "ref": "nightly",
+        "repo": "rust-analyzer",
         "type": "github"
       }
     },
