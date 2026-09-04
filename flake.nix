@@ -33,7 +33,7 @@
 
   outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, bark, fenix, ... }:
   let
-    version = "0.9.14";  # Bump before each release tag to match the next tag name
+    version = "0.10.0";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
     mkPhoenixdPackage =
       system:

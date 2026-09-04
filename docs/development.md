@@ -212,7 +212,7 @@ After flashing and booting the Raspberry Pi 4:
 2. Optional: for headless SSH before initial configuration, place an `authorized_keys` file on the firmware partition before first boot
 3. Navigate to `https://<pi-ip-address>/` to access the setup wizard
 4. Complete the wizard to:
-   - Generate/import your Spark wallet seed
+   - Choose Spark, Phoenixd, or Bark as the funding source
    - Set SSH password for `lnbitsadmin` user
    - Configure and start LNbits
 
@@ -363,9 +363,9 @@ nix build .#sdImage -L      # Build new image
 # Configuration App
 
 The configuration app is a web application that runs on first boot to guide users through the initial setup process. It handles:
-- Generating or importing the Spark wallet seed phrase
+- Generating or importing the selected funding source seed phrase
 - Setting the SSH password for the `lnbitsadmin` user
-- Starting the LNbits and Spark services after configuration is complete.
+- Starting LNbits and the selected funding service after configuration is complete.
 
 To run the app locally for development:
 ```bash
