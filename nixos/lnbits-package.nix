@@ -10,8 +10,8 @@ let
   uvLockedOverlay = workspace.mkPyprojectOverlay { sourcePreference = "wheel"; };
   plus = a: b: lib.unique ((if a == null then [] else a) ++ b);
   wasmtimeWheel = pkgs.fetchurl {
-    url = "https://files.pythonhosted.org/packages/42/56/ed5f492bd553a31c8e28d621f8256f2c7b1a133b28f73525d96ca355891a/wasmtime-45.0.0-py3-none-manylinux2014_aarch64.whl";
-    hash = "sha256-pJn2qw7rtw3Kg9akkEt0PNEi8yKvOr6GrwitdTUz2UY=";
+    url = "https://files.pythonhosted.org/packages/1c/c3/a957b226979daaeb09ec024562e9aac05e475a954537e6f150eb60bca84d/wasmtime-48.0.0-py3-none-manylinux2014_aarch64.whl";
+    hash = "sha256-JvzjYT/vvimijp1lncozJugAWThY5XWMrQhuuAKzt2Y=";
   };
   overrides = final: prev: {
     embit = prev.embit.overrideAttrs (old: {

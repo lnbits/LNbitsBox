@@ -11,22 +11,22 @@
 
     # LNbits release
     # To update: nix flake lock --update-input lnbits
-    lnbits.url = "github:lnbits/lnbits/v1.6.0";
+    lnbits.url = "github:lnbits/lnbits/v1.6.2";
 
     # Phoenixd source - build the JVM distribution from source on NixOS/aarch64.
-    phoenixd.url = "github:ACINQ/phoenixd/v0.9.0";
+    phoenixd.url = "github:ACINQ/phoenixd/v0.9.2";
     phoenixd.flake = false;
 
     # Spark sidecar for L2 Lightning integration
-    spark-sidecar.url = "github:lnbits/spark_sidecar";
+    spark-sidecar.url = "github:lnbits/spark_sidecar/v0.1.5";
     spark-sidecar.flake = false;  # Not a flake, just source
 
     # Bark wallet daemon. Its flake only exposes development shells, so the
     # image packages bark and barkd from this pinned source directly.
-    bark.url = "gitlab:ark-bitcoin/bark/bark-0.6.2";
+    bark.url = "gitlab:ark-bitcoin/bark/bark-0.7.1";
     bark.flake = false;
 
-    # Bark 0.6.2 requires Rust 1.90 while nixpkgs 24.11 provides Rust 1.82.
+    # Bark requires Rust 1.90 while nixpkgs 24.11 provides Rust 1.82.
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
   };

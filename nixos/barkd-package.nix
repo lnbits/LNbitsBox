@@ -33,7 +33,7 @@ let
 in
 rustPlatform.buildRustPackage {
   pname = "barkd";
-  version = "0.6.2";
+  version = "0.7.1";
   src = bark;
 
   # Bark's lockfile has only registry dependencies, so Nix can fetch each
