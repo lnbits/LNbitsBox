@@ -10,7 +10,7 @@
 
 # LNbitsBox
 
-A pre-configured, bootable NixOS SD card image for Raspberry Pi 4 that runs [LNbits](https://github.com/lnbits/lnbits) with Lightspark Spark as a funding source.
+A pre-configured, bootable NixOS SD card image for Raspberry Pi 4 that runs [LNbits](https://github.com/lnbits/lnbits) with ACINQ Phoenix, Bark or Lightspark Spark as funding sources.
 
 ![LNbitsBox image](./lnbitsbox.png)
 
