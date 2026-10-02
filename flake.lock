@@ -3,16 +3,16 @@
     "bark": {
       "flake": false,
       "locked": {
-        "lastModified": 1787667103,
-        "narHash": "sha256-IgLl7a69s9dedE7qqGncvRtV00LCpIC++f0Vruo2TLM=",
+        "lastModified": 1789124636,
+        "narHash": "sha256-nHoMhOqAVPjMePqKrJLuZxBIjHstA+AHLc0b/T/pnfQ=",
         "owner": "ark-bitcoin",
         "repo": "bark",
-        "rev": "09e5b81d220d16f1e876df4aa772185640301528",
+        "rev": "8f5d8c4f4afae87c8e4b3c6fb26fe06e9ae50e6a",
         "type": "gitlab"
       },
       "original": {
         "owner": "ark-bitcoin",
-        "ref": "bark-0.6.2",
+        "ref": "bark-0.7.1",
         "repo": "bark",
         "type": "gitlab"
       }
@@ -125,16 +125,16 @@
         "uv2nix": "uv2nix_2"
       },
       "locked": {
-        "lastModified": 1788369496,
-        "narHash": "sha256-XRl0/S34HDZtskDBPop/4oI+FBFtTpqo6Jcz/kKKBJc=",
+        "lastModified": 1789738874,
+        "narHash": "sha256-zn2iiIi37ecIOEej1Ti1oVuecP/7k7ZxJQjW6DHzXHs=",
         "owner": "lnbits",
         "repo": "lnbits",
-        "rev": "d941f0a3f94bea94ff6dc1f34a993f8a6aa5934f",
+        "rev": "9349da153c223b008f7d80453b53a54e09c8ed3d",
         "type": "github"
       },
       "original": {
         "owner": "lnbits",
-        "ref": "v1.6.0",
+        "ref": "v1.6.2",
         "repo": "lnbits",
         "type": "github"
       }
@@ -174,16 +174,16 @@
     "phoenixd": {
       "flake": false,
       "locked": {
-        "lastModified": 1783949608,
-        "narHash": "sha256-H4gQ1gf6SkVwvq5hMC0g0IGy70QNZgif2UemE076Fug=",
+        "lastModified": 1790766403,
+        "narHash": "sha256-QHRfNIvgANnZMGBLUHwHrgxkMRqNsB2Ul7No8k5UJCk=",
         "owner": "ACINQ",
         "repo": "phoenixd",
-        "rev": "b072567db6e42e8a3b0b0390da37c78e026e4807",
+        "rev": "bda8a1967373123a6f79a957c96b0d9382907c79",
         "type": "github"
       },
       "original": {
         "owner": "ACINQ",
-        "ref": "v0.9.0",
+        "ref": "v0.9.2",
         "repo": "phoenixd",
         "type": "github"
       }
@@ -388,15 +388,16 @@
     "spark-sidecar": {
       "flake": false,
       "locked": {
-        "lastModified": 1774341917,
-        "narHash": "sha256-4Tpcke6fOSTxXowxlRWYpxF6watn/JVrpXrj+/N3odE=",
+        "lastModified": 1789137641,
+        "narHash": "sha256-bEac8qPeXKJvfYFiPqDqOM26KepKQkoYKUZiT56LSxk=",
         "owner": "lnbits",
         "repo": "spark_sidecar",
-        "rev": "7ea1cd84c38a978b3716e79bc0cb8dd7286dcdd7",
+        "rev": "dbfed1fd9cb72f0a589d7479022f2cbb209b5924",
         "type": "github"
       },
       "original": {
         "owner": "lnbits",
+        "ref": "v0.1.5",
         "repo": "spark_sidecar",
         "type": "github"
       }
