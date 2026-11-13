@@ -11,7 +11,7 @@
 
     # LNbits release
     # To update: nix flake lock --update-input lnbits
-    lnbits.url = "github:lnbits/lnbits/v1.6.2";
+    lnbits.url = "github:lnbits/lnbits/v1.7.1";
 
     # Phoenixd source - build the JVM distribution from source on NixOS/aarch64.
     phoenixd.url = "github:ACINQ/phoenixd/v0.9.2";
@@ -33,7 +33,7 @@
 
   outputs = { self, nixpkgs, raspberry-pi-nix, lnbits, phoenixd, spark-sidecar, bark, fenix, ... }:
   let
-    version = "0.11.0";  # Bump before each release tag to match the next tag name
+    version = "0.11.1";  # Bump before each release tag to match the next tag name
     system = "aarch64-linux";
     mkPhoenixdPackage =
       system:

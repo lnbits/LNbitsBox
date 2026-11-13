@@ -2,6 +2,22 @@
 
 This guide covers manual release publishing for LNbitsBox, especially when the GitHub Actions release upload fails because the compressed SD image exceeds GitHub's per-asset size limit.
 
+## Prepared release: v0.11.1
+
+- Update LNbits from 1.6.2 to [1.7.1](https://github.com/lnbits/lnbits/releases/tag/v1.7.1), a security release that rotates authentication keys.
+- Keep the existing Phoenixd, Spark sidecar, and Bark versions.
+
+### Upgrade guidance
+
+Operators upgrading from earlier LNbits versions should follow the [upstream security recovery guidance](https://news.lnbits.com/news/lnbits-1-7-0-security-update). It covers resetting wallet keys, replacing funding-source credentials and other stored secrets, and recreating extension connections. Connected apps and integrations will need updated credentials. If compromise is suspected, upstream recommends a fresh server; updating alone does not remove access an attacker may already have gained.
+
+### Before publishing
+
+1. Build the image and OTA system closure on Linux with aarch64 support or a Raspberry Pi 4. Do not build on macOS.
+2. Test a fresh setup and an upgrade from v0.11.0 on a Raspberry Pi 4. Confirm LNbits reports 1.7.1, existing wallets load, and the configured funding source works. Check the admin dashboard, service restart, and credential changes described above.
+3. Confirm the OTA closure is available in Cachix before publishing its manifest, using the verification command below.
+4. Commit the release changes, then create and push tag `v0.11.1` to run the release workflow. Check the published image, checksum, and manifest; the manifest version must be `0.11.1`.
+
 ## When GitHub Actions fails with `size must be less than 2147483648`
 
 GitHub Releases rejects any single uploaded asset larger than `2,147,483,648` bytes (2 GiB). If the workflow fails with:
