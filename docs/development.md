@@ -243,7 +243,15 @@ The imported key is installed for the `lnbitsadmin` account before `sshd` starts
 
 **Out of memory:** Add swap space as shown in step 0, or use a machine with more RAM.
 
-**Kernel build from source:** If you see the kernel being built from source, ensure you've added the `raspberry-pi-nix` Cachix cache and that your flake is using the mainline kernel override.
+**Kernel build from source:** Ensure you've added the `raspberry-pi-nix` Cachix cache. A cache hit is not guaranteed: the locked inputs and kernel configuration must match a cached build. If no matching build is available, Nix compiles the Raspberry Pi kernel locally; use native aarch64 Linux to avoid QEMU overhead.
+
+### GitHub Actions builds
+
+The image workflow uses `ubuntu-24.04-arm` to build natively for the Raspberry Pi's aarch64 architecture. QEMU is not required on this runner. The SD image step allows 300 minutes, with a 360-minute limit for the whole job, leaving time for the OTA closure, compression, and release upload.
+
+If a run stops at exactly a configured timeout while still printing kernel compilation output, it has reached the workflow's time limit. Check cache setup messages earlier in the log and confirm that the run uses the ARM runner. Completed packages can be reused from Cachix when successfully uploaded; unfinished compilations must restart on a fresh runner.
+
+Workflow changes apply to the commit being built. To retry a failed release with a workflow fix, create a new release commit and version tag containing that fix. Re-running an old tagged run uses its original workflow.
 
 ### Getting Help
 
