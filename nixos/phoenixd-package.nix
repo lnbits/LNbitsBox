@@ -1,7 +1,7 @@
 { pkgs, phoenixd }:
 
 let
-  version = "0.9.2";
+  version = "0.9.3";
   buildJava = pkgs.jdk21_headless;
   runtimeJava = pkgs.jre_headless;
   gradlePackages = pkgs.callPackage "${pkgs.path}/pkgs/development/tools/build-managers/gradle/default.nix" { };

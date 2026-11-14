@@ -1,10 +1,7 @@
 { pkgs, bark, fenix }:
 
 let
-  swaggerUi = pkgs.fetchurl {
-    url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
-    hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
-  };
+  version = "0.8.1";
   rust = fenix.packages.${pkgs.system}.fromToolchainName {
     name = "1.90.0";
     sha256 = "sha256-SJwZ8g0zF2WrKDVmHrVG3pD2RGoQeo24MEXnNx5FyuI=";
@@ -33,7 +30,7 @@ let
 in
 rustPlatform.buildRustPackage {
   pname = "barkd";
-  version = "0.7.1";
+  inherit version;
   src = bark;
 
   # Bark's lockfile has only registry dependencies, so Nix can fetch each
@@ -41,19 +38,19 @@ rustPlatform.buildRustPackage {
   cargoDeps = cargoDeps;
   doCheck = false;
 
-  nativeBuildInputs = [ pkgs.pkg-config pkgs.protobuf pkgs.curl ];
+  nativeBuildInputs = [ pkgs.pkg-config pkgs.protobuf rustPlatform.bindgenHook ];
   buildInputs = [ pkgs.openssl pkgs.sqlite ];
 
-  # utoipa-swagger-ui normally downloads this archive in its build script.
-  # Give it a fixed local Nix store path instead: Nix sandbox builds have no
-  # network access, and the resulting barkd binary still includes Swagger UI.
-  SWAGGER_UI_DOWNLOAD_URL = "file://${swaggerUi}";
+  # Upstream build scripts use Git unless these release values are supplied.
+  GIT_HASH = bark.rev;
+  BARK_VERSION = version;
 
-  cargoBuildFlags = [ "-p" "bark-cli" "--bin" "bark" "--bin" "barkd" ];
+  # Swagger UI is now included in the upstream source behind an opt-in feature.
+  cargoBuildFlags = [ "-p" "bark-cli" "--bin" "bark" "--bin" "bark-cli" "--bin" "barkd" "--features" "barkd-swagger-ui" ];
   cargoTestFlags = [ "-p" "bark-cli" "--no-run" ];
 
   meta = {
-    description = "Bark and barkd wallet binaries";
+    description = "Bark CLI and barkd wallet binaries";
     homepage = "https://gitlab.com/ark-bitcoin/bark";
     license = pkgs.lib.licenses.mit;
     mainProgram = "barkd";

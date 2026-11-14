@@ -3,16 +3,16 @@
     "bark": {
       "flake": false,
       "locked": {
-        "lastModified": 1789124636,
-        "narHash": "sha256-nHoMhOqAVPjMePqKrJLuZxBIjHstA+AHLc0b/T/pnfQ=",
+        "lastModified": 1793915930,
+        "narHash": "sha256-Pok3NkMZNyv6AoyVJHPt21lQ+8rB7BDk92NEzexnpqw=",
         "owner": "ark-bitcoin",
         "repo": "bark",
-        "rev": "8f5d8c4f4afae87c8e4b3c6fb26fe06e9ae50e6a",
+        "rev": "303682063ed7559b06dcf37c5cb37bb7037b943f",
         "type": "gitlab"
       },
       "original": {
         "owner": "ark-bitcoin",
-        "ref": "bark-0.7.1",
+        "ref": "bark-0.8.1",
         "repo": "bark",
         "type": "gitlab"
       }
@@ -174,16 +174,16 @@
     "phoenixd": {
       "flake": false,
       "locked": {
-        "lastModified": 1790766403,
-        "narHash": "sha256-QHRfNIvgANnZMGBLUHwHrgxkMRqNsB2Ul7No8k5UJCk=",
+        "lastModified": 1791895183,
+        "narHash": "sha256-gB42qIEeYbFhX56SbvpmKiB7k6q9+UDuHmgETVnyFSU=",
         "owner": "ACINQ",
         "repo": "phoenixd",
-        "rev": "bda8a1967373123a6f79a957c96b0d9382907c79",
+        "rev": "66420dea6e4e0556c6fbb41366b70cefe488f61f",
         "type": "github"
       },
       "original": {
         "owner": "ACINQ",
-        "ref": "v0.9.2",
+        "ref": "v0.9.3",
         "repo": "phoenixd",
         "type": "github"
       }
